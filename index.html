@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>yuchaolove — 让心动被看见</title>
+<meta name="description" content="上传聊天截图，AI 分析对方态度，生成自然真诚的追求回复" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,500;1,400&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- Grain overlay -->
+<div class="grain"></div>
+
+<!-- Floating petals background -->
+<div class="petals-bg" aria-hidden="true">
+  <div class="petal p1">✿</div>
+  <div class="petal p2">✾</div>
+  <div class="petal p3">❀</div>
+  <div class="petal p4">✿</div>
+  <div class="petal p5">✾</div>
+  <div class="petal p6">❀</div>
+</div>
+
+<!-- Navigation -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="brand">
+      <span class="brand-yu">yucha</span><span class="brand-love">love</span>
+    </a>
+    <div class="nav-right">
+      <span class="nav-badge">Beta</span>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-kicker">✦ AI 情感助手 ✦</div>
+    <h1 class="hero-title">
+      让心动<em>被看见</em>，<br />
+      让回复<em>有温度</em>
+    </h1>
+    <p class="hero-sub">上传你们的聊天截图，yuchaolove 帮你读懂对方的心思，<br />生成真诚自然、不让人反感的回复</p>
+
+    <div class="hero-pills">
+      <div class="pill">
+        <span class="pill-icon">🔍</span> 读懂聊天情绪
+      </div>
+      <div class="pill">
+        <span class="pill-icon">💌</span> 生成专属回复
+      </div>
+      <div class="pill">
+        <span class="pill-icon">✨</span> 不油腻不尴尬
+      </div>
+    </div>
+
+    <button class="hero-btn" onclick="scrollToApp()">
+      开始使用
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+
+  <!-- Decorative card preview -->
+  <div class="hero-deco" aria-hidden="true">
+    <div class="deco-card deco-back">
+      <div class="deco-tag">对方态度</div>
+      <div class="deco-badge">有点感兴趣 ✨</div>
+      <div class="deco-line"></div>
+      <div class="deco-line short"></div>
+    </div>
+    <div class="deco-card deco-front">
+      <div class="deco-label">推荐回复</div>
+      <div class="deco-reply">"哈哈你也这样想啊，感觉你挺懂我的～"</div>
+      <div class="deco-copy">点击复制 ↗</div>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="how-section">
+  <div class="how-inner">
+    <div class="section-eyebrow">使用流程</div>
+    <h2 class="section-title">三步，让追求更自信</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-icon">📸</div>
+        <h3>上传截图</h3>
+        <p>把你们最近的聊天截图上传，yuchaolove 会读取对话内容</p>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-icon">🧠</div>
+        <h3>AI 分析</h3>
+        <p>智能识别对方的回复频率、措辞温度、情绪信号，判断真实态度</p>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-icon">💬</div>
+        <h3>生成回复</h3>
+        <p>根据对方状态生成 3 条不同风格的回复，自然真诚，一键复制</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Main App -->
+<section class="app-section" id="app-section">
+  <div class="app-inner">
+    <div class="section-eyebrow">开始分析</div>
+    <h2 class="section-title">上传你的聊天截图</h2>
+
+    <!-- Upload -->
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="fileInput" accept="image/*" />
+      <div class="upload-body">
+        <div class="upload-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <div class="upload-title">点击上传 / 拖入截图</div>
+        <div class="upload-hint">支持 JPG、PNG，建议包含最近 3~5 条对话</div>
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div class="preview-box" id="previewBox">
+      <img id="previewImg" src="" alt="截图预览" />
+      <div class="preview-meta">
+        <div class="preview-name" id="previewName">—</div>
+        <div class="preview-size" id="previewSize">—</div>
+        <button class="preview-change" onclick="resetUpload()">重新上传</button>
+      </div>
+    </div>
+
+    <!-- Options -->
+    <div class="options-row">
+      <div class="option-group">
+        <div class="option-label">添加背景（可选）</div>
+        <textarea id="contextInput" placeholder="例如：认识两周了，她最近回复慢了一些…" rows="2"></textarea>
+      </div>
+
+      <div class="option-group">
+        <div class="option-label">回复风格</div>
+        <div class="chip-group" id="chipGroup">
+          <button class="chip active" data-style="温暖体贴">🌸 温暖体贴</button>
+          <button class="chip" data-style="幽默俏皮">😄 幽默俏皮</button>
+          <button class="chip" data-style="自然真诚">🍃 自然真诚</button>
+          <button class="chip" data-style="制造好奇">✨ 制造好奇</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <button class="submit-btn" id="submitBtn" onclick="analyze()" disabled>
+      <span id="btnText">上传截图后开始分析</span>
+      <svg id="btnIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    </button>
+
+    <!-- Loading -->
+    <div class="loading-state" id="loadingState">
+      <div class="loading-heart">
+        <div class="heart-anim">♥</div>
+      </div>
+      <div class="loading-text">正在分析对方的心意…</div>
+      <div class="loading-sub">yuchaolove 正在读取聊天情绪</div>
+    </div>
+
+    <!-- Results -->
+    <div class="results" id="results">
+      <!-- Attitude card -->
+      <div class="result-attitude" id="resultAttitude">
+        <div class="attitude-header">
+          <div class="attitude-eyebrow">对方态度分析</div>
+          <div class="attitude-badge" id="attitudeBadge">—</div>
+        </div>
+        <p class="attitude-desc" id="attitudeDesc">—</p>
+      </div>
+
+      <!-- Reply cards -->
+      <div class="result-replies">
+        <div class="replies-header">
+          <div class="replies-eyebrow">推荐回复</div>
+          <div class="replies-hint">点击任意一条即可复制</div>
+        </div>
+        <div class="reply-list" id="replyList"></div>
+      </div>
+
+      <!-- Re-analyze -->
+      <button class="reanalyze-btn" onclick="analyze()">🔄 换一批回复</button>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">yuchaolove</div>
+    <div class="footer-tagline">用 AI，让追求多一分从容</div>
+    <div class="footer-note">© 2025 yuchaolove · 你的心动值得被好好回应</div>
+  </div>
+</footer>
+
+<!-- Toast -->
+<div class="toast" id="toast">💌 已复制，去发送吧～</div>
+
+<script src="app.js"></script>
+</body>
+</html>
