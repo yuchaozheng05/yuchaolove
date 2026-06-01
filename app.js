@@ -127,6 +127,8 @@ function buildPrompt(imageCount) {
 
 【先判断图片类型】
 - 先判断上传内容中是否至少有一张真正的聊天截图：应能看到聊天气泡、对话列表或清晰的双方消息。
+- 只有明确看到聊天气泡、聊天界面或成组的消息块，才可以将 is_chat_screenshot 设为 true。普通文字排版不是聊天记录。
+- 作业题目、PDF、网页、代码、笔记、文档、邮件正文、表格、风景、食物和普通照片都不是聊天截图，即使画面中有很多文字。
 - 如果所有图片都不是聊天截图，将 is_chat_screenshot 设为 false，dialogue 和 replies 返回空数组。用 non_chat_reply 写一句轻松、友好的提示，告诉用户换一张聊天截图。可以结合画面做一点幽默，但不要冒犯，也不要编造感情分析。
 - 如果多张图片中只有部分是聊天截图，将 is_chat_screenshot 设为 true，只分析有效聊天截图，忽略无关图片。
 
@@ -137,6 +139,7 @@ function buildPrompt(imageCount) {
 - 先在内部按从上到下、从旧到新还原对话，再结合整段聊天判断。不要只围绕最后一句生成模板。
 - 判断对方态度时，只使用“对方”发出的内容作为主要证据；“我”的内容只用于理解上下文。
 - 先输出 dialogue。dialogue 中的 side 只能根据气泡的几何位置填写为 left 或 right，不要根据句子内容猜发送者。speaker 必须严格使用固定映射：left = 对方，right = 我。
+- 不要把“左侧气泡 = 对方发出”“右侧气泡 = 我发出”或类似的辅助说明当成真实聊天消息。
 
 【任务一：判断态度】
 - 给出 8 字以内的态度标签。
@@ -161,6 +164,12 @@ ${context ? `【补充背景】${context}` : ''}
   "attitude_desc": "具体分析和策略建议",
   "is_chat_screenshot": true,
   "non_chat_reply": "",
+  "chat_evidence": {
+    "image_kind": "chat",
+    "has_message_bubbles": true,
+    "has_chat_ui": true,
+    "has_two_sided_layout": true
+  },
   "conversation_summary": "对方：...；我：...；对方：...",
   "dialogue": [
     {"side": "left", "speaker": "对方", "text": "左侧气泡内容"},
@@ -184,20 +193,25 @@ function parseAdvice(rawText) {
 
   const data = JSON.parse(cleaned.slice(start, end + 1));
   const dialogue = normalizeDialogue(data.dialogue);
-  const isChatScreenshot = data.is_chat_screenshot !== false;
+  const chatEvidence = normalizeChatEvidence(data.chat_evidence);
+  const isChatScreenshot = isVerifiedChatScreenshot(data, dialogue, chatEvidence);
+  const verifiedDialogue = isChatScreenshot ? dialogue : [];
   return {
-    attitude_label: cleanText(data.attitude_label, 12) || (isChatScreenshot ? '态度待判断' : '这不是聊天截图'),
+    attitude_label: isChatScreenshot ? cleanText(data.attitude_label, 12) || '态度待判断' : '这不是聊天截图',
     attitude_desc:
-      cleanText(data.attitude_desc, 180)
+      (isChatScreenshot ? cleanText(data.attitude_desc, 180) : '')
       || (isChatScreenshot ? '请结合对方后续行动继续观察。' : '我还没看到可以分析的聊天内容。'),
     is_chat_screenshot: isChatScreenshot,
     non_chat_reply: cleanText(data.non_chat_reply, 120) || getDefaultNonChatReply(),
-    conversation_summary: buildDialogueSummary(dialogue) || cleanText(data.conversation_summary, 260),
-    dialogue,
-    suggest_stop: Boolean(data.suggest_stop),
-    needs_retry: Boolean(data.needs_retry),
+    chat_evidence: chatEvidence,
+    conversation_summary: isChatScreenshot
+      ? buildDialogueSummary(verifiedDialogue) || cleanText(data.conversation_summary, 260)
+      : '',
+    dialogue: verifiedDialogue,
+    suggest_stop: isChatScreenshot && Boolean(data.suggest_stop),
+    needs_retry: isChatScreenshot && Boolean(data.needs_retry),
     degraded: Boolean(data.degraded),
-    replies: Array.isArray(data.replies)
+    replies: isChatScreenshot && Array.isArray(data.replies)
       ? data.replies
           .map((reply) => ({
             tag: cleanText(reply?.tag, 12) || selectedStyle,
@@ -247,6 +261,7 @@ function renderRetryNotice(message) {
     attitude_desc: message,
     is_chat_screenshot: true,
     non_chat_reply: '',
+    chat_evidence: {},
     conversation_summary: '',
     suggest_stop: false,
     needs_retry: true,
@@ -353,21 +368,11 @@ async function prepareImage(file, fileCount, forceCompression = false) {
   const shouldCompress = forceCompression || fileCount > 1 || file.size > 900 * 1024;
   const maxEdge = forceCompression ? 1400 : shouldCompress ? 1900 : 2200;
   const scale = Math.min(1, maxEdge / Math.max(image.naturalWidth, image.naturalHeight));
-  const bannerHeight = 64;
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-  canvas.height = Math.max(1, Math.round(image.naturalHeight * scale)) + bannerHeight;
+  canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
   const context = canvas.getContext('2d');
-  context.fillStyle = '#fff7f3';
-  context.fillRect(0, 0, canvas.width, bannerHeight);
-  context.fillStyle = '#3a2e28';
-  context.font = '600 24px sans-serif';
-  context.textBaseline = 'middle';
-  context.textAlign = 'left';
-  context.fillText('左侧气泡 = 对方发出', 22, bannerHeight / 2);
-  context.textAlign = 'right';
-  context.fillText('右侧气泡 = 我发出', canvas.width - 22, bannerHeight / 2);
-  context.drawImage(image, 0, bannerHeight, canvas.width, canvas.height - bannerHeight);
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
 
   const compressedUrl = canvas.toDataURL('image/webp', forceCompression ? 0.76 : shouldCompress ? 0.88 : 0.94);
   return getImagePayload(compressedUrl, file.name);
@@ -409,7 +414,7 @@ function normalizeDialogue(messages) {
     .map((message) => {
       const side = message?.side === 'left' || message?.side === 'right' ? message.side : '';
       const text = cleanText(message?.text, 100);
-      if (!side || !text) return null;
+      if (!side || !text || isHelperText(text)) return null;
       return { side, speaker: side === 'left' ? '对方' : '我', text };
     })
     .filter(Boolean)
@@ -422,4 +427,23 @@ function buildDialogueSummary(dialogue) {
     .map((message) => `${message.speaker}：${message.text}`)
     .join('；')
     .slice(0, 260);
+}
+
+function normalizeChatEvidence(evidence) {
+  return {
+    image_kind: cleanText(evidence?.image_kind, 24),
+    has_message_bubbles: evidence?.has_message_bubbles === true,
+    has_chat_ui: evidence?.has_chat_ui === true,
+    has_two_sided_layout: evidence?.has_two_sided_layout === true,
+  };
+}
+
+function isVerifiedChatScreenshot(data, dialogue, evidence) {
+  if (data.is_chat_screenshot === false) return false;
+  if (!evidence.has_message_bubbles && !evidence.has_chat_ui) return false;
+  return dialogue.length >= 2;
+}
+
+function isHelperText(text) {
+  return /左侧气泡|右侧气泡|对方发出|我发出|顺序从旧到新/.test(text);
 }

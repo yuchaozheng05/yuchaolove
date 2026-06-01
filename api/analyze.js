@@ -154,8 +154,10 @@ function parseAdvice(rawText) {
         .slice(0, 3)
     : [];
   const needsRetry = Boolean(value.needs_retry);
-  const isChatScreenshot = value.is_chat_screenshot !== false;
   const dialogue = normalizeDialogue(value.dialogue);
+  const chatEvidence = normalizeChatEvidence(value.chat_evidence);
+  const isChatScreenshot = isVerifiedChatScreenshot(value, dialogue, chatEvidence);
+  const verifiedDialogue = isChatScreenshot ? dialogue : [];
 
   if (isChatScreenshot && !needsRetry && replies.length < 3) {
     const incompleteError = new Error('Gemini returned fewer than three replies');
@@ -164,23 +166,26 @@ function parseAdvice(rawText) {
   }
 
   return {
-    attitude_label:
-      cleanText(value.attitude_label, 12)
-      || (!isChatScreenshot ? '这不是聊天截图' : needsRetry ? '截图不够清晰' : '态度待判断'),
+    attitude_label: isChatScreenshot
+      ? cleanText(value.attitude_label, 12) || (needsRetry ? '截图不够清晰' : '态度待判断')
+      : '这不是聊天截图',
     attitude_desc:
-      cleanText(value.attitude_desc, 180)
-      || (!isChatScreenshot
-        ? '我还没看到可以分析的聊天内容。'
-        : needsRetry
+      (isChatScreenshot ? cleanText(value.attitude_desc, 180) : '')
+      || (isChatScreenshot
+        ? needsRetry
           ? '这张截图暂时无法可靠读取，请换一张更清晰的截图后重试。'
-          : '请结合对方后续行动继续观察。'),
+          : '请结合对方后续行动继续观察。'
+        : '我还没看到可以分析的聊天内容。'),
     is_chat_screenshot: isChatScreenshot,
     non_chat_reply: cleanText(value.non_chat_reply, 120) || (!isChatScreenshot ? getDefaultNonChatReply() : ''),
-    conversation_summary: buildDialogueSummary(dialogue) || cleanText(value.conversation_summary, 260),
-    dialogue,
-    suggest_stop: Boolean(value.suggest_stop),
-    needs_retry: needsRetry,
-    replies,
+    chat_evidence: chatEvidence,
+    conversation_summary: isChatScreenshot
+      ? buildDialogueSummary(verifiedDialogue) || cleanText(value.conversation_summary, 260)
+      : '',
+    dialogue: verifiedDialogue,
+    suggest_stop: isChatScreenshot && Boolean(value.suggest_stop),
+    needs_retry: isChatScreenshot && needsRetry,
+    replies: isChatScreenshot ? replies : [],
   };
 }
 
@@ -190,6 +195,7 @@ function buildFreeTierFallbackAdvice() {
     attitude_desc: '当前免费分析额度暂时不可用。为了避免给你不准确的建议，本次不会猜测截图内容，请稍后点击“重新分析”。',
     is_chat_screenshot: true,
     non_chat_reply: '',
+    chat_evidence: {},
     conversation_summary: '',
     dialogue: [],
     suggest_stop: false,
@@ -223,7 +229,7 @@ function normalizeDialogue(messages) {
     .map((message) => {
       const side = message?.side === 'left' || message?.side === 'right' ? message.side : '';
       const text = cleanText(message?.text, 100);
-      if (!side || !text) return null;
+      if (!side || !text || isHelperText(text)) return null;
       return { side, speaker: side === 'left' ? '对方' : '我', text };
     })
     .filter(Boolean)
@@ -236,6 +242,25 @@ function buildDialogueSummary(dialogue) {
     .map((message) => `${message.speaker}：${message.text}`)
     .join('；')
     .slice(0, 260);
+}
+
+function normalizeChatEvidence(evidence) {
+  return {
+    image_kind: cleanText(evidence?.image_kind, 24),
+    has_message_bubbles: evidence?.has_message_bubbles === true,
+    has_chat_ui: evidence?.has_chat_ui === true,
+    has_two_sided_layout: evidence?.has_two_sided_layout === true,
+  };
+}
+
+function isVerifiedChatScreenshot(value, dialogue, evidence) {
+  if (value.is_chat_screenshot === false) return false;
+  if (!evidence.has_message_bubbles && !evidence.has_chat_ui) return false;
+  return dialogue.length >= 2;
+}
+
+function isHelperText(text) {
+  return /左侧气泡|右侧气泡|对方发出|我发出|顺序从旧到新/.test(text);
 }
 
 function summarizeError(error) {
@@ -254,7 +279,9 @@ export {
   buildFreeTierFallbackAdvice,
   getRequestParts,
   isRetryableModelError,
+  isVerifiedChatScreenshot,
   normalizeDialogue,
+  normalizeChatEvidence,
   parseAdvice,
   requestGeminiAdvice,
 };

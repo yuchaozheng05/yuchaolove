@@ -34,6 +34,12 @@ test('parses a complete advice response', () => {
   const advice = parseAdvice(JSON.stringify({
     attitude_label: '愿意接话',
     attitude_desc: '对方有回应，也留下了新话题。',
+    chat_evidence: {
+      image_kind: 'chat',
+      has_message_bubbles: true,
+      has_chat_ui: true,
+      has_two_sided_layout: true,
+    },
     conversation_summary: '这段摘要会被几何位置覆盖',
     dialogue: [
       { side: 'left', speaker: '我', text: '可以呀' },
@@ -75,14 +81,73 @@ test('returns a playful redirect for non-chat images without inventing replies',
     is_chat_screenshot: false,
     non_chat_reply: '这张风景很适合发朋友圈，但我还没看到聊天记录。',
     conversation_summary: '',
-    dialogue: [],
-    suggest_stop: false,
+    dialogue: [{ side: 'left', speaker: '对方', text: '被模型误认成聊天的文字' }],
+    suggest_stop: true,
     needs_retry: false,
-    replies: [],
+    replies: [{ tag: '自然真诚', text: '这条虚构回复不应该出现' }],
   }));
 
   assert.equal(advice.is_chat_screenshot, false);
   assert.equal(advice.non_chat_reply, '这张风景很适合发朋友圈，但我还没看到聊天记录。');
+  assert.deepEqual(advice.dialogue, []);
+  assert.equal(advice.suggest_stop, false);
+  assert.deepEqual(advice.replies, []);
+});
+
+test('rejects fake chat results that only contain helper text', () => {
+  const advice = parseAdvice(JSON.stringify({
+    is_chat_screenshot: true,
+    chat_evidence: {
+      image_kind: 'document',
+      has_message_bubbles: false,
+      has_chat_ui: false,
+      has_two_sided_layout: false,
+    },
+    dialogue: [
+      { side: 'left', speaker: '对方', text: '左侧气泡 = 对方发出' },
+      { side: 'right', speaker: '我', text: '右侧气泡 = 我发出' },
+    ],
+    replies: [
+      { tag: '自然真诚', text: '虚构回复 1' },
+      { tag: '自然真诚', text: '虚构回复 2' },
+      { tag: '自然真诚', text: '虚构回复 3' },
+    ],
+  }));
+
+  assert.equal(advice.is_chat_screenshot, false);
+  assert.equal(advice.attitude_label, '这不是聊天截图');
+  assert.deepEqual(advice.dialogue, []);
+  assert.deepEqual(advice.replies, []);
+});
+
+test('rejects document text even if the model tries to format it as dialogue', () => {
+  const advice = parseAdvice(JSON.stringify({
+    attitude_label: '认真求助',
+    attitude_desc: '对方正在布置作业。',
+    is_chat_screenshot: true,
+    chat_evidence: {
+      image_kind: 'homework document',
+      has_message_bubbles: false,
+      has_chat_ui: false,
+      has_two_sided_layout: false,
+    },
+    dialogue: [
+      { side: 'left', speaker: '对方', text: 'Image classification using MLP and MNIST Dataset' },
+      { side: 'right', speaker: '我', text: 'Write down the loss function' },
+    ],
+    suggest_stop: false,
+    needs_retry: false,
+    replies: [
+      { tag: '温暖体贴', text: '收到！这个作业看起来很有挑战性。' },
+      { tag: '温暖体贴', text: '我会认真完成的。' },
+      { tag: '温暖体贴', text: '有什么需要注意的吗？' },
+    ],
+  }));
+
+  assert.equal(advice.is_chat_screenshot, false);
+  assert.equal(advice.attitude_label, '这不是聊天截图');
+  assert.equal(advice.attitude_desc, '我还没看到可以分析的聊天内容。');
+  assert.deepEqual(advice.dialogue, []);
   assert.deepEqual(advice.replies, []);
 });
 
@@ -197,6 +262,12 @@ function geminiAdviceResponse() {
             attitude_desc: '对方仍然愿意交流，可以继续轻松聊。',
             is_chat_screenshot: true,
             non_chat_reply: '',
+            chat_evidence: {
+              image_kind: 'chat',
+              has_message_bubbles: true,
+              has_chat_ui: true,
+              has_two_sided_layout: true,
+            },
             conversation_summary: '对方：最近还好；我：那你平时喜欢做什么？',
             dialogue: [
               { side: 'left', speaker: '对方', text: '最近还好' },
