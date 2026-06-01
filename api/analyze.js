@@ -154,19 +154,28 @@ function parseAdvice(rawText) {
         .slice(0, 3)
     : [];
   const needsRetry = Boolean(value.needs_retry);
+  const isChatScreenshot = value.is_chat_screenshot !== false;
   const dialogue = normalizeDialogue(value.dialogue);
 
-  if (!needsRetry && replies.length < 3) {
+  if (isChatScreenshot && !needsRetry && replies.length < 3) {
     const incompleteError = new Error('Gemini returned fewer than three replies');
     incompleteError.providerStatus = 503;
     throw incompleteError;
   }
 
   return {
-    attitude_label: cleanText(value.attitude_label, 12) || (needsRetry ? '截图不够清晰' : '态度待判断'),
+    attitude_label:
+      cleanText(value.attitude_label, 12)
+      || (!isChatScreenshot ? '这不是聊天截图' : needsRetry ? '截图不够清晰' : '态度待判断'),
     attitude_desc:
       cleanText(value.attitude_desc, 180)
-      || (needsRetry ? '这张截图暂时无法可靠读取，请换一张更清晰的截图后重试。' : '请结合对方后续行动继续观察。'),
+      || (!isChatScreenshot
+        ? '我还没看到可以分析的聊天内容。'
+        : needsRetry
+          ? '这张截图暂时无法可靠读取，请换一张更清晰的截图后重试。'
+          : '请结合对方后续行动继续观察。'),
+    is_chat_screenshot: isChatScreenshot,
+    non_chat_reply: cleanText(value.non_chat_reply, 120) || (!isChatScreenshot ? getDefaultNonChatReply() : ''),
     conversation_summary: buildDialogueSummary(dialogue) || cleanText(value.conversation_summary, 260),
     dialogue,
     suggest_stop: Boolean(value.suggest_stop),
@@ -179,6 +188,8 @@ function buildFreeTierFallbackAdvice() {
   return {
     attitude_label: '免费通道繁忙',
     attitude_desc: '当前免费分析额度暂时不可用。为了避免给你不准确的建议，本次不会猜测截图内容，请稍后点击“重新分析”。',
+    is_chat_screenshot: true,
+    non_chat_reply: '',
     conversation_summary: '',
     dialogue: [],
     suggest_stop: false,
@@ -199,6 +210,10 @@ function isRetryableModelError(error) {
 function cleanText(value, maxLength) {
   if (typeof value !== 'string') return '';
   return value.replace(/\s+/g, ' ').trim().slice(0, maxLength);
+}
+
+function getDefaultNonChatReply() {
+  return '这张图挺有故事，但我还没看到你们聊天。换张聊天截图，我再帮你读空气。';
 }
 
 function normalizeDialogue(messages) {

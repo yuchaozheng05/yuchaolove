@@ -125,6 +125,11 @@ function buildPrompt(imageCount) {
 
 请完整阅读上传的 ${imageCount} 张聊天截图。截图已按照聊天时间从早到晚排列；如果有重叠消息，合并时去重。
 
+【先判断图片类型】
+- 先判断上传内容中是否至少有一张真正的聊天截图：应能看到聊天气泡、对话列表或清晰的双方消息。
+- 如果所有图片都不是聊天截图，将 is_chat_screenshot 设为 false，dialogue 和 replies 返回空数组。用 non_chat_reply 写一句轻松、友好的提示，告诉用户换一张聊天截图。可以结合画面做一点幽默，但不要冒犯，也不要编造感情分析。
+- 如果多张图片中只有部分是聊天截图，将 is_chat_screenshot 设为 true，只分析有效聊天截图，忽略无关图片。
+
 【必须先正确区分双方】
 - 对常见聊天软件，画面左边的气泡是“对方”发出的，画面右边的气泡是“我”发出的。这是默认硬规则，除非截图有非常明确的反向标识。
 - 不要把右侧“我”提出的问题误认为对方的问题，也不要替对方回答我自己刚问的问题。
@@ -154,6 +159,8 @@ ${context ? `【补充背景】${context}` : ''}
 {
   "attitude_label": "态度标签",
   "attitude_desc": "具体分析和策略建议",
+  "is_chat_screenshot": true,
+  "non_chat_reply": "",
   "conversation_summary": "对方：...；我：...；对方：...",
   "dialogue": [
     {"side": "left", "speaker": "对方", "text": "左侧气泡内容"},
@@ -177,9 +184,14 @@ function parseAdvice(rawText) {
 
   const data = JSON.parse(cleaned.slice(start, end + 1));
   const dialogue = normalizeDialogue(data.dialogue);
+  const isChatScreenshot = data.is_chat_screenshot !== false;
   return {
-    attitude_label: cleanText(data.attitude_label, 12) || '态度待判断',
-    attitude_desc: cleanText(data.attitude_desc, 180) || '请结合对方后续行动继续观察。',
+    attitude_label: cleanText(data.attitude_label, 12) || (isChatScreenshot ? '态度待判断' : '这不是聊天截图'),
+    attitude_desc:
+      cleanText(data.attitude_desc, 180)
+      || (isChatScreenshot ? '请结合对方后续行动继续观察。' : '我还没看到可以分析的聊天内容。'),
+    is_chat_screenshot: isChatScreenshot,
+    non_chat_reply: cleanText(data.non_chat_reply, 120) || getDefaultNonChatReply(),
     conversation_summary: buildDialogueSummary(dialogue) || cleanText(data.conversation_summary, 260),
     dialogue,
     suggest_stop: Boolean(data.suggest_stop),
@@ -207,11 +219,15 @@ function renderResults(data) {
   const list = document.getElementById('replyList');
   list.replaceChildren();
 
-  if (data.suggest_stop) {
+  if (!data.is_chat_screenshot) {
+    list.appendChild(createSystemCard('识图小提示', data.non_chat_reply || getDefaultNonChatReply(), '#c96b52'));
+  } else if (data.suggest_stop) {
     list.appendChild(createSystemCard('止损提醒', '舔狗照照镜子：对方连续短回，先别硬聊了。停一下，等对方愿意主动再说。', '#e57373'));
   }
 
-  if (data.needs_retry || data.degraded) {
+  if (!data.is_chat_screenshot) {
+    list.appendChild(createSystemCard('下一步', '换一张能看到左右聊天气泡的截图，我再认真帮你读空气。', '#e8927c'));
+  } else if (data.needs_retry || data.degraded) {
     list.appendChild(createSystemCard('请稍后重试', '免费分析通道暂时繁忙，或者截图不够清晰。本次没有猜测内容，请稍后重新分析。', '#c96b52'));
   } else if (data.suggest_stop) {
     list.appendChild(createSystemCard('建议动作', '先不要继续发消息。看对方之后会不会主动回来，比继续找话题更有参考价值。', '#c96b52'));
@@ -229,6 +245,8 @@ function renderRetryNotice(message) {
   renderResults({
     attitude_label: '暂时无法分析',
     attitude_desc: message,
+    is_chat_screenshot: true,
+    non_chat_reply: '',
     conversation_summary: '',
     suggest_stop: false,
     needs_retry: true,
@@ -305,6 +323,10 @@ function setSubmitState(disabled, text) {
 function cleanText(value, maxLength) {
   if (typeof value !== 'string') return '';
   return value.replace(/\s+/g, ' ').trim().slice(0, maxLength);
+}
+
+function getDefaultNonChatReply() {
+  return '这张图挺有故事，但我还没看到你们聊天。换张聊天截图，我再帮你读空气。';
 }
 
 function validateFiles(files) {

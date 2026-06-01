@@ -68,6 +68,24 @@ test('maps speaker identity from bubble side instead of model guesses', () => {
   );
 });
 
+test('returns a playful redirect for non-chat images without inventing replies', () => {
+  const advice = parseAdvice(JSON.stringify({
+    attitude_label: '不是聊天截图',
+    attitude_desc: '这是一张风景照，没有聊天气泡。',
+    is_chat_screenshot: false,
+    non_chat_reply: '这张风景很适合发朋友圈，但我还没看到聊天记录。',
+    conversation_summary: '',
+    dialogue: [],
+    suggest_stop: false,
+    needs_retry: false,
+    replies: [],
+  }));
+
+  assert.equal(advice.is_chat_screenshot, false);
+  assert.equal(advice.non_chat_reply, '这张风景很适合发朋友圈，但我还没看到聊天记录。');
+  assert.deepEqual(advice.replies, []);
+});
+
 test('validates uploaded screenshot format', () => {
   assert.equal(getRequestParts(requestBody).imageParts[0].source.media_type, 'image/png');
   assert.throws(
@@ -177,6 +195,8 @@ function geminiAdviceResponse() {
           text: JSON.stringify({
             attitude_label: '自然互动',
             attitude_desc: '对方仍然愿意交流，可以继续轻松聊。',
+            is_chat_screenshot: true,
+            non_chat_reply: '',
             conversation_summary: '对方：最近还好；我：那你平时喜欢做什么？',
             dialogue: [
               { side: 'left', speaker: '对方', text: '最近还好' },
