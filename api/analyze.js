@@ -154,6 +154,7 @@ function parseAdvice(rawText) {
         .slice(0, 3)
     : [];
   const needsRetry = Boolean(value.needs_retry);
+  const dialogue = normalizeDialogue(value.dialogue);
 
   if (!needsRetry && replies.length < 3) {
     const incompleteError = new Error('Gemini returned fewer than three replies');
@@ -166,7 +167,8 @@ function parseAdvice(rawText) {
     attitude_desc:
       cleanText(value.attitude_desc, 180)
       || (needsRetry ? '这张截图暂时无法可靠读取，请换一张更清晰的截图后重试。' : '请结合对方后续行动继续观察。'),
-    conversation_summary: cleanText(value.conversation_summary, 260),
+    conversation_summary: buildDialogueSummary(dialogue) || cleanText(value.conversation_summary, 260),
+    dialogue,
     suggest_stop: Boolean(value.suggest_stop),
     needs_retry: needsRetry,
     replies,
@@ -178,6 +180,7 @@ function buildFreeTierFallbackAdvice() {
     attitude_label: '免费通道繁忙',
     attitude_desc: '当前免费分析额度暂时不可用。为了避免给你不准确的建议，本次不会猜测截图内容，请稍后点击“重新分析”。',
     conversation_summary: '',
+    dialogue: [],
     suggest_stop: false,
     needs_retry: true,
     degraded: true,
@@ -198,6 +201,28 @@ function cleanText(value, maxLength) {
   return value.replace(/\s+/g, ' ').trim().slice(0, maxLength);
 }
 
+function normalizeDialogue(messages) {
+  if (!Array.isArray(messages)) return [];
+
+  return messages
+    .map((message) => {
+      const side = message?.side === 'left' || message?.side === 'right' ? message.side : '';
+      const text = cleanText(message?.text, 100);
+      if (!side || !text) return null;
+      return { side, speaker: side === 'left' ? '对方' : '我', text };
+    })
+    .filter(Boolean)
+    .slice(-20);
+}
+
+function buildDialogueSummary(dialogue) {
+  return dialogue
+    .slice(-8)
+    .map((message) => `${message.speaker}：${message.text}`)
+    .join('；')
+    .slice(0, 260);
+}
+
 function summarizeError(error) {
   return `${error?.providerStatus || 'unknown'} ${cleanText(error?.message || 'Unknown error', 180)}`;
 }
@@ -214,6 +239,7 @@ export {
   buildFreeTierFallbackAdvice,
   getRequestParts,
   isRetryableModelError,
+  normalizeDialogue,
   parseAdvice,
   requestGeminiAdvice,
 };

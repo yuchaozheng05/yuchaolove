@@ -131,6 +131,7 @@ function buildPrompt(imageCount) {
 - 忽略时间、日期、头像、昵称、系统提示、拍一拍等非消息内容。
 - 先在内部按从上到下、从旧到新还原对话，再结合整段聊天判断。不要只围绕最后一句生成模板。
 - 判断对方态度时，只使用“对方”发出的内容作为主要证据；“我”的内容只用于理解上下文。
+- 先输出 dialogue。dialogue 中的 side 只能根据气泡的几何位置填写为 left 或 right，不要根据句子内容猜发送者。speaker 必须严格使用固定映射：left = 对方，right = 我。
 
 【任务一：判断态度】
 - 给出 8 字以内的态度标签。
@@ -154,6 +155,10 @@ ${context ? `【补充背景】${context}` : ''}
   "attitude_label": "态度标签",
   "attitude_desc": "具体分析和策略建议",
   "conversation_summary": "对方：...；我：...；对方：...",
+  "dialogue": [
+    {"side": "left", "speaker": "对方", "text": "左侧气泡内容"},
+    {"side": "right", "speaker": "我", "text": "右侧气泡内容"}
+  ],
   "suggest_stop": false,
   "needs_retry": false,
   "replies": [
@@ -171,10 +176,12 @@ function parseAdvice(rawText) {
   if (start < 0 || end <= start) throw new Error('返回内容格式不正确');
 
   const data = JSON.parse(cleaned.slice(start, end + 1));
+  const dialogue = normalizeDialogue(data.dialogue);
   return {
     attitude_label: cleanText(data.attitude_label, 12) || '态度待判断',
     attitude_desc: cleanText(data.attitude_desc, 180) || '请结合对方后续行动继续观察。',
-    conversation_summary: cleanText(data.conversation_summary, 260),
+    conversation_summary: buildDialogueSummary(dialogue) || cleanText(data.conversation_summary, 260),
+    dialogue,
     suggest_stop: Boolean(data.suggest_stop),
     needs_retry: Boolean(data.needs_retry),
     degraded: Boolean(data.degraded),
@@ -206,6 +213,8 @@ function renderResults(data) {
 
   if (data.needs_retry || data.degraded) {
     list.appendChild(createSystemCard('请稍后重试', '免费分析通道暂时繁忙，或者截图不够清晰。本次没有猜测内容，请稍后重新分析。', '#c96b52'));
+  } else if (data.suggest_stop) {
+    list.appendChild(createSystemCard('建议动作', '先不要继续发消息。看对方之后会不会主动回来，比继续找话题更有参考价值。', '#c96b52'));
   } else {
     data.replies.forEach((reply, index) => {
       list.appendChild(createReplyCard(reply, index));
@@ -318,19 +327,27 @@ async function optimizeUploads(files) {
 
 async function prepareImage(file, fileCount, forceCompression = false) {
   const originalUrl = await readFileAsDataUrl(file);
-  const shouldCompress = forceCompression || fileCount > 1 || file.size > 900 * 1024;
-  if (!shouldCompress) return getImagePayload(originalUrl, file.name);
-
   const image = await loadImage(originalUrl);
-  const maxEdge = forceCompression ? 1400 : 1900;
+  const shouldCompress = forceCompression || fileCount > 1 || file.size > 900 * 1024;
+  const maxEdge = forceCompression ? 1400 : shouldCompress ? 1900 : 2200;
   const scale = Math.min(1, maxEdge / Math.max(image.naturalWidth, image.naturalHeight));
+  const bannerHeight = 64;
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-  canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+  canvas.height = Math.max(1, Math.round(image.naturalHeight * scale)) + bannerHeight;
   const context = canvas.getContext('2d');
-  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  context.fillStyle = '#fff7f3';
+  context.fillRect(0, 0, canvas.width, bannerHeight);
+  context.fillStyle = '#3a2e28';
+  context.font = '600 24px sans-serif';
+  context.textBaseline = 'middle';
+  context.textAlign = 'left';
+  context.fillText('左侧气泡 = 对方发出', 22, bannerHeight / 2);
+  context.textAlign = 'right';
+  context.fillText('右侧气泡 = 我发出', canvas.width - 22, bannerHeight / 2);
+  context.drawImage(image, 0, bannerHeight, canvas.width, canvas.height - bannerHeight);
 
-  const compressedUrl = canvas.toDataURL('image/webp', forceCompression ? 0.76 : 0.88);
+  const compressedUrl = canvas.toDataURL('image/webp', forceCompression ? 0.76 : shouldCompress ? 0.88 : 0.94);
   return getImagePayload(compressedUrl, file.name);
 }
 
@@ -361,4 +378,26 @@ function getImagePayload(dataUrl, name) {
 
 function getTotalBase64Length(images) {
   return images.reduce((sum, image) => sum + image.base64.length, 0);
+}
+
+function normalizeDialogue(messages) {
+  if (!Array.isArray(messages)) return [];
+
+  return messages
+    .map((message) => {
+      const side = message?.side === 'left' || message?.side === 'right' ? message.side : '';
+      const text = cleanText(message?.text, 100);
+      if (!side || !text) return null;
+      return { side, speaker: side === 'left' ? '对方' : '我', text };
+    })
+    .filter(Boolean)
+    .slice(-20);
+}
+
+function buildDialogueSummary(dialogue) {
+  return dialogue
+    .slice(-8)
+    .map((message) => `${message.speaker}：${message.text}`)
+    .join('；')
+    .slice(0, 260);
 }

@@ -5,6 +5,7 @@ import handler, {
   FREE_MODELS,
   buildFreeTierFallbackAdvice,
   getRequestParts,
+  normalizeDialogue,
   parseAdvice,
 } from '../api/analyze.js';
 
@@ -33,7 +34,11 @@ test('parses a complete advice response', () => {
   const advice = parseAdvice(JSON.stringify({
     attitude_label: '愿意接话',
     attitude_desc: '对方有回应，也留下了新话题。',
-    conversation_summary: '对方：可以呀；我：那你更喜欢哪一种？',
+    conversation_summary: '这段摘要会被几何位置覆盖',
+    dialogue: [
+      { side: 'left', speaker: '我', text: '可以呀' },
+      { side: 'right', speaker: '对方', text: '那你更喜欢哪一种？' },
+    ],
     suggest_stop: false,
     needs_retry: false,
     replies: [
@@ -45,7 +50,22 @@ test('parses a complete advice response', () => {
 
   assert.equal(advice.attitude_label, '愿意接话');
   assert.equal(advice.conversation_summary, '对方：可以呀；我：那你更喜欢哪一种？');
+  assert.deepEqual(advice.dialogue.map((message) => message.speaker), ['对方', '我']);
   assert.equal(advice.replies.length, 3);
+});
+
+test('maps speaker identity from bubble side instead of model guesses', () => {
+  assert.deepEqual(
+    normalizeDialogue([
+      { side: 'left', speaker: '我', text: '不忙' },
+      { side: 'right', speaker: '对方', text: '你空闲喜欢做什么？' },
+      { side: 'center', speaker: '对方', text: 'Yesterday 20:56' },
+    ]),
+    [
+      { side: 'left', speaker: '对方', text: '不忙' },
+      { side: 'right', speaker: '我', text: '你空闲喜欢做什么？' },
+    ],
+  );
 });
 
 test('validates uploaded screenshot format', () => {
@@ -158,6 +178,10 @@ function geminiAdviceResponse() {
             attitude_label: '自然互动',
             attitude_desc: '对方仍然愿意交流，可以继续轻松聊。',
             conversation_summary: '对方：最近还好；我：那你平时喜欢做什么？',
+            dialogue: [
+              { side: 'left', speaker: '对方', text: '最近还好' },
+              { side: 'right', speaker: '我', text: '那你平时喜欢做什么？' },
+            ],
             suggest_stop: false,
             needs_retry: false,
             replies: [
