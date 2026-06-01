@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import handler, {
+  CHAT_ADVICE_SCHEMA,
   FREE_MODELS,
   buildFreeTierFallbackAdvice,
   extractFirstJsonObject,
@@ -152,6 +153,41 @@ test('rejects document text even if the model tries to format it as dialogue', (
   assert.deepEqual(advice.replies, []);
 });
 
+test('keeps a real two-sided chat when the model contradicts its visual evidence', () => {
+  const advice = parseAdvice(JSON.stringify({
+    attitude_label: '回复偏冷',
+    attitude_desc: '对方多次短回，没有主动延伸话题。',
+    is_chat_screenshot: false,
+    non_chat_reply: '模型误填的非聊天提示不应覆盖真实聊天。',
+    chat_evidence: {
+      image_kind: 'dark wechat screenshot',
+      has_message_bubbles: true,
+      has_chat_ui: true,
+      has_two_sided_layout: true,
+    },
+    conversation_summary: '',
+    dialogue: [
+      { side: 'left', speaker: '对方', text: '不是' },
+      { side: 'right', speaker: '我', text: '那你这个专业忙吗' },
+      { side: 'left', speaker: '对方', text: '不忙' },
+      { side: 'right', speaker: '我', text: '你空闲时间一般都喜欢做什么呀' },
+      { side: 'left', speaker: '对方', text: '玩手机' },
+    ],
+    suggest_stop: true,
+    needs_retry: false,
+    replies: [
+      { tag: '自然真诚', text: '收到，先不打扰你啦。' },
+      { tag: '自然真诚', text: '哈哈好，手机赢了。' },
+      { tag: '自然真诚', text: '行，那我先撤。' },
+    ],
+  }));
+
+  assert.equal(advice.is_chat_screenshot, true);
+  assert.equal(advice.dialogue.length, 5);
+  assert.equal(advice.suggest_stop, true);
+  assert.equal(advice.replies.length, 3);
+});
+
 test('parses the first complete JSON object when Gemini repeats its response', () => {
   const first = {
     is_chat_screenshot: false,
@@ -226,11 +262,14 @@ test('passes multiple screenshots to Gemini in chronological order', async () =>
     });
 
     const parts = requestPayload.contents[0].parts;
-    assert.equal(parts[0].text, '聊天截图 1/2，顺序从旧到新。');
+    assert.equal(parts[0].text, '上传图片 1/2。先判断它是否为聊天截图；多张有效聊天截图按此顺序从旧到新排列。');
     assert.equal(parts[1].inline_data.mime_type, 'image/png');
-    assert.equal(parts[2].text, '聊天截图 2/2，顺序从旧到新。');
+    assert.equal(parts[2].text, '上传图片 2/2。先判断它是否为聊天截图；多张有效聊天截图按此顺序从旧到新排列。');
     assert.equal(parts[3].inline_data.mime_type, 'image/jpeg');
     assert.equal(parts[4].text, 'Analyze screenshots.');
+    assert.equal(requestPayload.generationConfig.responseMimeType, 'application/json');
+    assert.deepEqual(requestPayload.generationConfig.responseJsonSchema, CHAT_ADVICE_SCHEMA);
+    assert.equal(requestPayload.generationConfig.thinkingConfig.thinkingBudget, 0);
   } finally {
     global.fetch = originalFetch;
   }

@@ -2,6 +2,63 @@ const FREE_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
 const ALLOWED_MEDIA_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_IMAGE_COUNT = 6;
 const MAX_TOTAL_IMAGE_BASE64_LENGTH = 4_000_000;
+const CHAT_ADVICE_SCHEMA = {
+  type: 'object',
+  properties: {
+    attitude_label: { type: 'string' },
+    attitude_desc: { type: 'string' },
+    is_chat_screenshot: { type: 'boolean' },
+    non_chat_reply: { type: 'string' },
+    chat_evidence: {
+      type: 'object',
+      properties: {
+        image_kind: { type: 'string' },
+        has_message_bubbles: { type: 'boolean' },
+        has_chat_ui: { type: 'boolean' },
+        has_two_sided_layout: { type: 'boolean' },
+      },
+      required: ['image_kind', 'has_message_bubbles', 'has_chat_ui', 'has_two_sided_layout'],
+    },
+    conversation_summary: { type: 'string' },
+    dialogue: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          side: { type: 'string', enum: ['left', 'right'] },
+          speaker: { type: 'string' },
+          text: { type: 'string' },
+        },
+        required: ['side', 'speaker', 'text'],
+      },
+    },
+    suggest_stop: { type: 'boolean' },
+    needs_retry: { type: 'boolean' },
+    replies: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          tag: { type: 'string' },
+          text: { type: 'string' },
+        },
+        required: ['tag', 'text'],
+      },
+    },
+  },
+  required: [
+    'attitude_label',
+    'attitude_desc',
+    'is_chat_screenshot',
+    'non_chat_reply',
+    'chat_evidence',
+    'conversation_summary',
+    'dialogue',
+    'suggest_stop',
+    'needs_retry',
+    'replies',
+  ],
+};
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -94,7 +151,7 @@ async function requestGeminiAdvice({ apiKey, model, imageParts, prompt }) {
         contents: [{
           parts: [
             ...imageParts.flatMap((imagePart, index) => [
-              { text: `聊天截图 ${index + 1}/${imageParts.length}，顺序从旧到新。` },
+              { text: `上传图片 ${index + 1}/${imageParts.length}。先判断它是否为聊天截图；多张有效聊天截图按此顺序从旧到新排列。` },
               {
                 inline_data: {
                   mime_type: imagePart.source.media_type,
@@ -106,9 +163,13 @@ async function requestGeminiAdvice({ apiKey, model, imageParts, prompt }) {
           ],
         }],
         generationConfig: {
-          temperature: 0.45,
-          maxOutputTokens: 1000,
+          temperature: 0.35,
+          maxOutputTokens: 1600,
           responseMimeType: 'application/json',
+          responseJsonSchema: CHAT_ADVICE_SCHEMA,
+          thinkingConfig: {
+            thinkingBudget: 0,
+          },
         },
       }),
     },
@@ -282,9 +343,15 @@ function normalizeChatEvidence(evidence) {
 }
 
 function isVerifiedChatScreenshot(value, dialogue, evidence) {
-  if (value.is_chat_screenshot === false) return false;
-  if (!evidence.has_message_bubbles && !evidence.has_chat_ui) return false;
-  return dialogue.length >= 2;
+  const hasTwoSidedDialogue = dialogue.some((message) => message.side === 'left')
+    && dialogue.some((message) => message.side === 'right');
+  const hasVisualEvidence = evidence.has_message_bubbles
+    || evidence.has_chat_ui
+    || (evidence.has_two_sided_layout && hasTwoSidedDialogue);
+
+  if (!hasVisualEvidence || dialogue.length < 2) return false;
+  if (value.is_chat_screenshot === false && !hasTwoSidedDialogue) return false;
+  return true;
 }
 
 function isHelperText(text) {
@@ -303,6 +370,7 @@ function createPublicError(statusCode, publicMessage) {
 }
 
 export {
+  CHAT_ADVICE_SCHEMA,
   FREE_MODELS,
   buildFreeTierFallbackAdvice,
   extractFirstJsonObject,

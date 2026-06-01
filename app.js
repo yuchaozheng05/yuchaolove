@@ -128,6 +128,8 @@ function buildPrompt(imageCount) {
 【先判断图片类型】
 - 先判断上传内容中是否至少有一张真正的聊天截图：应能看到聊天气泡、对话列表或清晰的双方消息。
 - 只有明确看到聊天气泡、聊天界面或成组的消息块，才可以将 is_chat_screenshot 设为 true。普通文字排版不是聊天记录。
+- 微信、短信等聊天软件的深色模式截图仍然是聊天截图。截图可以被裁剪，也可以包含时间、昵称、系统提示或不完整的顶部气泡。
+- 如果画面中有多个左右对齐的消息气泡，尤其是左侧灰色气泡和右侧绿色气泡，应当识别为聊天截图并提取可见对话。
 - 作业题目、PDF、网页、代码、笔记、文档、邮件正文、表格、风景、食物和普通照片都不是聊天截图，即使画面中有很多文字。
 - 如果所有图片都不是聊天截图，将 is_chat_screenshot 设为 false，dialogue 和 replies 返回空数组。用 non_chat_reply 写一句轻松、友好的提示，告诉用户换一张聊天截图。可以结合画面做一点幽默，但不要冒犯，也不要编造感情分析。
 - 如果多张图片中只有部分是聊天截图，将 is_chat_screenshot 设为 true，只分析有效聊天截图，忽略无关图片。
@@ -398,6 +400,8 @@ async function prepareImage(file, fileCount, forceCompression = false) {
   const shouldCompress = forceCompression || fileCount > 1 || file.size > 900 * 1024;
   const maxEdge = forceCompression ? 1400 : shouldCompress ? 1900 : 2200;
   const scale = Math.min(1, maxEdge / Math.max(image.naturalWidth, image.naturalHeight));
+  if (!shouldCompress && scale === 1) return getImagePayload(originalUrl, file.name);
+
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
   canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
@@ -469,9 +473,15 @@ function normalizeChatEvidence(evidence) {
 }
 
 function isVerifiedChatScreenshot(data, dialogue, evidence) {
-  if (data.is_chat_screenshot === false) return false;
-  if (!evidence.has_message_bubbles && !evidence.has_chat_ui) return false;
-  return dialogue.length >= 2;
+  const hasTwoSidedDialogue = dialogue.some((message) => message.side === 'left')
+    && dialogue.some((message) => message.side === 'right');
+  const hasVisualEvidence = evidence.has_message_bubbles
+    || evidence.has_chat_ui
+    || (evidence.has_two_sided_layout && hasTwoSidedDialogue);
+
+  if (!hasVisualEvidence || dialogue.length < 2) return false;
+  if (data.is_chat_screenshot === false && !hasTwoSidedDialogue) return false;
+  return true;
 }
 
 function isHelperText(text) {
