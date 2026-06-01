@@ -237,7 +237,7 @@ function parseAdvice(rawText) {
       ? buildDialogueSummary(verifiedDialogue) || cleanText(value.conversation_summary, 260)
       : '',
     dialogue: verifiedDialogue,
-    suggest_stop: isChatScreenshot && Boolean(value.suggest_stop),
+    suggest_stop: isChatScreenshot && (Boolean(value.suggest_stop) || hasRepeatedColdReplies(verifiedDialogue)),
     needs_retry: isChatScreenshot && needsRetry,
     replies: isChatScreenshot ? replies : [],
   };
@@ -333,6 +333,15 @@ function buildDialogueSummary(dialogue) {
     .slice(0, 260);
 }
 
+function hasRepeatedColdReplies(dialogue) {
+  const recentReplies = dialogue
+    .filter((message) => message.side === 'left')
+    .slice(-3);
+
+  return recentReplies.length === 3
+    && recentReplies.every((message) => message.text.length <= 6 && !/[?？]/.test(message.text));
+}
+
 function normalizeChatEvidence(evidence) {
   return {
     image_kind: cleanText(evidence?.image_kind, 24),
@@ -375,6 +384,7 @@ export {
   buildFreeTierFallbackAdvice,
   extractFirstJsonObject,
   getRequestParts,
+  hasRepeatedColdReplies,
   isRetryableModelError,
   isVerifiedChatScreenshot,
   normalizeDialogue,

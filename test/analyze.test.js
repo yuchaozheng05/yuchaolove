@@ -7,6 +7,7 @@ import handler, {
   buildFreeTierFallbackAdvice,
   extractFirstJsonObject,
   getRequestParts,
+  hasRepeatedColdReplies,
   normalizeDialogue,
   parseAdvice,
 } from '../api/analyze.js';
@@ -186,6 +187,26 @@ test('keeps a real two-sided chat when the model contradicts its visual evidence
   assert.equal(advice.dialogue.length, 5);
   assert.equal(advice.suggest_stop, true);
   assert.equal(advice.replies.length, 3);
+});
+
+test('detects three consecutive short replies as a cold conversation', () => {
+  const dialogue = normalizeDialogue([
+    { side: 'left', text: '不是' },
+    { side: 'right', text: '那你这个专业忙吗' },
+    { side: 'left', text: '不忙' },
+    { side: 'right', text: '你空闲时间喜欢做什么呀' },
+    { side: 'left', text: '玩手机' },
+  ]);
+
+  assert.equal(hasRepeatedColdReplies(dialogue), true);
+  assert.equal(
+    hasRepeatedColdReplies([
+      { side: 'left', text: '不是' },
+      { side: 'left', text: '不忙' },
+      { side: 'left', text: '你呢？' },
+    ]),
+    false,
+  );
 });
 
 test('parses the first complete JSON object when Gemini repeats its response', () => {

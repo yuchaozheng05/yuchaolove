@@ -205,7 +205,7 @@ function parseAdvice(rawText) {
       ? buildDialogueSummary(verifiedDialogue) || cleanText(data.conversation_summary, 260)
       : '',
     dialogue: verifiedDialogue,
-    suggest_stop: isChatScreenshot && Boolean(data.suggest_stop),
+    suggest_stop: isChatScreenshot && (Boolean(data.suggest_stop) || hasRepeatedColdReplies(verifiedDialogue)),
     needs_retry: isChatScreenshot && Boolean(data.needs_retry),
     degraded: Boolean(data.degraded),
     replies: isChatScreenshot && Array.isArray(data.replies)
@@ -461,6 +461,15 @@ function buildDialogueSummary(dialogue) {
     .map((message) => `${message.speaker}：${message.text}`)
     .join('；')
     .slice(0, 260);
+}
+
+function hasRepeatedColdReplies(dialogue) {
+  const recentReplies = dialogue
+    .filter((message) => message.side === 'left')
+    .slice(-3);
+
+  return recentReplies.length === 3
+    && recentReplies.every((message) => message.text.length <= 6 && !/[?？]/.test(message.text));
 }
 
 function normalizeChatEvidence(evidence) {
