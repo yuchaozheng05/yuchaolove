@@ -33,6 +33,7 @@ test('parses a complete advice response', () => {
   const advice = parseAdvice(JSON.stringify({
     attitude_label: '愿意接话',
     attitude_desc: '对方有回应，也留下了新话题。',
+    conversation_summary: '对方：可以呀；我：那你更喜欢哪一种？',
     suggest_stop: false,
     needs_retry: false,
     replies: [
@@ -43,15 +44,62 @@ test('parses a complete advice response', () => {
   }));
 
   assert.equal(advice.attitude_label, '愿意接话');
+  assert.equal(advice.conversation_summary, '对方：可以呀；我：那你更喜欢哪一种？');
   assert.equal(advice.replies.length, 3);
 });
 
 test('validates uploaded screenshot format', () => {
-  assert.equal(getRequestParts(requestBody).imagePart.source.media_type, 'image/png');
+  assert.equal(getRequestParts(requestBody).imageParts[0].source.media_type, 'image/png');
   assert.throws(
     () => getRequestParts({ messages: [{ content: [] }] }),
+    /1 到 6 张/,
+  );
+  assert.throws(
+    () => getRequestParts({
+      messages: [{
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: 'image/gif', data: 'aGVsbG8=' } },
+          { type: 'text', text: 'Analyze this screenshot.' },
+        ],
+      }],
+    }),
     /JPG、PNG 或 WEBP/,
   );
+});
+
+test('passes multiple screenshots to Gemini in chronological order', async () => {
+  const originalFetch = global.fetch;
+  let requestPayload;
+  global.fetch = async (_url, options) => {
+    requestPayload = JSON.parse(options.body);
+    return jsonResponse(200, geminiAdviceResponse());
+  };
+
+  try {
+    const { requestGeminiAdvice } = await import('../api/analyze.js');
+    const imageParts = [
+      requestBody.messages[0].content[0],
+      {
+        type: 'image',
+        source: { type: 'base64', media_type: 'image/jpeg', data: 'd29ybGQ=' },
+      },
+    ];
+    await requestGeminiAdvice({
+      apiKey: 'test-key',
+      model: 'gemini-2.5-flash-lite',
+      imageParts,
+      prompt: 'Analyze screenshots.',
+    });
+
+    const parts = requestPayload.contents[0].parts;
+    assert.equal(parts[0].text, '聊天截图 1/2，顺序从旧到新。');
+    assert.equal(parts[1].inline_data.mime_type, 'image/png');
+    assert.equal(parts[2].text, '聊天截图 2/2，顺序从旧到新。');
+    assert.equal(parts[3].inline_data.mime_type, 'image/jpeg');
+    assert.equal(parts[4].text, 'Analyze screenshots.');
+  } finally {
+    global.fetch = originalFetch;
+  }
 });
 
 test('falls back to the second free model after a quota error', async () => {
@@ -109,6 +157,7 @@ function geminiAdviceResponse() {
           text: JSON.stringify({
             attitude_label: '自然互动',
             attitude_desc: '对方仍然愿意交流，可以继续轻松聊。',
+            conversation_summary: '对方：最近还好；我：那你平时喜欢做什么？',
             suggest_stop: false,
             needs_retry: false,
             replies: [

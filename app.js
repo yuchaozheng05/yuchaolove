@@ -1,6 +1,8 @@
 /* yuchaolove - app.js */
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_FILE_COUNT = 6;
+const MAX_TOTAL_IMAGE_BASE64_LENGTH = 3_800_000;
 const ALLOWED_FILE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const TAG_CLASS = {
   '温暖体贴': 'tag-warm',
@@ -9,41 +11,43 @@ const TAG_CLASS = {
   '制造好奇': 'tag-curious',
 };
 
-let imageBase64 = null;
-let imageMediaType = 'image/jpeg';
+let uploadedImages = [];
 let selectedStyle = '温暖体贴';
 
 document.getElementById('fileInput').addEventListener('change', handleFileUpload);
 document.getElementById('chipGroup').addEventListener('click', handleStyleSelection);
 
-function handleFileUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
+async function handleFileUpload(event) {
+  const files = Array.from(event.target.files || []);
+  if (!files.length) return;
 
-  if (!ALLOWED_FILE_TYPES.has(file.type)) {
-    showToast('请上传 JPG、PNG 或 WEBP 截图');
-    event.target.value = '';
-    return;
-  }
-  if (file.size > MAX_FILE_SIZE) {
-    showToast('截图不能超过 10MB');
+  const validationMessage = validateFiles(files);
+  if (validationMessage) {
+    showToast(validationMessage);
     event.target.value = '';
     return;
   }
 
-  imageMediaType = file.type;
-  const reader = new FileReader();
-  reader.onload = function (readerEvent) {
-    imageBase64 = readerEvent.target.result.split(',')[1];
-    document.getElementById('previewImg').src = readerEvent.target.result;
-    document.getElementById('previewName').textContent = file.name;
-    document.getElementById('previewSize').textContent = `${(file.size / 1024).toFixed(0)} KB`;
+  try {
+    setSubmitState(true, '正在处理截图...');
+    uploadedImages = await optimizeUploads(files);
+    const firstImage = uploadedImages[0];
+    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+
+    document.getElementById('previewImg').src = firstImage.previewUrl;
+    document.getElementById('previewName').textContent =
+      files.length === 1 ? files[0].name : `${files.length} 张截图 · 将按选择顺序分析`;
+    document.getElementById('previewSize').textContent = `${(totalSize / 1024).toFixed(0)} KB`;
     document.getElementById('previewBox').style.display = 'flex';
     document.getElementById('uploadZone').style.display = 'none';
     document.getElementById('results').style.display = 'none';
     setSubmitState(false, '开始分析');
-  };
-  reader.readAsDataURL(file);
+  } catch (error) {
+    uploadedImages = [];
+    event.target.value = '';
+    setSubmitState(true, '上传截图后开始分析');
+    showToast(error.message || '截图处理失败，请重试');
+  }
 }
 
 function handleStyleSelection(event) {
@@ -56,7 +60,7 @@ function handleStyleSelection(event) {
 }
 
 function resetUpload() {
-  imageBase64 = null;
+  uploadedImages = [];
   document.getElementById('uploadZone').style.display = 'block';
   document.getElementById('previewBox').style.display = 'none';
   document.getElementById('fileInput').value = '';
@@ -69,7 +73,7 @@ function scrollToApp() {
 }
 
 async function analyze() {
-  if (!imageBase64) return;
+  if (!uploadedImages.length) return;
 
   setSubmitState(true, '分析中...');
   document.getElementById('loadingState').style.display = 'block';
@@ -83,15 +87,15 @@ async function analyze() {
         messages: [{
           role: 'user',
           content: [
-            {
+            ...uploadedImages.map((image) => ({
               type: 'image',
               source: {
                 type: 'base64',
-                media_type: imageMediaType,
-                data: imageBase64,
+                media_type: image.mediaType,
+                data: image.base64,
               },
-            },
-            { type: 'text', text: buildPrompt() },
+            })),
+            { type: 'text', text: buildPrompt(uploadedImages.length) },
           ],
         }],
       }),
@@ -114,16 +118,24 @@ async function analyze() {
   }
 }
 
-function buildPrompt() {
+function buildPrompt(imageCount) {
   const context = document.getElementById('contextInput').value.trim();
 
   return `你是一位克制、真实、擅长理解聊天上下文的回复顾问。
 
-请完整阅读截图中可见的聊天记录。先识别哪些气泡是用户发出的，哪些是对方发出的；结合整段聊天、对方的主动程度、回复长度、情绪和最后一句话来判断，而不是只围绕最后一句生成模板。
+请完整阅读上传的 ${imageCount} 张聊天截图。截图已按照聊天时间从早到晚排列；如果有重叠消息，合并时去重。
+
+【必须先正确区分双方】
+- 对常见聊天软件，画面左边的气泡是“对方”发出的，画面右边的气泡是“我”发出的。这是默认硬规则，除非截图有非常明确的反向标识。
+- 不要把右侧“我”提出的问题误认为对方的问题，也不要替对方回答我自己刚问的问题。
+- 忽略时间、日期、头像、昵称、系统提示、拍一拍等非消息内容。
+- 先在内部按从上到下、从旧到新还原对话，再结合整段聊天判断。不要只围绕最后一句生成模板。
+- 判断对方态度时，只使用“对方”发出的内容作为主要证据；“我”的内容只用于理解上下文。
 
 【任务一：判断态度】
 - 给出 8 字以内的态度标签。
 - 用 100 字以内说明判断依据和下一步节奏。
+- 用 conversation_summary 简洁复述最近的关键对话，明确标注“对方：”和“我：”，让我可以确认你没有读反左右两边。
 - 如果对方连续敷衍、没有反问、明显不想继续聊，将 suggest_stop 设为 true。
 - 如果截图文字无法可靠读取，将 needs_retry 设为 true，不要猜测，不要编造聊天内容。
 
@@ -132,6 +144,7 @@ function buildPrompt() {
 - 必须贴合截图中的真实话题和对方反应。
 - 像真人聊天，简洁自然，不油腻，不强行暧昧，不突然邀约。
 - 三条回复角度不同，每条不超过 50 字。
+- 如果 suggest_stop 为 true，不要继续采访式追问，也不要硬开新话题。推荐体面收尾、暂停发送或轻松退场。
 - 如果 needs_retry 为 true，replies 返回空数组。
 
 ${context ? `【补充背景】${context}` : ''}
@@ -140,6 +153,7 @@ ${context ? `【补充背景】${context}` : ''}
 {
   "attitude_label": "态度标签",
   "attitude_desc": "具体分析和策略建议",
+  "conversation_summary": "对方：...；我：...；对方：...",
   "suggest_stop": false,
   "needs_retry": false,
   "replies": [
@@ -160,6 +174,7 @@ function parseAdvice(rawText) {
   return {
     attitude_label: cleanText(data.attitude_label, 12) || '态度待判断',
     attitude_desc: cleanText(data.attitude_desc, 180) || '请结合对方后续行动继续观察。',
+    conversation_summary: cleanText(data.conversation_summary, 260),
     suggest_stop: Boolean(data.suggest_stop),
     needs_retry: Boolean(data.needs_retry),
     degraded: Boolean(data.degraded),
@@ -178,12 +193,15 @@ function parseAdvice(rawText) {
 function renderResults(data) {
   document.getElementById('attitudeBadge').textContent = data.attitude_label;
   document.getElementById('attitudeDesc').textContent = data.attitude_desc;
+  const summary = document.getElementById('conversationSummary');
+  summary.textContent = data.conversation_summary || '';
+  summary.classList.toggle('show', Boolean(data.conversation_summary));
 
   const list = document.getElementById('replyList');
   list.replaceChildren();
 
   if (data.suggest_stop) {
-    list.appendChild(createSystemCard('止损提醒', '对方投入明显偏低。先别追着发消息，给彼此一点空间。', '#e57373'));
+    list.appendChild(createSystemCard('止损提醒', '舔狗照照镜子：对方连续短回，先别硬聊了。停一下，等对方愿意主动再说。', '#e57373'));
   }
 
   if (data.needs_retry || data.degraded) {
@@ -202,6 +220,7 @@ function renderRetryNotice(message) {
   renderResults({
     attitude_label: '暂时无法分析',
     attitude_desc: message,
+    conversation_summary: '',
     suggest_stop: false,
     needs_retry: true,
     degraded: true,
@@ -277,4 +296,69 @@ function setSubmitState(disabled, text) {
 function cleanText(value, maxLength) {
   if (typeof value !== 'string') return '';
   return value.replace(/\s+/g, ' ').trim().slice(0, maxLength);
+}
+
+function validateFiles(files) {
+  if (files.length > MAX_FILE_COUNT) return `一次最多上传 ${MAX_FILE_COUNT} 张截图`;
+  if (files.some((file) => !ALLOWED_FILE_TYPES.has(file.type))) return '请上传 JPG、PNG 或 WEBP 截图';
+  if (files.some((file) => file.size > MAX_FILE_SIZE)) return '单张截图不能超过 10MB';
+  return '';
+}
+
+async function optimizeUploads(files) {
+  let images = await Promise.all(files.map((file) => prepareImage(file, files.length)));
+  if (getTotalBase64Length(images) <= MAX_TOTAL_IMAGE_BASE64_LENGTH) return images;
+
+  images = await Promise.all(files.map((file) => prepareImage(file, files.length, true)));
+  if (getTotalBase64Length(images) > MAX_TOTAL_IMAGE_BASE64_LENGTH) {
+    throw new Error('截图总量较大，请减少张数或裁剪后再上传');
+  }
+  return images;
+}
+
+async function prepareImage(file, fileCount, forceCompression = false) {
+  const originalUrl = await readFileAsDataUrl(file);
+  const shouldCompress = forceCompression || fileCount > 1 || file.size > 900 * 1024;
+  if (!shouldCompress) return getImagePayload(originalUrl, file.name);
+
+  const image = await loadImage(originalUrl);
+  const maxEdge = forceCompression ? 1400 : 1900;
+  const scale = Math.min(1, maxEdge / Math.max(image.naturalWidth, image.naturalHeight));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+  canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const context = canvas.getContext('2d');
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+  const compressedUrl = canvas.toDataURL('image/webp', forceCompression ? 0.76 : 0.88);
+  return getImagePayload(compressedUrl, file.name);
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('截图读取失败，请重新上传'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImage(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('截图格式无法读取'));
+    image.src = dataUrl;
+  });
+}
+
+function getImagePayload(dataUrl, name) {
+  const [header, base64] = dataUrl.split(',');
+  const mediaType = header.match(/^data:([^;]+);base64$/)?.[1];
+  if (!mediaType || !base64) throw new Error('截图格式无法读取');
+  return { base64, mediaType, name, previewUrl: dataUrl };
+}
+
+function getTotalBase64Length(images) {
+  return images.reduce((sum, image) => sum + image.base64.length, 0);
 }

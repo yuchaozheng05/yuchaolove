@@ -119,7 +119,7 @@
 
     <!-- Upload -->
     <div class="upload-zone" id="uploadZone">
-      <input type="file" id="fileInput" accept="image/*" />
+      <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" multiple />
       <div class="upload-body">
         <div class="upload-icon-wrap">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28">
@@ -129,7 +129,7 @@
           </svg>
         </div>
         <div class="upload-title">点击上传 / 拖入截图</div>
-        <div class="upload-hint">支持 JPG、PNG，建议包含最近 3~5 条对话</div>
+        <div class="upload-hint">支持最多 6 张 JPG、PNG、WEBP，请按聊天时间从早到晚选择</div>
       </div>
     </div>
 
@@ -185,6 +185,7 @@
           <div class="attitude-badge" id="attitudeBadge">—</div>
         </div>
         <p class="attitude-desc" id="attitudeDesc">—</p>
+        <div class="conversation-summary" id="conversationSummary"></div>
       </div>
 
       <!-- Reply cards -->

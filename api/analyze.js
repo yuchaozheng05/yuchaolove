@@ -1,6 +1,7 @@
 const FREE_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
 const ALLOWED_MEDIA_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const MAX_IMAGE_BASE64_LENGTH = 14_000_000;
+const MAX_IMAGE_COUNT = 6;
+const MAX_TOTAL_IMAGE_BASE64_LENGTH = 4_000_000;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -13,7 +14,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { imagePart, textPart } = getRequestParts(req.body);
+    const { imageParts, textPart } = getRequestParts(req.body);
     let lastError;
 
     for (const model of FREE_MODELS) {
@@ -21,7 +22,7 @@ export default async function handler(req, res) {
         const rawText = await requestGeminiAdvice({
           apiKey,
           model,
-          imagePart,
+          imageParts,
           prompt: textPart.text,
         });
         const advice = parseAdvice(rawText);
@@ -60,25 +61,30 @@ function getRequestParts(body) {
     throw createPublicError(400, '请求格式不正确，请重新上传截图。');
   }
 
-  const imagePart = content.find((part) => part.type === 'image');
+  const imageParts = content.filter((part) => part.type === 'image');
   const textPart = content.find((part) => part.type === 'text');
-  const mediaType = imagePart?.source?.media_type;
-  const imageData = imagePart?.source?.data;
 
-  if (!ALLOWED_MEDIA_TYPES.has(mediaType) || typeof imageData !== 'string' || !imageData) {
+  if (!imageParts.length || imageParts.length > MAX_IMAGE_COUNT) {
+    throw createPublicError(400, `请上传 1 到 ${MAX_IMAGE_COUNT} 张聊天截图。`);
+  }
+  if (imageParts.some((part) => !ALLOWED_MEDIA_TYPES.has(part?.source?.media_type))) {
     throw createPublicError(400, '请上传 JPG、PNG 或 WEBP 格式的聊天截图。');
   }
-  if (imageData.length > MAX_IMAGE_BASE64_LENGTH) {
-    throw createPublicError(413, '截图太大，请上传 10MB 以内的图片。');
+  if (imageParts.some((part) => typeof part?.source?.data !== 'string' || !part.source.data)) {
+    throw createPublicError(400, '截图内容无法读取，请重新上传。');
+  }
+  const totalImageLength = imageParts.reduce((sum, part) => sum + part.source.data.length, 0);
+  if (totalImageLength > MAX_TOTAL_IMAGE_BASE64_LENGTH) {
+    throw createPublicError(413, '截图总量较大，请减少张数或裁剪后再上传。');
   }
   if (!textPart?.text || typeof textPart.text !== 'string') {
     throw createPublicError(400, '分析说明缺失，请刷新页面后重试。');
   }
 
-  return { imagePart, textPart };
+  return { imageParts, textPart };
 }
 
-async function requestGeminiAdvice({ apiKey, model, imagePart, prompt }) {
+async function requestGeminiAdvice({ apiKey, model, imageParts, prompt }) {
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {
@@ -87,12 +93,15 @@ async function requestGeminiAdvice({ apiKey, model, imagePart, prompt }) {
       body: JSON.stringify({
         contents: [{
           parts: [
-            {
-              inline_data: {
-                mime_type: imagePart.source.media_type,
-                data: imagePart.source.data,
+            ...imageParts.flatMap((imagePart, index) => [
+              { text: `聊天截图 ${index + 1}/${imageParts.length}，顺序从旧到新。` },
+              {
+                inline_data: {
+                  mime_type: imagePart.source.media_type,
+                  data: imagePart.source.data,
+                },
               },
-            },
+            ]),
             { text: prompt },
           ],
         }],
@@ -157,6 +166,7 @@ function parseAdvice(rawText) {
     attitude_desc:
       cleanText(value.attitude_desc, 180)
       || (needsRetry ? '这张截图暂时无法可靠读取，请换一张更清晰的截图后重试。' : '请结合对方后续行动继续观察。'),
+    conversation_summary: cleanText(value.conversation_summary, 260),
     suggest_stop: Boolean(value.suggest_stop),
     needs_retry: needsRetry,
     replies,
@@ -167,6 +177,7 @@ function buildFreeTierFallbackAdvice() {
   return {
     attitude_label: '免费通道繁忙',
     attitude_desc: '当前免费分析额度暂时不可用。为了避免给你不准确的建议，本次不会猜测截图内容，请稍后点击“重新分析”。',
+    conversation_summary: '',
     suggest_stop: false,
     needs_retry: true,
     degraded: true,
