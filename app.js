@@ -128,19 +128,22 @@ function buildPrompt(imageCount) {
 【先判断图片类型】
 - 先判断上传内容中是否至少有一张真正的聊天截图：应能看到聊天气泡、对话列表或清晰的双方消息。
 - 只有明确看到聊天气泡、聊天界面或成组的消息块，才可以将 is_chat_screenshot 设为 true。普通文字排版不是聊天记录。
-- 微信、短信等聊天软件的深色模式截图仍然是聊天截图。截图可以被裁剪，也可以包含时间、昵称、系统提示或不完整的顶部气泡。
-- 如果画面中有多个左右对齐的消息气泡，尤其是左侧灰色气泡和右侧绿色气泡，应当识别为聊天截图并提取可见对话。
+- 支持微信、短信、iMessage、WhatsApp、Instagram 私信、Messenger、Telegram、LINE、QQ、Discord、Slack 私信等常见聊天软件。不要依赖某个 App 的名称、颜色或主题。
+- 浅色和深色模式都可能是聊天截图。截图可以被裁剪，也可以包含时间、昵称、头像、系统提示、已读状态、表情反应或不完整的顶部消息。
+- 如果画面中有多个左右对齐的消息气泡，无论气泡是绿色、蓝色、灰色、紫色还是其他颜色，都应当识别为聊天截图并提取可见对话。
+- Discord、Slack 私信等界面可能使用单列消息流而不是左右气泡。如果画面明确显示发送者名称、头像归属或其他可见身份标记，也应当识别为聊天截图。
 - 作业题目、PDF、网页、代码、笔记、文档、邮件正文、表格、风景、食物和普通照片都不是聊天截图，即使画面中有很多文字。
 - 如果所有图片都不是聊天截图，将 is_chat_screenshot 设为 false，dialogue 和 replies 返回空数组。用 non_chat_reply 写一句轻松、友好的提示，告诉用户换一张聊天截图。可以结合画面做一点幽默，但不要冒犯，也不要编造感情分析。
 - 如果多张图片中只有部分是聊天截图，将 is_chat_screenshot 设为 true，只分析有效聊天截图，忽略无关图片。
 
 【必须先正确区分双方】
-- 对常见聊天软件，画面左边的气泡是“对方”发出的，画面右边的气泡是“我”发出的。这是默认硬规则，除非截图有非常明确的反向标识。
+- 对常见左右气泡聊天界面，画面左边的气泡是“对方”发出的，画面右边的气泡是“我”发出的。这是默认硬规则，除非截图有非常明确的反向标识。
+- 对单列消息流界面，仅在画面明确显示发送者名称、头像归属或身份标记时判断双方。此时 side 填写 feed，speaker 根据可见身份标记填写“对方”或“我”。无法可靠区分时，将 needs_retry 设为 true，不要猜。
 - 不要把右侧“我”提出的问题误认为对方的问题，也不要替对方回答我自己刚问的问题。
 - 忽略时间、日期、头像、昵称、系统提示、拍一拍等非消息内容。
 - 先在内部按从上到下、从旧到新还原对话，再结合整段聊天判断。不要只围绕最后一句生成模板。
 - 判断对方态度时，只使用“对方”发出的内容作为主要证据；“我”的内容只用于理解上下文。
-- 先输出 dialogue。dialogue 中的 side 只能根据气泡的几何位置填写为 left 或 right，不要根据句子内容猜发送者。speaker 必须严格使用固定映射：left = 对方，right = 我。
+- 先输出 dialogue。左右气泡界面的 side 只能根据气泡几何位置填写为 left 或 right，不要根据句子内容猜发送者。speaker 必须严格使用固定映射：left = 对方，right = 我。只有单列消息流才使用 side = feed。
 - 不要把“左侧气泡 = 对方发出”“右侧气泡 = 我发出”或类似的辅助说明当成真实聊天消息。
 
 【任务一：判断态度】
@@ -175,7 +178,8 @@ ${context ? `【补充背景】${context}` : ''}
   "conversation_summary": "对方：...；我：...；对方：...",
   "dialogue": [
     {"side": "left", "speaker": "对方", "text": "左侧气泡内容"},
-    {"side": "right", "speaker": "我", "text": "右侧气泡内容"}
+    {"side": "right", "speaker": "我", "text": "右侧气泡内容"},
+    {"side": "feed", "speaker": "对方", "text": "单列消息流内容，仅在界面明确标记发送者时使用"}
   ],
   "suggest_stop": false,
   "needs_retry": false,
@@ -446,9 +450,13 @@ function normalizeDialogue(messages) {
 
   return messages
     .map((message) => {
-      const side = message?.side === 'left' || message?.side === 'right' ? message.side : '';
+      const side = ['left', 'right', 'feed'].includes(message?.side) ? message.side : '';
       const text = cleanText(message?.text, 100);
       if (!side || !text || isHelperText(text)) return null;
+      if (side === 'feed') {
+        const speaker = message?.speaker === '对方' || message?.speaker === '我' ? message.speaker : '';
+        return speaker ? { side, speaker, text } : null;
+      }
       return { side, speaker: side === 'left' ? '对方' : '我', text };
     })
     .filter(Boolean)
@@ -465,7 +473,7 @@ function buildDialogueSummary(dialogue) {
 
 function hasRepeatedColdReplies(dialogue) {
   const recentReplies = dialogue
-    .filter((message) => message.side === 'left')
+    .filter((message) => message.speaker === '对方')
     .slice(-3);
 
   return recentReplies.length === 3

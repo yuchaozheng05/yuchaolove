@@ -25,7 +25,7 @@ const CHAT_ADVICE_SCHEMA = {
       items: {
         type: 'object',
         properties: {
-          side: { type: 'string', enum: ['left', 'right'] },
+          side: { type: 'string', enum: ['left', 'right', 'feed'] },
           speaker: { type: 'string' },
           text: { type: 'string' },
         },
@@ -316,9 +316,13 @@ function normalizeDialogue(messages) {
 
   return messages
     .map((message) => {
-      const side = message?.side === 'left' || message?.side === 'right' ? message.side : '';
+      const side = ['left', 'right', 'feed'].includes(message?.side) ? message.side : '';
       const text = cleanText(message?.text, 100);
       if (!side || !text || isHelperText(text)) return null;
+      if (side === 'feed') {
+        const speaker = message?.speaker === '对方' || message?.speaker === '我' ? message.speaker : '';
+        return speaker ? { side, speaker, text } : null;
+      }
       return { side, speaker: side === 'left' ? '对方' : '我', text };
     })
     .filter(Boolean)
@@ -335,7 +339,7 @@ function buildDialogueSummary(dialogue) {
 
 function hasRepeatedColdReplies(dialogue) {
   const recentReplies = dialogue
-    .filter((message) => message.side === 'left')
+    .filter((message) => message.speaker === '对方')
     .slice(-3);
 
   return recentReplies.length === 3

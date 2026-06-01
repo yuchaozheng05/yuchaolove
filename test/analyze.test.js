@@ -77,6 +77,48 @@ test('maps speaker identity from bubble side instead of model guesses', () => {
   );
 });
 
+test('accepts a single-column direct-message feed with explicit senders', () => {
+  const advice = parseAdvice(JSON.stringify({
+    attitude_label: '正常互动',
+    attitude_desc: '单列私信中双方都在正常接话。',
+    is_chat_screenshot: true,
+    non_chat_reply: '',
+    chat_evidence: {
+      image_kind: 'discord direct message',
+      has_message_bubbles: false,
+      has_chat_ui: true,
+      has_two_sided_layout: false,
+    },
+    conversation_summary: '',
+    dialogue: [
+      { side: 'feed', speaker: '对方', text: '今晚还打球吗' },
+      { side: 'feed', speaker: '我', text: '可以啊，还是老地方？' },
+      { side: 'feed', speaker: '对方', text: '行，八点见' },
+    ],
+    suggest_stop: false,
+    needs_retry: false,
+    replies: [
+      { tag: '自然真诚', text: '好，那我八点过去。' },
+      { tag: '自然真诚', text: '收到，晚点见。' },
+      { tag: '自然真诚', text: '行，我到附近了跟你说。' },
+    ],
+  }));
+
+  assert.equal(advice.is_chat_screenshot, true);
+  assert.deepEqual(advice.dialogue.map((message) => message.speaker), ['对方', '我', '对方']);
+  assert.equal(advice.replies.length, 3);
+});
+
+test('drops a single-column message when its sender is not visible', () => {
+  assert.deepEqual(
+    normalizeDialogue([
+      { side: 'feed', speaker: '无法判断', text: '这句话不能猜发送者' },
+      { side: 'feed', speaker: '对方', text: '这句话有明确发送者' },
+    ]),
+    [{ side: 'feed', speaker: '对方', text: '这句话有明确发送者' }],
+  );
+});
+
 test('returns a playful redirect for non-chat images without inventing replies', () => {
   const advice = parseAdvice(JSON.stringify({
     attitude_label: '不是聊天截图',
