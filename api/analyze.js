@@ -1,4 +1,4 @@
-const FREE_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
+const MODELS = ['gpt-4.1-mini'];
 const ALLOWED_MEDIA_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_IMAGE_COUNT = 6;
 const MAX_TOTAL_IMAGE_BASE64_LENGTH = 4_000_000;
@@ -65,7 +65,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ error: '分析服务尚未配置，请联系管理员。' });
   }
@@ -74,9 +74,9 @@ export default async function handler(req, res) {
     const { imageParts, textPart } = getRequestParts(req.body);
     let lastError;
 
-    for (const model of FREE_MODELS) {
+    for (const model of MODELS) {
       try {
-        const rawText = await requestGeminiAdvice({
+        const rawText = await requestOpenAIAdvice({
           apiKey,
           model,
           imageParts,
@@ -90,7 +90,7 @@ export default async function handler(req, res) {
         });
       } catch (error) {
         lastError = error;
-        console.warn(`Gemini model ${model} failed: ${summarizeError(error)}`);
+        console.warn(`OpenAI model ${model} failed: ${summarizeError(error)}`);
         if (!isRetryableModelError(error)) break;
       }
     }
@@ -100,7 +100,7 @@ export default async function handler(req, res) {
       return res.status(200).json({
         content: [{ type: 'text', text: JSON.stringify(advice) }],
         degraded: true,
-        reason: 'free-tier-unavailable',
+        reason: 'service-unavailable',
       });
     }
 
@@ -141,54 +141,52 @@ function getRequestParts(body) {
   return { imageParts, textPart };
 }
 
-async function requestGeminiAdvice({ apiKey, model, imageParts, prompt }) {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+async function requestOpenAIAdvice({ apiKey, model, imageParts, prompt }) {
+  const imageMessages = imageParts.flatMap((imagePart, index) => [
     {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            ...imageParts.flatMap((imagePart, index) => [
-              { text: `上传图片 ${index + 1}/${imageParts.length}。先判断它是否为聊天截图；多张有效聊天截图按此顺序从旧到新排列。` },
-              {
-                inline_data: {
-                  mime_type: imagePart.source.media_type,
-                  data: imagePart.source.data,
-                },
-              },
-            ]),
-            { text: prompt },
-          ],
-        }],
-        generationConfig: {
-          temperature: 0.35,
-          maxOutputTokens: 1600,
-          responseMimeType: 'application/json',
-          responseJsonSchema: CHAT_ADVICE_SCHEMA,
-          thinkingConfig: {
-            thinkingBudget: 0,
-          },
-        },
-      }),
+      type: 'text',
+      text: `上传图片 ${index + 1}/${imageParts.length}。先判断它是否为聊天截图；多张有效聊天截图按此顺序从旧到新排列。`,
     },
-  );
+    {
+      type: 'image_url',
+      image_url: {
+        url: `data:${imagePart.source.media_type};base64,${imagePart.source.data}`,
+        detail: 'high',
+      },
+    },
+  ]);
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        {
+          role: 'user',
+          content: [...imageMessages, { type: 'text', text: prompt }],
+        },
+      ],
+      temperature: 0.35,
+      max_tokens: 1600,
+      response_format: { type: 'json_object' },
+    }),
+  });
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data.error) {
-    const providerError = new Error(data.error?.message || `Gemini request failed with ${response.status}`);
+    const providerError = new Error(data.error?.message || `OpenAI request failed with ${response.status}`);
     providerError.providerStatus = response.status;
-    providerError.providerCode = data.error?.status || '';
+    providerError.providerCode = data.error?.code || '';
     throw providerError;
   }
 
-  const text = data.candidates?.[0]?.content?.parts
-    ?.map((part) => part.text || '')
-    .join('')
-    .trim();
+  const text = data.choices?.[0]?.message?.content?.trim();
   if (!text) {
-    const emptyError = new Error('Gemini returned an empty response');
+    const emptyError = new Error('OpenAI returned an empty response');
     emptyError.providerStatus = 503;
     throw emptyError;
   }
@@ -214,7 +212,7 @@ function parseAdvice(rawText) {
   const verifiedDialogue = isChatScreenshot ? dialogue : [];
 
   if (isChatScreenshot && !needsRetry && replies.length < 3) {
-    const incompleteError = new Error('Gemini returned fewer than three replies');
+    const incompleteError = new Error('OpenAI returned fewer than three replies');
     incompleteError.providerStatus = 503;
     throw incompleteError;
   }
@@ -246,7 +244,7 @@ function parseAdvice(rawText) {
 function extractFirstJsonObject(rawText) {
   const cleaned = rawText.replace(/```json|```/gi, '').trim();
   const start = cleaned.indexOf('{');
-  if (start < 0) throw new Error('Gemini returned invalid JSON');
+  if (start < 0) throw new Error('OpenAI returned invalid JSON');
 
   let depth = 0;
   let inString = false;
@@ -275,13 +273,13 @@ function extractFirstJsonObject(rawText) {
     }
   }
 
-  throw new Error('Gemini returned invalid JSON');
+  throw new Error('OpenAI returned invalid JSON');
 }
 
 function buildFreeTierFallbackAdvice() {
   return {
-    attitude_label: '免费通道繁忙',
-    attitude_desc: '当前免费分析额度暂时不可用。为了避免给你不准确的建议，本次不会猜测截图内容，请稍后点击“重新分析”。',
+    attitude_label: '服务暂时繁忙',
+    attitude_desc: '当前分析服务暂时不可用。为了避免给你不准确的建议，本次不会猜测截图内容，请稍后点击"重新分析"。',
     is_chat_screenshot: true,
     non_chat_reply: '',
     chat_evidence: {},
@@ -384,7 +382,7 @@ function createPublicError(statusCode, publicMessage) {
 
 export {
   CHAT_ADVICE_SCHEMA,
-  FREE_MODELS,
+  MODELS,
   buildFreeTierFallbackAdvice,
   extractFirstJsonObject,
   getRequestParts,
@@ -394,5 +392,5 @@ export {
   normalizeDialogue,
   normalizeChatEvidence,
   parseAdvice,
-  requestGeminiAdvice,
+  requestOpenAIAdvice,
 };
