@@ -1,3 +1,7 @@
 {
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "check": "node --check app.js && node --check api/analyze.js",
+    "test": "node --test"
+  }
 }
