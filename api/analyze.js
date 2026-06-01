@@ -136,14 +136,7 @@ async function requestGeminiAdvice({ apiKey, model, imageParts, prompt }) {
 }
 
 function parseAdvice(rawText) {
-  const cleaned = rawText.replace(/```json|```/gi, '').trim();
-  const start = cleaned.indexOf('{');
-  const end = cleaned.lastIndexOf('}');
-  if (start < 0 || end <= start) {
-    throw new Error('Gemini returned invalid JSON');
-  }
-
-  const value = JSON.parse(cleaned.slice(start, end + 1));
+  const value = JSON.parse(extractFirstJsonObject(rawText));
   const replies = Array.isArray(value.replies)
     ? value.replies
         .map((reply) => ({
@@ -187,6 +180,41 @@ function parseAdvice(rawText) {
     needs_retry: isChatScreenshot && needsRetry,
     replies: isChatScreenshot ? replies : [],
   };
+}
+
+function extractFirstJsonObject(rawText) {
+  const cleaned = rawText.replace(/```json|```/gi, '').trim();
+  const start = cleaned.indexOf('{');
+  if (start < 0) throw new Error('Gemini returned invalid JSON');
+
+  let depth = 0;
+  let inString = false;
+  let isEscaped = false;
+
+  for (let index = start; index < cleaned.length; index += 1) {
+    const character = cleaned[index];
+    if (inString) {
+      if (isEscaped) {
+        isEscaped = false;
+      } else if (character === '\\') {
+        isEscaped = true;
+      } else if (character === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (character === '"') {
+      inString = true;
+    } else if (character === '{') {
+      depth += 1;
+    } else if (character === '}') {
+      depth -= 1;
+      if (depth === 0) return cleaned.slice(start, index + 1);
+    }
+  }
+
+  throw new Error('Gemini returned invalid JSON');
 }
 
 function buildFreeTierFallbackAdvice() {
@@ -277,6 +305,7 @@ function createPublicError(statusCode, publicMessage) {
 export {
   FREE_MODELS,
   buildFreeTierFallbackAdvice,
+  extractFirstJsonObject,
   getRequestParts,
   isRetryableModelError,
   isVerifiedChatScreenshot,

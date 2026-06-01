@@ -186,12 +186,7 @@ ${context ? `【补充背景】${context}` : ''}
 }
 
 function parseAdvice(rawText) {
-  const cleaned = rawText.replace(/```json|```/gi, '').trim();
-  const start = cleaned.indexOf('{');
-  const end = cleaned.lastIndexOf('}');
-  if (start < 0 || end <= start) throw new Error('返回内容格式不正确');
-
-  const data = JSON.parse(cleaned.slice(start, end + 1));
+  const data = JSON.parse(extractFirstJsonObject(rawText));
   const dialogue = normalizeDialogue(data.dialogue);
   const chatEvidence = normalizeChatEvidence(data.chat_evidence);
   const isChatScreenshot = isVerifiedChatScreenshot(data, dialogue, chatEvidence);
@@ -221,6 +216,41 @@ function parseAdvice(rawText) {
           .slice(0, 3)
       : [],
   };
+}
+
+function extractFirstJsonObject(rawText) {
+  const cleaned = rawText.replace(/```json|```/gi, '').trim();
+  const start = cleaned.indexOf('{');
+  if (start < 0) throw new Error('返回内容格式不正确');
+
+  let depth = 0;
+  let inString = false;
+  let isEscaped = false;
+
+  for (let index = start; index < cleaned.length; index += 1) {
+    const character = cleaned[index];
+    if (inString) {
+      if (isEscaped) {
+        isEscaped = false;
+      } else if (character === '\\') {
+        isEscaped = true;
+      } else if (character === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (character === '"') {
+      inString = true;
+    } else if (character === '{') {
+      depth += 1;
+    } else if (character === '}') {
+      depth -= 1;
+      if (depth === 0) return cleaned.slice(start, index + 1);
+    }
+  }
+
+  throw new Error('返回内容格式不正确');
 }
 
 function renderResults(data) {

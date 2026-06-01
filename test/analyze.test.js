@@ -4,6 +4,7 @@ import test from 'node:test';
 import handler, {
   FREE_MODELS,
   buildFreeTierFallbackAdvice,
+  extractFirstJsonObject,
   getRequestParts,
   normalizeDialogue,
   parseAdvice,
@@ -149,6 +150,36 @@ test('rejects document text even if the model tries to format it as dialogue', (
   assert.equal(advice.attitude_desc, '我还没看到可以分析的聊天内容。');
   assert.deepEqual(advice.dialogue, []);
   assert.deepEqual(advice.replies, []);
+});
+
+test('parses the first complete JSON object when Gemini repeats its response', () => {
+  const first = {
+    is_chat_screenshot: false,
+    non_chat_reply: '这看起来像作业截图，换张聊天记录我再帮你分析。',
+    chat_evidence: {
+      image_kind: 'homework document',
+      has_message_bubbles: false,
+      has_chat_ui: false,
+      has_two_sided_layout: false,
+    },
+    dialogue: [],
+    replies: [],
+  };
+  const second = {
+    is_chat_screenshot: false,
+    non_chat_reply: '第二个重复对象不应影响解析。',
+    dialogue: [],
+    replies: [],
+  };
+
+  assert.equal(
+    extractFirstJsonObject(`${JSON.stringify(first)}\n${JSON.stringify(second)}`),
+    JSON.stringify(first),
+  );
+  assert.equal(
+    parseAdvice(`${JSON.stringify(first)}\n${JSON.stringify(second)}`).non_chat_reply,
+    first.non_chat_reply,
+  );
 });
 
 test('validates uploaded screenshot format', () => {
