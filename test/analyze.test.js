@@ -3,9 +3,14 @@ import test from 'node:test';
 
 import handler, {
   CHAT_ADVICE_SCHEMA,
+  IMAGE_READING_RULES,
   MODELS,
+  PRIMARY_IMAGE_DETAIL,
+  PRIMARY_MAX_COMPLETION_TOKENS,
   REPLY_COACH_SYSTEM_PROMPT,
   REPLY_PERSPECTIVE_EXAMPLES,
+  REPLY_REFINEMENT_SCHEMA,
+  REFINEMENT_MAX_COMPLETION_TOKENS,
   buildStageChatGuide,
   buildFreeTierFallbackAdvice,
   buildReplyRefinementPrompt,
@@ -16,6 +21,7 @@ import handler, {
   hasRepeatedColdReplies,
   inferConversationStage,
   logUsage,
+  mergeRefinedReplies,
   needsReplyRefinement,
   normalizeDialogue,
   normalizeStickerSuggestions,
@@ -56,8 +62,8 @@ test('defines a strict schema for richer attraction analysis', () => {
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('flirt_level'));
   assert.equal(CHAT_ADVICE_SCHEMA.properties.chat_guide.additionalProperties, false);
   assert.equal(CHAT_ADVICE_SCHEMA.properties.replies.items.additionalProperties, false);
-  assert.equal(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.minItems, 6);
-  assert.equal(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.maxItems, 6);
+  assert.equal(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.minItems, 3);
+  assert.equal(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.maxItems, 3);
   assert.deepEqual(Object.keys(CHAT_ADVICE_SCHEMA.properties.replies.items.properties), ['text']);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /主动回球/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /暧昧必须有依据/);
@@ -66,6 +72,7 @@ test('defines a strict schema for richer attraction analysis', () => {
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /连续倾诉/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /主动了解/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /绝对不要替用户编造/);
+  assert.match(IMAGE_READING_RULES, /左侧 = 对方，右侧 = 我/);
   assert.match(REPLY_PERSPECTIVE_EXAMPLES, /先夸我两句/);
 });
 
@@ -81,7 +88,18 @@ test('parses willingness signals, flirt level, and clean untagged replies', () =
   assert.deepEqual(advice.interest_signals, ['主动回问', '接住共同梗']);
   assert.deepEqual(advice.replies[0], { text: '感受到了，嘴硬但还挺会关心人' });
   assert.deepEqual(advice.sticker_suggestions[0], { text: '有点会聊', mood: 'teasing', scene: 'peek' });
+  assert.equal(advice.sticker_suggestions.length, 6);
   assert.equal(advice.conversation_summary, '对方：你感受到我的了吗；我：好像遇到我你才对白由向往');
+});
+
+test('merges lightweight text-only reply refinements into the original advice', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue()));
+  const merged = mergeRefinedReplies(advice, JSON.stringify({
+    replies: [{ text: '回复一' }, { text: '回复二' }, { text: '回复三' }],
+  }));
+
+  assert.deepEqual(merged.replies, [{ text: '回复一' }, { text: '回复二' }, { text: '回复三' }]);
+  assert.equal(merged.attitude_label, advice.attitude_label);
 });
 
 test('maps speaker identity from bubble side instead of model guesses', () => {
@@ -527,6 +545,9 @@ test('passes multiple screenshots to OpenAI with strict JSON schema', async () =
     assert.equal(requestPayload.messages[1].role, 'user');
     assert.equal(requestPayload.messages[1].content[1].type, 'image_url');
     assert.match(requestPayload.messages[1].content[1].image_url.url, /^data:image\/png;base64,/);
+    assert.equal(requestPayload.messages[1].content[1].image_url.detail, PRIMARY_IMAGE_DETAIL);
+    assert.equal(requestPayload.max_completion_tokens, PRIMARY_MAX_COMPLETION_TOKENS);
+    assert.equal('max_tokens' in requestPayload, false);
     assert.equal(requestPayload.response_format.type, 'json_schema');
     assert.equal(requestPayload.response_format.json_schema.strict, true);
     assert.deepEqual(requestPayload.response_format.json_schema.schema, CHAT_ADVICE_SCHEMA);
@@ -584,6 +605,9 @@ test('asks OpenAI for one refinement pass when initial replies feel robotic', as
     assert.equal(response.statusCode, 200);
     assert.equal(requests.length, 2);
     assert.match(requests[1].messages[1].content.at(-1).text, /上一轮候选需要重写/);
+    assert.equal(requests[1].messages[1].content.some((part) => part.type === 'image_url'), false);
+    assert.equal(requests[1].max_completion_tokens, REFINEMENT_MAX_COMPLETION_TOKENS);
+    assert.deepEqual(requests[1].response_format.json_schema.schema, REPLY_REFINEMENT_SCHEMA);
   } finally {
     global.fetch = originalFetch;
     restoreEnvironment('OPENAI_API_KEY', originalApiKey);
