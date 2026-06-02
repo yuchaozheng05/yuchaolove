@@ -7,10 +7,12 @@ import handler, {
   REPLY_COACH_SYSTEM_PROMPT,
   REPLY_PERSPECTIVE_EXAMPLES,
   buildFreeTierFallbackAdvice,
+  buildReplyRefinementPrompt,
   extractFirstJsonObject,
   getRequestParts,
   hasRepeatedColdReplies,
   logUsage,
+  needsReplyRefinement,
   normalizeDialogue,
   parseAdvice,
   requestOpenAIAdvice,
@@ -177,6 +179,27 @@ test('detects three consecutive short replies as a cold conversation', () => {
   );
 });
 
+test('flags robotic or perspective-reversed reply candidates for refinement', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue({
+    dialogue: [
+      { side: 'right', speaker: '我', text: '等你先发现' },
+      { side: 'left', speaker: '对方', text: '那你要我怎么哄' },
+    ],
+    replies: [
+      { tag: '自然暧昧', text: '哄你？先说说你想怎么被哄', angle: '视角错位' },
+      { tag: '自然暧昧', text: '你觉得怎么才算哄到我？', angle: '问号过多' },
+      { tag: '自然暧昧', text: '先夸我两句，我看看诚意', angle: '自然陈述' },
+    ],
+  })));
+
+  assert.equal(needsReplyRefinement(advice), true);
+  assert.match(buildReplyRefinementPrompt('Analyze.', advice), /不要出现“哄你？”/);
+});
+
+test('keeps a short, varied, correctly oriented reply set', () => {
+  assert.equal(needsReplyRefinement(parseAdvice(JSON.stringify(adviceValue()))), false);
+});
+
 test('parses the first complete JSON object when OpenAI repeats a response', () => {
   const first = adviceValue({ is_chat_screenshot: false, dialogue: [], replies: [] });
   const second = adviceValue({ non_chat_reply: '第二个对象不应影响解析。' });
@@ -237,6 +260,42 @@ test('returns an honest retry result if OpenAI is unavailable', async () => {
     assert.equal(response.statusCode, 200);
     assert.equal(response.body.degraded, true);
     assert.deepEqual(JSON.parse(response.body.content[0].text), buildFreeTierFallbackAdvice());
+  } finally {
+    global.fetch = originalFetch;
+    restoreEnvironment('OPENAI_API_KEY', originalApiKey);
+  }
+});
+
+test('asks OpenAI for one refinement pass when initial replies feel robotic', async () => {
+  const originalFetch = global.fetch;
+  const originalApiKey = process.env.OPENAI_API_KEY;
+  process.env.OPENAI_API_KEY = 'test-key';
+  const requests = [];
+  global.fetch = async (_url, options) => {
+    requests.push(JSON.parse(options.body));
+    if (requests.length === 1) {
+      return jsonResponse(200, openAIAdviceResponse(adviceValue({
+        dialogue: [
+          { side: 'right', speaker: '我', text: '等你先发现' },
+          { side: 'left', speaker: '对方', text: '那你要我怎么哄' },
+        ],
+        replies: [
+          { tag: '自然暧昧', text: '哄你？你觉得怎样才算哄好？', angle: '视角错位' },
+          { tag: '自然暧昧', text: '那你平时喜欢怎么被哄？', angle: '模板追问' },
+          { tag: '自然暧昧', text: '听起来你挺会哄人', angle: '模板语言' },
+        ],
+      })));
+    }
+    return jsonResponse(200, openAIAdviceResponse());
+  };
+
+  try {
+    const response = createResponseRecorder();
+    await handler({ method: 'POST', body: requestBody, headers: {} }, response);
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(requests.length, 2);
+    assert.match(requests[1].messages[1].content.at(-1).text, /上一轮候选需要重写/);
   } finally {
     global.fetch = originalFetch;
     restoreEnvironment('OPENAI_API_KEY', originalApiKey);
@@ -305,9 +364,9 @@ function adviceValue(overrides = {}) {
   };
 }
 
-function openAIAdviceResponse() {
+function openAIAdviceResponse(advice = adviceValue()) {
   return {
-    choices: [{ message: { content: JSON.stringify(adviceValue()) } }],
+    choices: [{ message: { content: JSON.stringify(advice) } }],
   };
 }
 

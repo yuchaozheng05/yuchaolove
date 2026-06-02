@@ -124,7 +124,22 @@ export default async function handler(req, res) {
           imageParts,
           prompt: textPart.text,
         });
-        const advice = parseAdvice(rawText);
+        let advice = parseAdvice(rawText);
+
+        if (needsReplyRefinement(advice)) {
+          try {
+            const refinedText = await requestOpenAIAdvice({
+              apiKey,
+              model,
+              imageParts,
+              prompt: buildReplyRefinementPrompt(textPart.text, advice),
+            });
+            const refinedAdvice = parseAdvice(refinedText);
+            if (!needsReplyRefinement(refinedAdvice)) advice = refinedAdvice;
+          } catch (error) {
+            console.warn(`OpenAI reply refinement failed: ${summarizeError(error)}`);
+          }
+        }
 
         // Log usage asynchronously (don't block response)
         logUsage({ req, advice, imageParts, model }).catch(() => {});
@@ -364,6 +379,41 @@ function hasRepeatedColdReplies(dialogue) {
   return recentReplies.length === 3 && recentReplies.every((message) => message.text.length <= 6 && !/[?？]/.test(message.text));
 }
 
+function needsReplyRefinement(advice) {
+  if (!advice?.is_chat_screenshot || advice.needs_retry || advice.suggest_stop) return false;
+
+  const replies = Array.isArray(advice.replies) ? advice.replies : [];
+  const latestOpponentText = [...(advice.dialogue || [])]
+    .reverse()
+    .find((message) => message.speaker === '对方')
+    ?.text || '';
+  const questionCount = replies.filter((reply) => /[?？]/.test(reply.text)).length;
+  const hasTemplateLanguage = replies.some((reply) => (
+    /听起来|感觉你|那你平时|有需要.{0,6}告诉我|调整好状态|看来/.test(reply.text)
+  ));
+  const hasReversedComfortPerspective = /哄/.test(latestOpponentText)
+    && replies.some((reply) => /^哄你[?？：:]?/.test(reply.text));
+
+  return questionCount > 1 || hasTemplateLanguage || hasReversedComfortPerspective;
+}
+
+function buildReplyRefinementPrompt(originalPrompt, advice) {
+  const latestOpponentText = [...(advice.dialogue || [])]
+    .reverse()
+    .find((message) => message.speaker === '对方')
+    ?.text || '';
+
+  return `${originalPrompt}
+
+【上一轮候选需要重写】
+上一轮回复仍有视角错位、问号过多或模板腔。请重新输出完整 JSON，并重点重写 replies。
+- 候选必须是“我”准备发送给“对方”的话。
+- 对方最后一句是：“${latestOpponentText}”
+- 严格确认谁在哄谁、谁在关心谁。不要出现“哄你？”这种把方向说反的话。
+- 三条候选最多一条带问号；至少两条是可以直接发送的短陈述句。
+- 每条尽量控制在 8 到 24 个字，不要重复对方原句，不要像客服，不要解释策略。`;
+}
+
 function normalizeChatEvidence(evidence) {
   return { image_kind: cleanText(evidence?.image_kind, 24), has_message_bubbles: evidence?.has_message_bubbles === true, has_chat_ui: evidence?.has_chat_ui === true, has_two_sided_layout: evidence?.has_two_sided_layout === true };
 }
@@ -428,4 +478,4 @@ async function logUsage({ req, advice, imageParts }) {
   }
 }
 
-export { CHAT_ADVICE_SCHEMA, MODELS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, buildFreeTierFallbackAdvice, extractFirstJsonObject, getRequestParts, hasRepeatedColdReplies, isRetryableModelError, isVerifiedChatScreenshot, logUsage, normalizeDialogue, normalizeChatEvidence, parseAdvice, requestOpenAIAdvice };
+export { CHAT_ADVICE_SCHEMA, MODELS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, buildFreeTierFallbackAdvice, buildReplyRefinementPrompt, extractFirstJsonObject, getRequestParts, hasRepeatedColdReplies, isRetryableModelError, isVerifiedChatScreenshot, logUsage, needsReplyRefinement, normalizeDialogue, normalizeChatEvidence, parseAdvice, requestOpenAIAdvice };
