@@ -1,7 +1,7 @@
 {
   "type": "module",
   "scripts": {
-    "check": "node --check app.js && node --check api/analyze.js",
+    "check": "node --check app.js && node --check sticker.js && node --check api/analyze.js",
     "test": "node --test"
   }
 }

@@ -384,9 +384,9 @@ BASE_CHARS.forEach((base, bi) => {
 // ── 推荐系统 ──────────────────────────────────────────────
 
 const EXPR_KEYWORDS = {
-  happy:    ['感兴趣','喜欢','热情','积极','心动','很好','活跃','主动'],
-  blush:    ['暧昧','含蓄','欲拒','撩','暗示','矜持'],
-  sad:      ['冷淡','敷衍','消极','不感兴趣','无聊'],
+  happy:    ['感兴趣','喜欢','热情','积极','心动','很好','活跃','主动','愿意接话','主动了解'],
+  blush:    ['暧昧','含蓄','欲拒','撩','暗示','矜持','有来有回'],
+  sad:      ['冷淡','敷衍','消极','不感兴趣','无聊','情绪倾诉','压力'],
   cry:      ['拒绝','止损','停止','伤心','难过'],
   angry:    ['愤怒','生气','不满','抗拒'],
   confused: ['不明','待判断','模糊','混乱','疑惑'],
@@ -394,8 +394,14 @@ const EXPR_KEYWORDS = {
   shock:    ['惊讶','突然','意外','震惊'],
 };
 
-function attitudeToExpr(label) {
-  const l = label || '';
+function getAdviceLabel(advice) {
+  if (typeof advice === 'string') return advice;
+  return `${advice?.attitude_label || ''} ${advice?.conversation_mode || ''}`;
+}
+
+function attitudeToExpr(advice) {
+  if (advice?.suggest_stop) return 'cry';
+  const l = getAdviceLabel(advice);
   for (const [expr, keywords] of Object.entries(EXPR_KEYWORDS)) {
     if (keywords.some(k => l.includes(k))) return expr;
   }
@@ -410,8 +416,8 @@ function scoreSticker(sticker, targetExpr) {
   return score;
 }
 
-function getRecommended(attitudeLabel, count = 6) {
-  const expr = attitudeToExpr(attitudeLabel);
+function getRecommended(advice, count = 6) {
+  const expr = attitudeToExpr(advice);
   const scored = STICKER_LIBRARY.map(s => ({ ...s, score: scoreSticker(s, expr) + Math.random() * 0.5 }));
   scored.sort((a, b) => b.score - a.score);
 
@@ -488,16 +494,32 @@ function makeStickerCanvas(sticker, text, size) {
 
 // ── 主入口：分析完自动调用 ────────────────────────────────
 
-function showStickerPanel(attitudeLabel) {
+const STICKER_TEXT_BY_EXPR = {
+  happy: ['哈哈哈', '好耶', '收到'],
+  blush: ['嘿嘿', '有点意思', '懂了'],
+  sad: ['先缓缓', '辛苦啦', '歇会儿'],
+  cry: ['我先撤啦', '不打扰啦', '溜了'],
+  angry: ['啊？', '离谱', '不理解'],
+  confused: ['啊？', '再说说', '不知道诶'],
+  cool: ['行', '稳', '知道了'],
+  shock: ['真的假的', '啊？', '好家伙'],
+};
+
+function getStickerText(expr, index) {
+  const choices = STICKER_TEXT_BY_EXPR[expr] || STICKER_TEXT_BY_EXPR.happy;
+  return choices[index % choices.length];
+}
+
+function showStickerPanel(advice) {
   const panel = document.getElementById('stickerPanel');
   const grid = document.getElementById('stickerGrid');
   if (!panel || !grid) return;
 
-  const text = attitudeLabel || 'yuchaolove';
-  const recommended = getRecommended(attitudeLabel, 6);
+  const recommended = getRecommended(advice, 6);
 
-  grid.innerHTML = '';
-  recommended.forEach(sticker => {
+  grid.replaceChildren();
+  recommended.forEach((sticker, index) => {
+    const text = getStickerText(sticker.expr, index);
     const thumb = makeStickerCanvas(sticker, text, 150);
     thumb.className = 'sticker-thumb';
     thumb.title = sticker.name;
