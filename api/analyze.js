@@ -16,12 +16,15 @@ const REPLY_COACH_SYSTEM_PROMPT = `你是中文聊天回复顾问。你的目标
 - 候选回复永远是用户准备发送给对方的话。严格站在“我”的视角，不要把谁关心谁、谁哄谁、谁问谁理解反。
 - 一条回复只放一个重点。避免采访式连环提问、空泛关心、突然邀约、过度承诺、强行自恋和油腻土味情话。
 - 生成 3 到 5 条候选，最多一条使用问号。至少两条是可以直接发送的自然陈述。不要把对方原句重复一遍再反问。
+- 回复不必刻意压成极短句。需要完整接住情绪、回答问题或延续共同梗时，可以自然写到 12 到 42 个字；重点是像真人，不是机械删字。
 - flirt_level 是暧昧上限，不是必须完成的任务。对方只是认真提问、澄清或解释时，先正常回答，不要为了暧昧而绕开问题。
 - 如果对方最后一句在问“为什么”“怎么知道”“怎么确定”或类似澄清问题，至少两条候选要真正回应问题，不要全部改成调情、卖关子或反问。
 - 轻松聊天里的追问，不要写成长解释、情感分析或辩解。优先简短承认误判，再自然接住对方。不要编造截图里没有出现的“回复慢”“不积极”等依据。
 - 对方在倾诉难受时，先像朋友一样接住情绪。不要说教，不要连续叮嘱，不要强行暧昧，也不要写成客服式关怀或健康提醒作文。
 - 绝对不要替用户编造截图或补充背景里没有出现的个人信息，例如爱好、经历、课程、行程和家乡。需要用户自己填写时，用“___”保留一个明显空位。
 - 除了回复候选，还要给用户一条可以照着走的聊天路线：现在先做什么、后续怎么展开、什么不要做。每一步不是让用户一次发完，而是根据对方回应逐步推进。
+- 先判断 conversation_stage。阶段决定下一步，不要把所有聊天都套成“接一句、聊兴趣、马上邀约”。只有对方持续接球，才逐步增加个人化话题或轻松邀约。
+- 给 3 到 5 条 sticker_suggestions。每条包含适合当前上下文的短配字、情绪和画面场景，用作聊天表情包。配字要像聊天梗图，不要写分析标签。
 - 少用“听起来”“感觉你”“那你平时”“有需要告诉我”“调整好状态”“看来”这类模板句。
 - 候选要自然、有变化，但不要给每条回复套风格标签。`;
 
@@ -51,6 +54,10 @@ const CHAT_ADVICE_SCHEMA = {
     conversation_mode: {
       type: 'string',
       enum: ['冷淡敷衍', '礼貌回应', '愿意接话', '主动了解', '情绪倾诉', '轻松暧昧'],
+    },
+    conversation_stage: {
+      type: 'string',
+      enum: ['初次认识', '轻松破冰', '稳定了解', '暧昧升温', '情绪陪伴', '建议停手'],
     },
     reply_strategy: { type: 'string' },
     flirt_level: {
@@ -110,6 +117,19 @@ const CHAT_ADVICE_SCHEMA = {
         required: ['text'],
       },
     },
+    sticker_suggestions: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          text: { type: 'string' },
+          mood: { type: 'string', enum: ['playful', 'teasing', 'curious', 'caring', 'speechless', 'retreat'] },
+          scene: { type: 'string', enum: ['phone', 'skeptical', 'confused', 'caring', 'shocked', 'retreat', 'peek'] },
+        },
+        required: ['text', 'mood', 'scene'],
+      },
+    },
   },
   required: [
     'attitude_label',
@@ -118,6 +138,7 @@ const CHAT_ADVICE_SCHEMA = {
     'interest_level',
     'interest_signals',
     'conversation_mode',
+    'conversation_stage',
     'reply_strategy',
     'flirt_level',
     'is_chat_screenshot',
@@ -129,6 +150,7 @@ const CHAT_ADVICE_SCHEMA = {
     'suggest_stop',
     'needs_retry',
     'replies',
+    'sticker_suggestions',
   ],
 };
 
@@ -309,6 +331,8 @@ function parseAdvice(rawText) {
   const verifiedDialogue = isChatScreenshot ? dialogue : [];
   const emotionalDisclosure = isChatScreenshot && hasRecentEmotionalDisclosure(verifiedDialogue);
   const activeCuriosity = isChatScreenshot && !emotionalDisclosure && hasActiveCuriosity(verifiedDialogue);
+  const suggestStop = isChatScreenshot && !emotionalDisclosure && (Boolean(value.suggest_stop) || hasRepeatedColdReplies(verifiedDialogue));
+  const conversationStage = inferConversationStage(value.conversation_stage, { emotionalDisclosure, activeCuriosity, suggestStop });
 
   if (isChatScreenshot && !needsRetry && replies.length < 3 && !emotionalDisclosure) {
     const incompleteError = new Error('OpenAI returned fewer than three replies');
@@ -327,17 +351,19 @@ function parseAdvice(rawText) {
     interest_level: isChatScreenshot ? (emotionalDisclosure || activeCuriosity ? '愿意接话' : normalizeInterestLevel(value.interest_level)) : '低意愿',
     interest_signals: isChatScreenshot ? (emotionalDisclosure ? buildEmotionalDisclosureSignals(verifiedDialogue) : activeCuriosity ? buildActiveCuriositySignals() : normalizeSignals(value.interest_signals)) : [],
     conversation_mode: isChatScreenshot ? (emotionalDisclosure ? '情绪倾诉' : activeCuriosity ? '主动了解' : normalizeConversationMode(value.conversation_mode)) : '礼貌回应',
+    conversation_stage: isChatScreenshot ? conversationStage : '初次认识',
     reply_strategy: isChatScreenshot ? (emotionalDisclosure ? '先回应她现在的不舒服，给她一点喘息空间，等她愿意继续说再慢慢接话。' : activeCuriosity ? '先认真回答她最后的问题，给一个真实细节，再顺着她的反应慢慢展开。' : cleanText(value.reply_strategy, 100)) : '',
     flirt_level: isChatScreenshot ? (emotionalDisclosure ? '先别暧昧' : normalizeFlirtLevel(value.flirt_level)) : '先别暧昧',
     is_chat_screenshot: isChatScreenshot,
     non_chat_reply: cleanText(value.non_chat_reply, 120) || (!isChatScreenshot ? getDefaultNonChatReply() : ''),
     chat_evidence: chatEvidence,
     conversation_summary: isChatScreenshot ? buildDialogueSummary(verifiedDialogue) || cleanText(value.conversation_summary, 260) : '',
-    chat_guide: isChatScreenshot ? (emotionalDisclosure ? buildEmotionalDisclosureGuide() : activeCuriosity ? buildActiveCuriosityGuide() : normalizeChatGuide(value.chat_guide)) : buildDefaultChatGuide(),
+    chat_guide: isChatScreenshot ? (emotionalDisclosure ? buildEmotionalDisclosureGuide() : activeCuriosity ? buildActiveCuriosityGuide() : normalizeChatGuide(value.chat_guide, buildStageChatGuide(conversationStage))) : buildDefaultChatGuide(),
     dialogue: verifiedDialogue,
-    suggest_stop: isChatScreenshot && !emotionalDisclosure && (Boolean(value.suggest_stop) || hasRepeatedColdReplies(verifiedDialogue)),
+    suggest_stop: suggestStop,
     needs_retry: isChatScreenshot && needsRetry,
     replies: isChatScreenshot ? replies : [],
+    sticker_suggestions: isChatScreenshot ? normalizeStickerSuggestions(value.sticker_suggestions, conversationStage) : [],
   };
 }
 
@@ -358,7 +384,7 @@ function extractFirstJsonObject(rawText) {
 }
 
 function buildFreeTierFallbackAdvice() {
-  return { attitude_label: '服务暂时繁忙', attitude_desc: '当前分析服务暂时不可用。为了避免给你不准确的建议，本次不会猜测截图内容，请稍后点击"重新分析"。', interest_score: 0, interest_level: '低意愿', interest_signals: [], conversation_mode: '礼貌回应', reply_strategy: '', flirt_level: '先别暧昧', is_chat_screenshot: true, non_chat_reply: '', chat_evidence: {}, conversation_summary: '', chat_guide: buildDefaultChatGuide(), dialogue: [], suggest_stop: false, needs_retry: true, degraded: true, replies: [] };
+  return { attitude_label: '服务暂时繁忙', attitude_desc: '当前分析服务暂时不可用。为了避免给你不准确的建议，本次不会猜测截图内容，请稍后点击"重新分析"。', interest_score: 0, interest_level: '低意愿', interest_signals: [], conversation_mode: '礼貌回应', conversation_stage: '初次认识', reply_strategy: '', flirt_level: '先别暧昧', is_chat_screenshot: true, non_chat_reply: '', chat_evidence: {}, conversation_summary: '', chat_guide: buildDefaultChatGuide(), dialogue: [], suggest_stop: false, needs_retry: true, degraded: true, replies: [], sticker_suggestions: [] };
 }
 
 function isRetryableModelError(error) {
@@ -390,20 +416,30 @@ function normalizeConversationMode(value) {
   return ['冷淡敷衍', '礼貌回应', '愿意接话', '主动了解', '情绪倾诉', '轻松暧昧'].includes(value) ? value : '愿意接话';
 }
 
+function normalizeConversationStage(value) {
+  return ['初次认识', '轻松破冰', '稳定了解', '暧昧升温', '情绪陪伴', '建议停手'].includes(value) ? value : '轻松破冰';
+}
+
+function inferConversationStage(value, { emotionalDisclosure = false, activeCuriosity = false, suggestStop = false } = {}) {
+  if (suggestStop) return '建议停手';
+  if (emotionalDisclosure) return '情绪陪伴';
+  if (activeCuriosity) return '稳定了解';
+  return normalizeConversationStage(value);
+}
+
 function normalizeSignals(signals) {
   if (!Array.isArray(signals)) return [];
   return signals.map((signal) => cleanText(signal, 28)).filter(Boolean).slice(0, 4);
 }
 
-function normalizeChatGuide(guide) {
+function normalizeChatGuide(guide, fallback = buildDefaultChatGuide()) {
   const normalized = {
-    current_move: cleanText(guide?.current_move, 80),
+    current_move: cleanText(guide?.current_move, 120),
     next_steps: Array.isArray(guide?.next_steps)
-      ? guide.next_steps.map((step) => cleanText(step, 80)).filter(Boolean).slice(0, 4)
+      ? guide.next_steps.map((step) => cleanText(step, 120)).filter(Boolean).slice(0, 4)
       : [],
-    avoid: cleanText(guide?.avoid, 80),
+    avoid: cleanText(guide?.avoid, 120),
   };
-  const fallback = buildDefaultChatGuide();
   return {
     current_move: normalized.current_move || fallback.current_move,
     next_steps: normalized.next_steps.length ? normalized.next_steps : fallback.next_steps,
@@ -411,40 +447,126 @@ function normalizeChatGuide(guide) {
   };
 }
 
-function buildDefaultChatGuide() {
-  return {
-    current_move: '先接住对方最后一句，再顺着一个细节展开。',
-    next_steps: [
-      '一次只聊一个点，等对方回应再往下走。',
-      '对方愿意回问时，再从兴趣自然延伸到更具体的话题。',
-      '互动顺畅后，再考虑轻松邀约。',
-    ],
-    avoid: '不要连续发问，也不要突然硬撩。',
+function buildStageChatGuide(stage) {
+  const guides = {
+    初次认识: {
+      current_move: '现在还是初识阶段，先让这轮聊天舒服地继续，不急着证明自己或刻意制造暧昧。',
+      next_steps: [
+        '先顺着眼前的话题回一个具体点，给对方一个容易接住的入口。',
+        '如果对方愿意继续回问，再交换一个日常细节，让聊天有一点真实感。',
+        '连续几轮都有来有回后，再找共同兴趣，不急着邀约。',
+      ],
+      avoid: '别一上来就连问资料，也别突然夸外貌或强行撩。',
+    },
+    轻松破冰: {
+      current_move: '目前在破冰阶段，先接住她最后一句，再加一个有画面的细节，让她容易回。',
+      next_steps: [
+        '这轮只聊一个点，观察她会不会补充细节或主动回问。',
+        '她愿意接球时，再把话题延伸到一个轻松的生活片段。',
+        '有共同点后可以留一个小钩子，下次继续聊，不必马上邀约。',
+      ],
+      avoid: '不要像问卷一样连续发问，也不要每一句都故意暧昧。',
+    },
+    稳定了解: {
+      current_move: '现在已经进入互相了解阶段。先认真回应她正在问的内容，再留一个她愿意继续聊的细节。',
+      next_steps: [
+        '先给一个真实的小细节，不要只回结论。',
+        '她对某一点表现出兴趣时，再顺着这个点交换彼此经历。',
+        '如果她持续主动接球，再自然聊到一起能做的活动，合适时再轻松邀约。',
+      ],
+      avoid: '不要把正常了解误判成告白信号，也别跳过聊天直接约。',
+    },
+    暧昧升温: {
+      current_move: '现在有一点暧昧空间，可以顺着你们已有的梗轻轻回球，但别突然加太重。',
+      next_steps: [
+        '先沿着现有互动轻轻调侃一句，看看她会不会继续接。',
+        '她继续回球时，再加入一点更个人化的关心或共同梗。',
+        '氛围稳定后，可以提出低压力、容易拒绝的轻松邀约。',
+      ],
+      avoid: '不要突然表白，不要用占有欲或过度自恋逼她表态。',
+    },
+    情绪陪伴: {
+      current_move: '现在更重要的是让她觉得被听见。先回应她具体说的不舒服或烦心点，不急着推进关系。',
+      next_steps: [
+        '先接住她说的具体不舒服或烦心点。',
+        '她愿意继续说时，再顺着她的节奏陪她聊一会儿。',
+        '等情绪缓下来，再自然换到轻松一点的话题。',
+      ],
+      avoid: '别说教，别急着给方案，也别趁她脆弱时硬撩。',
+    },
+    建议停手: {
+      current_move: '目前对方没有明显想继续聊的信号。先停一下，把空间留给对方。',
+      next_steps: [
+        '这轮不要继续补发新问题。',
+        '观察对方之后会不会主动回来或自然开启新话题。',
+        '如果长期都只有你在推进，就把精力收回来。',
+      ],
+      avoid: '不要为了挽回聊天继续连发，也不要用情绪施压。',
+    },
   };
+  return guides[normalizeConversationStage(stage)];
+}
+
+function buildDefaultChatGuide() {
+  return buildStageChatGuide('轻松破冰');
 }
 
 function buildEmotionalDisclosureGuide() {
-  return {
-    current_move: '先回应她现在的不舒服，不急着讲道理或换话题。',
-    next_steps: [
-      '先发一句短关心，让她感觉被接住。',
-      '她愿意继续说时，再问一句她现在更想休息、吐槽还是有人陪聊。',
-      '等她状态缓一点，再自然聊轻松的话题。',
-    ],
-    avoid: '别连续教育她早点睡，也别这时候硬撩或马上邀约。',
-  };
+  return buildStageChatGuide('情绪陪伴');
 }
 
 function buildActiveCuriosityGuide() {
-  return {
-    current_move: '先认真回答她最后问的爱好，给一个真实的小细节。',
-    next_steps: [
-      '她对某个爱好有反应时，顺着这个点聊一会儿。',
-      '再自然回问她的兴趣，一次只问一个。',
-      '发现共同点后，再从活动或吃饭轻松邀约。',
+  return buildStageChatGuide('稳定了解');
+}
+
+const STICKER_MOODS = new Set(['playful', 'teasing', 'curious', 'caring', 'speechless', 'retreat']);
+const STICKER_SCENES = new Set(['phone', 'skeptical', 'confused', 'caring', 'shocked', 'retreat', 'peek']);
+
+function buildDefaultStickerSuggestions(stage) {
+  const suggestions = {
+    初次认识: [
+      { text: '哈哈有点意思', mood: 'playful', scene: 'phone' },
+      { text: '展开说说', mood: 'curious', scene: 'peek' },
+      { text: '我先听着', mood: 'curious', scene: 'caring' },
     ],
-    avoid: '别编造自己的爱好，也别还没聊开就马上邀约。',
+    轻松破冰: [
+      { text: '行 你继续', mood: 'teasing', scene: 'skeptical' },
+      { text: '真的假的', mood: 'playful', scene: 'shocked' },
+      { text: '我再看看', mood: 'curious', scene: 'peek' },
+    ],
+    稳定了解: [
+      { text: '原来如此', mood: 'curious', scene: 'phone' },
+      { text: '继续展开', mood: 'curious', scene: 'peek' },
+      { text: '记下了', mood: 'playful', scene: 'caring' },
+    ],
+    暧昧升温: [
+      { text: '有点会聊', mood: 'teasing', scene: 'peek' },
+      { text: '我再观察', mood: 'playful', scene: 'phone' },
+      { text: '行吧 加一分', mood: 'teasing', scene: 'skeptical' },
+    ],
+    情绪陪伴: [
+      { text: '先缓一会儿', mood: 'caring', scene: 'caring' },
+      { text: '我在听', mood: 'caring', scene: 'peek' },
+      { text: '今天辛苦了', mood: 'caring', scene: 'phone' },
+    ],
+    建议停手: [
+      { text: '行 你继续玩', mood: 'retreat', scene: 'retreat' },
+      { text: '那我先撤了', mood: 'retreat', scene: 'phone' },
+      { text: '所以我算什么', mood: 'speechless', scene: 'confused' },
+    ],
   };
+  return suggestions[normalizeConversationStage(stage)];
+}
+
+function normalizeStickerSuggestions(suggestions, stage = '轻松破冰') {
+  const normalized = Array.isArray(suggestions)
+    ? suggestions.map((suggestion) => ({
+        text: cleanText(suggestion?.text, 16),
+        mood: STICKER_MOODS.has(suggestion?.mood) ? suggestion.mood : 'playful',
+        scene: STICKER_SCENES.has(suggestion?.scene) ? suggestion.scene : 'phone',
+      })).filter((suggestion) => suggestion.text).slice(0, 5)
+    : [];
+  return normalized.length >= 3 ? normalized : buildDefaultStickerSuggestions(stage);
 }
 
 function getDefaultNonChatReply() {
@@ -528,7 +650,7 @@ function needsReplyRefinement(advice) {
   ));
   const hasReversedComfortPerspective = /哄/.test(latestOpponentText)
     && replies.some((reply) => /^哄你[?？：:]?/.test(reply.text));
-  const hasOverlongReplies = replies.some((reply) => reply.text.length > 24);
+  const hasOverlongReplies = replies.some((reply) => reply.text.length > 48);
   const asksForExplanation = /为什么|怎么(?:知道|确定|就确定|看出来)|如何|凭什么|哪里猜错|你不是.{0,12}吗/.test(latestOpponentText);
   const evasiveReplyCount = replies.filter((reply) => (
     /观察|秘密|吊人胃口|慢慢了解|慢慢发现|你说说|哪里猜错|猜猜|以后再告诉你/.test(reply.text)
@@ -569,11 +691,11 @@ function buildReplyRefinementPrompt(originalPrompt, advice) {
 - 候选必须是“我”准备发送给“对方”的话。
 - 对方最后一句是：“${latestOpponentText}”
 - 严格确认谁在哄谁、谁在关心谁。不要出现“哄你？”这种把方向说反的话。
-- 输出 3 到 5 条候选，最多一条带问号；至少两条是可以直接发送的短陈述句。
+- 输出 3 到 5 条候选，最多一条带问号；至少两条是可以直接发送的自然陈述句。
 	- 如果对方最后是在认真追问原因或澄清，至少两条直接回应问题。暧昧尺度是上限，不是任务；不要用调情、卖关子或反问躲开问题。
 	- 如果对方在连续倾诉困、疼、压力或不舒服，先接住情绪。不要说教、不要硬撩，不要写“早点休息”“不要熬夜”“身体重要”“照顾好自己”“别太勉强”“放松一下”“有需要告诉我”。
 	- 不要替用户编造截图或补充背景里没有出现的爱好、经历、课程、行程和家乡。对方在问这些信息时，用“___”保留一个让用户自己替换的空位。
-	- 每条尽量控制在 8 到 24 个字，不要重复对方原句，不要像客服，不要解释策略。
+	- 通常控制在 12 到 42 个字。需要完整接住情绪、回答问题或延续共同梗时可以稍长，不要为了短而砍掉人情味。
 - 不要编造截图里没有出现的“回复慢”“不积极”等依据。轻松追问可以短句承认误判，例如“我瞎猜的，那我撤回”。`;
 }
 
@@ -704,4 +826,4 @@ async function logUsage({ req, advice, imageParts }) {
   }
 }
 
-export { CHAT_ADVICE_SCHEMA, MODELS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, buildActiveCuriosityGuide, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildReplyRefinementPrompt, extractFirstJsonObject, getRequestParts, hasActiveCuriosity, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, isRetryableModelError, isVerifiedChatScreenshot, logUsage, needsReplyRefinement, normalizeChatGuide, normalizeConversationMode, normalizeDialogue, normalizeChatEvidence, parseAdvice, repairReplyCandidates, requestOpenAIAdvice };
+export { CHAT_ADVICE_SCHEMA, MODELS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, buildActiveCuriosityGuide, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildReplyRefinementPrompt, buildStageChatGuide, extractFirstJsonObject, getRequestParts, hasActiveCuriosity, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, inferConversationStage, isRetryableModelError, isVerifiedChatScreenshot, logUsage, needsReplyRefinement, normalizeChatGuide, normalizeConversationMode, normalizeConversationStage, normalizeDialogue, normalizeChatEvidence, normalizeStickerSuggestions, parseAdvice, repairReplyCandidates, requestOpenAIAdvice };

@@ -6,6 +6,7 @@ import handler, {
   MODELS,
   REPLY_COACH_SYSTEM_PROMPT,
   REPLY_PERSPECTIVE_EXAMPLES,
+  buildStageChatGuide,
   buildFreeTierFallbackAdvice,
   buildReplyRefinementPrompt,
   extractFirstJsonObject,
@@ -13,9 +14,11 @@ import handler, {
   hasActiveCuriosity,
   hasRecentEmotionalDisclosure,
   hasRepeatedColdReplies,
+  inferConversationStage,
   logUsage,
   needsReplyRefinement,
   normalizeDialogue,
+  normalizeStickerSuggestions,
   parseAdvice,
   repairReplyCandidates,
   requestOpenAIAdvice,
@@ -47,7 +50,9 @@ test('defines a strict schema for richer attraction analysis', () => {
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('interest_score'));
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('interest_signals'));
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('conversation_mode'));
+  assert.ok(CHAT_ADVICE_SCHEMA.required.includes('conversation_stage'));
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('chat_guide'));
+  assert.ok(CHAT_ADVICE_SCHEMA.required.includes('sticker_suggestions'));
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('flirt_level'));
   assert.equal(CHAT_ADVICE_SCHEMA.properties.chat_guide.additionalProperties, false);
   assert.equal(CHAT_ADVICE_SCHEMA.properties.replies.items.additionalProperties, false);
@@ -69,9 +74,11 @@ test('parses willingness signals, flirt level, and clean untagged replies', () =
   assert.equal(advice.interest_score, 76);
   assert.equal(advice.interest_level, '轻微好感');
   assert.equal(advice.conversation_mode, '轻松暧昧');
+  assert.equal(advice.conversation_stage, '暧昧升温');
   assert.equal(advice.flirt_level, '轻微暧昧');
   assert.deepEqual(advice.interest_signals, ['主动回问', '接住共同梗']);
   assert.deepEqual(advice.replies[0], { text: '感受到了，嘴硬但还挺会关心人' });
+  assert.deepEqual(advice.sticker_suggestions[0], { text: '有点会聊', mood: 'teasing', scene: 'peek' });
   assert.equal(advice.conversation_summary, '对方：你感受到我的了吗；我：好像遇到我你才对白由向往');
 });
 
@@ -365,6 +372,40 @@ test('keeps a short, varied, correctly oriented reply set', () => {
   assert.equal(needsReplyRefinement(parseAdvice(JSON.stringify(adviceValue()))), false);
 });
 
+test('keeps a natural reply that is longer than the old 24-character cap', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue({
+    replies: [
+      { text: '我刚刚确实有点想多了，不过你愿意认真解释，我还是挺开心的' },
+      { text: '那我先收回刚刚那句，重新认识一下你' },
+      { text: '好吧，这局算我判断太快了' },
+    ],
+  })));
+
+  assert.equal(needsReplyRefinement(advice), false);
+});
+
+test('infers a stage before building the next conversation route', () => {
+  assert.equal(inferConversationStage('暧昧升温'), '暧昧升温');
+  assert.equal(inferConversationStage('轻松破冰', { activeCuriosity: true }), '稳定了解');
+  assert.equal(inferConversationStage('暧昧升温', { suggestStop: true }), '建议停手');
+  assert.match(buildStageChatGuide('稳定了解').current_move, /互相了解/);
+});
+
+test('normalizes contextual sticker suggestions and falls back by stage', () => {
+  assert.deepEqual(
+    normalizeStickerSuggestions([{ text: ' 行 你继续 ', mood: 'teasing', scene: 'skeptical' }], '建议停手')[0],
+    { text: '行 你继续玩', mood: 'retreat', scene: 'retreat' },
+  );
+  assert.deepEqual(
+    normalizeStickerSuggestions([
+      { text: ' 有点会聊 ', mood: 'teasing', scene: 'peek' },
+      { text: '真的假的', mood: 'playful', scene: 'shocked' },
+      { text: '我再看看', mood: 'curious', scene: 'phone' },
+    ], '暧昧升温')[0],
+    { text: '有点会聊', mood: 'teasing', scene: 'peek' },
+  );
+});
+
 test('flags flirt that evades a direct clarification question', () => {
   const advice = parseAdvice(JSON.stringify(adviceValue({
     dialogue: [
@@ -397,10 +438,10 @@ test('keeps up to five clean reply candidates', () => {
   assert.deepEqual(advice.replies.map((reply) => reply.text), ['回复一', '回复二', '回复三', '回复四', '回复五']);
 });
 
-test('flags long explanatory replies for a shorter human rewrite', () => {
+test('flags essay-like explanatory replies for a more natural rewrite', () => {
   const advice = parseAdvice(JSON.stringify(adviceValue({
     replies: [
-      { text: '因为你平时回我也不太积极，我就觉得你可能不想理我。' },
+      { text: '因为我刚刚把你前面说的几句话都想得太复杂了，所以一不小心自己脑补了很多，其实我也没有那么确定，确实有点想多了。' },
       { text: '我瞎猜的，那我撤回' },
       { text: '那我判断错了，你还是愿意理我的' },
     ],
@@ -611,6 +652,7 @@ function adviceValue(overrides = {}) {
     interest_level: '轻微好感',
     interest_signals: ['主动回问', '接住共同梗'],
     conversation_mode: '轻松暧昧',
+    conversation_stage: '暧昧升温',
     reply_strategy: '顺着她的玩笑轻轻接住，留一个容易回复的小钩子。',
     flirt_level: '轻微暧昧',
     is_chat_screenshot: true,
@@ -637,6 +679,11 @@ function adviceValue(overrides = {}) {
       { text: '感受到了，嘴硬但还挺会关心人' },
       { text: '刚感受到一点，再演两集看看' },
       { text: '有一点，但我还在观察' },
+    ],
+    sticker_suggestions: [
+      { text: '有点会聊', mood: 'teasing', scene: 'peek' },
+      { text: '我再观察', mood: 'playful', scene: 'phone' },
+      { text: '行吧 加一分', mood: 'teasing', scene: 'skeptical' },
     ],
     ...overrides,
   };
