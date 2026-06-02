@@ -129,17 +129,20 @@
           </svg>
         </div>
         <div class="upload-title">点击上传 / 拖入截图</div>
-        <div class="upload-hint">支持最多 6 张 JPG、PNG、WEBP，请按聊天时间从早到晚选择</div>
+        <div class="upload-hint">支持最多 6 张 JPG、PNG、WEBP，可一次多选或逐张添加，请按聊天时间从早到晚选择</div>
       </div>
     </div>
 
     <!-- Preview -->
     <div class="preview-box" id="previewBox">
-      <img id="previewImg" src="" alt="截图预览" />
+      <div class="preview-gallery" id="previewGallery"></div>
       <div class="preview-meta">
         <div class="preview-name" id="previewName">—</div>
         <div class="preview-size" id="previewSize">—</div>
-        <button class="preview-change" onclick="resetUpload()">重新上传</button>
+        <div class="preview-actions">
+          <button class="preview-change" id="addScreenshotBtn" onclick="openFilePicker()">＋ 继续添加截图</button>
+          <button class="preview-change" onclick="resetUpload()">清空重选</button>
+        </div>
       </div>
     </div>
 

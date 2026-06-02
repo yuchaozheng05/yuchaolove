@@ -13,7 +13,7 @@ async function handleFileUpload(event) {
   const files = Array.from(event.target.files || []);
   if (!files.length) return;
 
-  const validationMessage = validateFiles(files);
+  const validationMessage = validateFiles(files, uploadedImages.length);
   if (validationMessage) {
     showToast(validationMessage);
     event.target.value = '';
@@ -22,28 +22,57 @@ async function handleFileUpload(event) {
 
   try {
     setSubmitState(true, '正在处理截图...');
-    uploadedImages = await optimizeUploads(files);
-    const firstImage = uploadedImages[0];
-    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
-
-    document.getElementById('previewImg').src = firstImage.previewUrl;
-    document.getElementById('previewName').textContent =
-      files.length === 1 ? files[0].name : `${files.length} 张截图 · 将按选择顺序分析`;
-    document.getElementById('previewSize').textContent = `${(totalSize / 1024).toFixed(0)} KB`;
+    const addedImages = await optimizeUploads(files);
+    const combinedImages = [...uploadedImages, ...addedImages];
+    if (getTotalBase64Length(combinedImages) > MAX_TOTAL_IMAGE_BASE64_LENGTH) {
+      throw new Error('截图总量较大，请减少张数或裁剪后再上传');
+    }
+    uploadedImages = combinedImages;
+    renderPreviewGallery();
     document.getElementById('previewBox').style.display = 'flex';
     document.getElementById('uploadZone').style.display = 'none';
     document.getElementById('results').style.display = 'none';
+    event.target.value = '';
     setSubmitState(false, '开始分析');
   } catch (error) {
-    uploadedImages = [];
     event.target.value = '';
-    setSubmitState(true, '上传截图后开始分析');
+    setSubmitState(uploadedImages.length === 0, uploadedImages.length ? '开始分析' : '上传截图后开始分析');
     showToast(error.message || '截图处理失败，请重试');
   }
 }
 
+function renderPreviewGallery() {
+  const gallery = document.getElementById('previewGallery');
+  gallery.replaceChildren();
+  uploadedImages.forEach((image, index) => {
+    const item = document.createElement('div');
+    item.className = 'preview-thumb';
+
+    const thumbnail = document.createElement('img');
+    thumbnail.src = image.previewUrl;
+    thumbnail.alt = `截图 ${index + 1}`;
+
+    const order = document.createElement('span');
+    order.textContent = `${index + 1}`;
+
+    item.append(thumbnail, order);
+    gallery.appendChild(item);
+  });
+
+  document.getElementById('previewName').textContent =
+    `${uploadedImages.length} 张截图 · 将按左侧顺序分析`;
+  document.getElementById('previewSize').textContent =
+    `处理后约 ${(getTotalBase64Length(uploadedImages) * 0.75 / 1024).toFixed(0)} KB`;
+  document.getElementById('addScreenshotBtn').hidden = uploadedImages.length >= MAX_FILE_COUNT;
+}
+
+function openFilePicker() {
+  document.getElementById('fileInput').click();
+}
+
 function resetUpload() {
   uploadedImages = [];
+  document.getElementById('previewGallery').replaceChildren();
   document.getElementById('uploadZone').style.display = 'block';
   document.getElementById('previewBox').style.display = 'none';
   document.getElementById('fileInput').value = '';
@@ -421,8 +450,8 @@ function getDefaultNonChatReply() {
   return '这张图挺有故事，但我还没看到你们聊天。换张聊天截图，我再帮你读空气。';
 }
 
-function validateFiles(files) {
-  if (files.length > MAX_FILE_COUNT) return `一次最多上传 ${MAX_FILE_COUNT} 张截图`;
+function validateFiles(files, existingCount = 0) {
+  if (existingCount + files.length > MAX_FILE_COUNT) return `最多上传 ${MAX_FILE_COUNT} 张截图`;
   if (files.some((file) => !ALLOWED_FILE_TYPES.has(file.type))) return '请上传 JPG、PNG 或 WEBP 截图';
   if (files.some((file) => file.size > MAX_FILE_SIZE)) return '单张截图不能超过 10MB';
   return '';
