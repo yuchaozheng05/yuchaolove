@@ -161,64 +161,81 @@ function buildPrompt(imageCount) {
 - 如果多张图片中只有部分是聊天截图，将 is_chat_screenshot 设为 true，只分析有效聊天截图，忽略无关图片。
 
 【必须先正确区分双方】
-- 对常见左右气泡聊天界面，画面左边的气泡是“对方”发出的，画面右边的气泡是“我”发出的。这是默认硬规则，除非截图有非常明确的反向标识。
-- 对单列消息流界面，仅在画面明确显示发送者名称、头像归属或身份标记时判断双方。此时 side 填写 feed，speaker 根据可见身份标记填写“对方”或“我”。无法可靠区分时，将 needs_retry 设为 true，不要猜。
-- 不要把右侧“我”提出的问题误认为对方的问题，也不要替对方回答我自己刚问的问题。
+- 对常见左右气泡聊天界面，画面左边的气泡是"对方"发出的，画面右边的气泡是"我"发出的。这是默认硬规则，除非截图有非常明确的反向标识。
+- 对单列消息流界面，仅在画面明确显示发送者名称、头像归属或身份标记时判断双方。此时 side 填写 feed，speaker 根据可见身份标记填写"对方"或"我"。无法可靠区分时，将 needs_retry 设为 true，不要猜。
+- 不要把右侧"我"提出的问题误认为对方的问题，也不要替对方回答我自己刚问的问题。
 - 忽略时间、日期、头像、昵称、系统提示、拍一拍等非消息内容。
 - 先在内部按从上到下、从旧到新还原对话，再结合整段聊天判断。不要只围绕最后一句生成模板。
-- 判断对方态度时，只使用“对方”发出的内容作为主要证据；“我”的内容只用于理解上下文。
+- 判断对方态度时，只使用"对方"发出的内容作为主要证据；"我"的内容只用于理解上下文。
 - 先输出 dialogue。左右气泡界面的 side 只能根据气泡几何位置填写为 left 或 right，不要根据句子内容猜发送者。speaker 必须严格使用固定映射：left = 对方，right = 我。只有单列消息流才使用 side = feed。
-- 不要把“左侧气泡 = 对方发出”“右侧气泡 = 我发出”或类似的辅助说明当成真实聊天消息。
+- 不要把"左侧气泡 = 对方发出""右侧气泡 = 我发出"或类似的辅助说明当成真实聊天消息。
 
-	【任务一：判断态度】
-	- 不要把“有回复”直接等同于“有好感”。先判断对方是在礼貌回应、愿意接话、轻微好感，还是主动升温。
-	- 重点观察对方是否主动提问、连续发多条、自然延伸话题、接梗、使用表情包、回看前文、关心我、轻微调侃我。这些才是更有价值的回球信号。
-	- 区分“连续敷衍”和“连续倾诉”。如果对方连发多条，说困、累、疼、不舒服、压力、烦躁或学习状态，并补充表情包，这是在释放情绪和信任，不是冷淡短回，也不代表已经暧昧。
-	- 如果对方连续主动询问我的专业、课程、爱好、日常、食物或周末安排，属于“主动了解”。先认真回答，再顺着一个细节聊天，不要立刻硬撩或邀约。
-	- 回复间隔只能作为弱信号。不要因为一次晚回就断定冷淡，也不要因为回复快就擅自认定喜欢。
-	- 用 interest_score 给出 0 到 100 的互动意愿分数；用 interest_level 选择：低意愿、礼貌回应、愿意接话、轻微好感、主动升温。
-	- 用 interest_signals 写出最多 4 个来自截图的具体依据，不要写空泛结论。
-	- 用 conversation_mode 选择当前聊天状态：冷淡敷衍、礼貌回应、愿意接话、主动了解、情绪倾诉、轻松暧昧。愿意倾诉不等于已经有好感，但也绝不是冷淡。
-	- 用 conversation_stage 判断关系进度：初次认识、轻松破冰、稳定了解、暧昧升温、情绪陪伴、建议停手。阶段要根据整段聊天判断，不要默认已经适合邀约。
-	- 给出 8 字以内的态度标签，用 100 字以内说明判断依据和下一步节奏。
+【任务一：判断态度】
+- 不要把"有回复"直接等同于"有好感"。先判断对方是在礼貌回应、愿意接话、轻微好感，还是主动升温。
+- 重点观察对方是否主动提问、连续发多条、自然延伸话题、接梗、使用表情包、回看前文、关心我、轻微调侃我。这些才是更有价值的回球信号。
+- 区分"连续敷衍"和"连续倾诉"。如果对方连发多条，说困、累、疼、不舒服、压力、烦躁或学习状态，并补充表情包，这是在释放情绪和信任，不是冷淡短回，也不代表已经暧昧。
+- 如果对方连续主动询问我的专业、课程、爱好、日常、食物或周末安排，属于"主动了解"。先认真回答，再顺着一个细节聊天，不要立刻硬撩或邀约。
+- 回复间隔只能作为弱信号。不要因为一次晚回就断定冷淡，也不要因为回复快就擅自认定喜欢。
+- 用 interest_score 给出 0 到 100 的互动意愿分数；用 interest_level 选择：低意愿、礼貌回应、愿意接话、轻微好感、主动升温。
+- 用 interest_signals 写出最多 4 个来自截图的具体依据，不要写空泛结论。
+- 用 conversation_mode 选择当前聊天状态：冷淡敷衍、礼貌回应、愿意接话、主动了解、情绪倾诉、轻松暧昧。愿意倾诉不等于已经有好感，但也绝不是冷淡。
+- 用 conversation_stage 判断关系进度：初次认识、轻松破冰、稳定了解、暧昧升温、情绪陪伴、建议停手。阶段要根据整段聊天判断，不要默认已经适合邀约。
+- 给出 8 字以内的态度标签，用 100 字以内说明判断依据和下一步节奏。
 - 用 reply_strategy 写一句明确策略：现在应该轻松接话、顺着梗升温、留一个回球点，还是先停一下。
 - 用 flirt_level 选择当前暧昧上限：先别暧昧、轻松接话、轻微暧昧、自然升温。
-- 用 conversation_summary 简洁复述最近的关键对话，明确标注“对方：”和“我：”，让我可以确认你没有读反左右两边。
+- 用 conversation_summary 简洁复述最近的关键对话，明确标注"对方："和"我："，让我可以确认你没有读反左右两边。
 - 如果对方连续敷衍、没有反问、明显不想继续聊，将 suggest_stop 设为 true。
 - 如果截图文字无法可靠读取，将 needs_retry 设为 true，不要猜测，不要编造聊天内容。
 
 【任务二：生成 3 到 5 条可直接发送的回复】
 - 不要让用户预先选择回复风格。先根据整段聊天判断对方真实态度，再自动决定回复尺度。
 - 必须接住截图中对方最近的反应，同时参考整段聊天里的共同梗、昵称、细节和情绪。
-- 候选回复永远是“我”准备发给“对方”的话。先确认对方最后一句的真实方向，不要把谁关心谁、谁哄谁、谁问谁理解反。
-- 像真人聊天，通常控制在 12 到 42 个字。需要完整接住情绪、回答问题或延续共同梗时可以稍长，不要为了短而砍掉人情味。
+- 候选回复永远是"我"准备发给"对方"的话。先确认对方最后一句的真实方向，不要把谁关心谁、谁哄谁、谁问谁理解反。
+
+【回复长度】
+- 回复长度控制在 8 到 25 字，根据情境灵活调整：
+  - 轻松接话、顺着一个梗：8–16 字
+  - 接住情绪（对方说不舒服/累/烦/压力）：12–22 字，先接住她说的具体内容，再带一句温暖的话
+  - 回答对方问题或延伸一个细节：12–22 字
+  - 推进关系或轻松邀约：10–20 字
+- 所有候选里不要都是同一个长度，有短有稍长，但最长不超过 25 字。
+
+【情绪场景（对方倾诉疲惫/身体不舒服/压力/烦心事）】
+- 先接住她说的具体症状或情绪，不要跳过。比如对方说"肚子疼头也疼"就先说这两件事，不要泛化成"身体不好要注意"。
+- 给她一种被听见的感觉，可以带一点心疼或理解，让她觉得你是真的在听，不是在走流程。
+- 不要一上来就给建议（多喝水/早点睡/去看医生）。如果要给建议，先接住情绪再说，而且只说一件具体的事。
+- 不要说教，不要用"身体是最重要的/要注意休息/不要太勉强"这类通用提醒，因为这些话什么情况下都能用，等于什么都没说。
+- 可以稍微带一点关心的幽默，但不要硬撩或趁她脆弱时暧昧。
+
+【其他场景通用规则】
+- 像真人聊天，可以适当用语气词（哈/哈哈/啊/呀/诶），但不要堆砌。
 - 每条只放一个重点，给对方留一个轻松回球点。不要连续追问，不要一次问两个问题。
 - 所有候选中最多一条使用问号。至少两条是自然陈述。不要把对方原句重复一遍再反问。
-- 如果对方处于“礼貌回应”，不强行暧昧；如果是“愿意接话”，可以轻微暧昧；如果已经“主动升温”，可以自然回球，但不要突然告白。
+- 如果对方处于"礼貌回应"，不强行暧昧；如果是"愿意接话"，可以轻微暧昧；如果已经"主动升温"，可以自然回球，但不要突然告白。
 - flirt_level 是暧昧上限，不是必须完成的任务。对方只是在认真提问、澄清或解释时，先正常回答，不要为了暧昧而绕开问题。
-- 如果对方最后一句在问“为什么”“怎么知道”“怎么确定”或类似澄清问题，至少两条候选要真正回应问题。不要全部改成调情、卖关子或反问。
-- 轻松聊天里的追问，不要写成长解释、情感分析或辩解。优先简短承认误判，再自然接住对方。不要编造截图里没有出现的“回复慢”“不积极”等依据。
-	- 避免模板句：少用“听起来”“感觉你”“那你平时”“有需要告诉我”“调整好状态”“看来”。
-	- 避免油腻句：不要凭空说想她、梦到她、心动、命中注定、只对她例外，也不要突然叫宝宝。
-	- 对方在倾诉难受时，先像朋友一样接住情绪。不要说教，不要连续叮嘱，不要强行暧昧，也不要写成客服式关怀或健康提醒作文。避免“身体重要”“照顾好自己”“别太勉强”“放松一下”这类长句。
-	- 绝对不要替用户编造截图或补充背景里没有出现的个人信息，例如爱好、经历、课程、行程和家乡。需要用户自己填写时，用“___”保留一个明显空位。
-	- 不要给每条回复套风格标签，也不要额外解释回复。
+- 如果对方最后一句在问"为什么""怎么知道""怎么确定"或类似澄清问题，至少两条候选要真正回应问题。不要全部改成调情、卖关子或反问。
+- 轻松聊天里的追问，不要写成长解释、情感分析或辩解。优先简短承认误判，再自然接住对方。
+- 避免模板句：少用"听起来""感觉你""那你平时""有需要告诉我""调整好状态""看来"。
+- 避免油腻句：不要凭空说想她、梦到她、心动、命中注定、只对她例外，也不要突然叫宝宝。
+- 绝对不要替用户编造截图或补充背景里没有出现的个人信息，例如爱好、经历、课程、行程和家乡。需要用户自己填写时，用"___"保留一个明显空位。
+- 不要给每条回复套风格标签，也不要额外解释回复。
 - 如果 suggest_stop 为 true，不要继续采访式追问，也不要硬开新话题。推荐体面收尾、暂停发送或轻松退场。
-	- 如果 needs_retry 为 true，replies 返回空数组。
+- 如果 needs_retry 为 true，replies 返回空数组。
 
-	【任务三：给出逐步聊天路线】
-	- 用 chat_guide.current_move 写此刻最适合的一个动作。
-	- 用 chat_guide.next_steps 写 2 到 4 步后续路线。每一步都要等对方回应后再决定是否继续，不是让用户一次全部发完。
-	- 用 chat_guide.avoid 写一个当前最需要避免的动作。
-	- 对方在主动了解我时，可以自然沿着“当前话题 → 兴趣爱好 → 轻松邀约”推进；对方在倾诉时，先接住情绪，不急着换话题或邀约。
-	- 路线必须符合 conversation_stage。只有对方持续接球，才能逐步聊得更个人化或轻松邀约。不要用逼问、施压或套路诱导对方回复。
+【任务三：给出逐步聊天路线】
+- 用 chat_guide.current_move 写此刻最适合的一个动作。
+- 用 chat_guide.next_steps 写 2 到 4 步后续路线。每一步都要等对方回应后再决定是否继续，不是让用户一次全部发完。
+- 用 chat_guide.avoid 写一个当前最需要避免的动作。
+- 对方在主动了解我时，可以自然沿着"当前话题 → 兴趣爱好 → 轻松邀约"推进；对方在倾诉时，先接住情绪，不急着换话题或邀约。
+- 路线必须符合 conversation_stage。只有对方持续接球，才能逐步聊得更个人化或轻松邀约。不要用逼问、施压或套路诱导对方回复。
 
-	【任务四：推荐聊天表情包】
-	- 用 sticker_suggestions 给 3 到 5 个表情包创意。每条包含 text、mood 和 scene。
-	- text 是会直接写在表情包上的短配字，2 到 12 个字，像聊天梗图，不要写分析标签。
-	- mood 只能选择 playful、teasing、curious、caring、speechless、retreat。
-	- scene 只能选择 phone、skeptical、confused、caring、shocked、retreat、peek。
-	- 根据整段聊天推荐，不要所有场景都给暧昧表情。
+【任务四：推荐聊天表情包】
+- 用 sticker_suggestions 给 3 到 5 个表情包创意。每条包含 text、mood 和 scene。
+- text 是会直接写在表情包上的短配字，2 到 12 个字，像聊天梗图，不要写分析标签。
+- mood 只能选择 playful、teasing、curious、caring、speechless、retreat。
+- scene 只能选择 phone、skeptical、confused、caring、shocked、retreat、peek。
+- 根据整段聊天推荐，不要所有场景都给暧昧表情。
+- 情绪陪伴场景（对方在倾诉）优先给 caring 场景；轻松破冰给 playful/peek；建议停手给 retreat。
 
 ${context ? `【补充背景】${context}` : ''}
 
@@ -226,12 +243,12 @@ ${context ? `【补充背景】${context}` : ''}
 {
   "attitude_label": "态度标签",
   "attitude_desc": "具体分析和策略建议",
-	  "interest_score": 68,
-	  "interest_level": "愿意接话",
-	  "interest_signals": ["会顺着共同梗继续聊", "主动回问"],
-	  "conversation_mode": "愿意接话",
-	  "conversation_stage": "轻松破冰",
-	  "reply_strategy": "顺着她最后一句轻松回球，留一点自然暧昧。",
+  "interest_score": 68,
+  "interest_level": "愿意接话",
+  "interest_signals": ["会顺着共同梗继续聊", "主动回问"],
+  "conversation_mode": "愿意接话",
+  "conversation_stage": "轻松破冰",
+  "reply_strategy": "顺着她最后一句轻松回球，留一点自然暧昧。",
   "flirt_level": "轻微暧昧",
   "is_chat_screenshot": true,
   "non_chat_reply": "",
@@ -240,13 +257,13 @@ ${context ? `【补充背景】${context}` : ''}
     "has_message_bubbles": true,
     "has_chat_ui": true,
     "has_two_sided_layout": true
-	  },
-	  "conversation_summary": "对方：...；我：...；对方：...",
-	  "chat_guide": {
-	    "current_move": "先接住对方最后一句，再顺着一个细节展开。",
-	    "next_steps": ["一次只聊一个点，等她回应。", "她愿意回问时，再自然聊到兴趣爱好。", "互动顺畅后，再考虑轻松邀约。"],
-	    "avoid": "不要连续发问，也不要突然硬撩。"
-	  },
+  },
+  "conversation_summary": "对方：...；我：...；对方：...",
+  "chat_guide": {
+    "current_move": "先接住对方最后一句，再顺着一个细节展开。",
+    "next_steps": ["一次只聊一个点，等她回应。", "她愿意回问时，再自然聊到兴趣爱好。", "互动顺畅后，再考虑轻松邀约。"],
+    "avoid": "不要连续发问，也不要突然硬撩。"
+  },
   "dialogue": [
     {"side": "left", "speaker": "对方", "text": "左侧气泡内容"},
     {"side": "right", "speaker": "我", "text": "右侧气泡内容"},
@@ -283,8 +300,8 @@ function parseAdvice(rawText) {
       ? '对方在连续表达自己的疲惫、不舒服或压力，也愿意补充细节。这是在向你倾诉，不是敷衍，但目前更适合先接住情绪，不急着升温。'
       : activeCuriosity
         ? '对方连续主动问你的情况，也会顺着前一个答案继续展开。她至少愿意了解你，先认真回答一个具体点，再看她会不会继续接球。'
-      : (isChatScreenshot ? cleanText(data.attitude_desc, 180) : '')
-        || (isChatScreenshot ? '请结合对方后续行动继续观察。' : '我还没看到可以分析的聊天内容。'),
+        : (isChatScreenshot ? cleanText(data.attitude_desc, 180) : '')
+          || (isChatScreenshot ? '请结合对方后续行动继续观察。' : '我还没看到可以分析的聊天内容。'),
     interest_score: isChatScreenshot ? (emotionalDisclosure ? Math.max(52, clampScore(data.interest_score)) : activeCuriosity ? Math.max(62, clampScore(data.interest_score)) : clampScore(data.interest_score)) : 0,
     interest_level: isChatScreenshot ? (emotionalDisclosure || activeCuriosity ? '愿意接话' : normalizeInterestLevel(data.interest_level)) : '低意愿',
     interest_signals: isChatScreenshot ? (emotionalDisclosure ? buildEmotionalDisclosureSignals(verifiedDialogue) : activeCuriosity ? buildActiveCuriositySignals() : normalizeSignals(data.interest_signals)) : [],
@@ -306,7 +323,7 @@ function parseAdvice(rawText) {
     replies: isChatScreenshot && Array.isArray(data.replies)
       ? data.replies
           .map((reply) => ({
-            text: cleanText(reply?.text, 80),
+            text: cleanText(reply?.text, 100),
           }))
           .filter((reply) => reply.text)
           .slice(0, 5)
@@ -442,7 +459,11 @@ function createReplyCard(reply, index) {
 
   card.appendChild(text);
   card.appendChild(copy);
-  card.addEventListener('click', () => copyText(reply.text));
+  card.addEventListener('click', () => {
+    copyText(reply.text);
+    card.classList.add('copied');
+    setTimeout(() => card.classList.remove('copied'), 1200);
+  });
   return card;
 }
 
@@ -751,7 +772,7 @@ function normalizeStickerSuggestions(suggestions, stage = '轻松破冰') {
     ? suggestions.map((suggestion) => ({
         text: cleanText(suggestion?.text, 16),
         mood: STICKER_MOODS.has(suggestion?.mood) ? suggestion.mood : 'playful',
-        scene: STICKER_SCENES.has(suggestion?.scene) ? suggestion.scene : 'phone',
+        scene: STICKER_SCENES.has(suggestion?.scene) ? suggestion.scene : '',
       })).filter((suggestion) => suggestion.text).slice(0, 5)
     : [];
   if (normalized.length >= 3) return normalized;
