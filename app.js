@@ -164,6 +164,7 @@ function buildPrompt(imageCount) {
 	- 不要把“有回复”直接等同于“有好感”。先判断对方是在礼貌回应、愿意接话、轻微好感，还是主动升温。
 	- 重点观察对方是否主动提问、连续发多条、自然延伸话题、接梗、使用表情包、回看前文、关心我、轻微调侃我。这些才是更有价值的回球信号。
 	- 区分“连续敷衍”和“连续倾诉”。如果对方连发多条，说困、累、疼、不舒服、压力、烦躁或学习状态，并补充表情包，这是在释放情绪和信任，不是冷淡短回，也不代表已经暧昧。
+	- 如果对方连续主动询问我的专业、课程、爱好、日常、食物或周末安排，属于“主动了解”。先认真回答，再顺着一个细节聊天，不要立刻硬撩或邀约。
 	- 回复间隔只能作为弱信号。不要因为一次晚回就断定冷淡，也不要因为回复快就擅自认定喜欢。
 	- 用 interest_score 给出 0 到 100 的互动意愿分数；用 interest_level 选择：低意愿、礼貌回应、愿意接话、轻微好感、主动升温。
 	- 用 interest_signals 写出最多 4 个来自截图的具体依据，不要写空泛结论。
@@ -189,6 +190,7 @@ function buildPrompt(imageCount) {
 	- 避免模板句：少用“听起来”“感觉你”“那你平时”“有需要告诉我”“调整好状态”“看来”。
 	- 避免油腻句：不要凭空说想她、梦到她、心动、命中注定、只对她例外，也不要突然叫宝宝。
 	- 对方在倾诉难受时，先像朋友一样接住情绪。不要说教，不要连续叮嘱，不要强行暧昧，也不要写成客服式关怀或健康提醒作文。避免“身体重要”“照顾好自己”“别太勉强”“放松一下”这类长句。
+	- 绝对不要替用户编造截图或补充背景里没有出现的个人信息，例如爱好、经历、课程、行程和家乡。需要用户自己填写时，用“___”保留一个明显空位。
 	- 不要给每条回复套风格标签，也不要额外解释回复。
 - 如果 suggest_stop 为 true，不要继续采访式追问，也不要硬开新话题。推荐体面收尾、暂停发送或轻松退场。
 	- 如果 needs_retry 为 true，replies 返回空数组。
@@ -247,17 +249,20 @@ function parseAdvice(rawText) {
   const isChatScreenshot = isVerifiedChatScreenshot(data, dialogue, chatEvidence);
   const verifiedDialogue = isChatScreenshot ? dialogue : [];
   const emotionalDisclosure = isChatScreenshot && hasRecentEmotionalDisclosure(verifiedDialogue);
+  const activeCuriosity = isChatScreenshot && !emotionalDisclosure && hasActiveCuriosity(verifiedDialogue);
   return {
-    attitude_label: isChatScreenshot ? (emotionalDisclosure ? '愿意倾诉' : cleanText(data.attitude_label, 12) || '态度待判断') : '这不是聊天截图',
+    attitude_label: isChatScreenshot ? (emotionalDisclosure ? '愿意倾诉' : activeCuriosity ? '主动了解' : cleanText(data.attitude_label, 12) || '态度待判断') : '这不是聊天截图',
     attitude_desc: emotionalDisclosure
       ? '对方在连续表达自己的疲惫、不舒服或压力，也愿意补充细节。这是在向你倾诉，不是敷衍，但目前更适合先接住情绪，不急着升温。'
+      : activeCuriosity
+        ? '对方连续主动问你的情况，也会顺着前一个答案继续展开。她至少愿意了解你，先认真回答一个具体点，再看她会不会继续接球。'
       : (isChatScreenshot ? cleanText(data.attitude_desc, 180) : '')
         || (isChatScreenshot ? '请结合对方后续行动继续观察。' : '我还没看到可以分析的聊天内容。'),
-    interest_score: isChatScreenshot ? (emotionalDisclosure ? Math.max(52, clampScore(data.interest_score)) : clampScore(data.interest_score)) : 0,
-    interest_level: isChatScreenshot ? (emotionalDisclosure ? '愿意接话' : normalizeInterestLevel(data.interest_level)) : '低意愿',
-    interest_signals: isChatScreenshot ? (emotionalDisclosure ? buildEmotionalDisclosureSignals(verifiedDialogue) : normalizeSignals(data.interest_signals)) : [],
-    conversation_mode: isChatScreenshot ? (emotionalDisclosure ? '情绪倾诉' : normalizeConversationMode(data.conversation_mode)) : '礼貌回应',
-    reply_strategy: isChatScreenshot ? (emotionalDisclosure ? '先回应她现在的不舒服，给她一点喘息空间，等她愿意继续说再慢慢接话。' : cleanText(data.reply_strategy, 100)) : '',
+    interest_score: isChatScreenshot ? (emotionalDisclosure ? Math.max(52, clampScore(data.interest_score)) : activeCuriosity ? Math.max(62, clampScore(data.interest_score)) : clampScore(data.interest_score)) : 0,
+    interest_level: isChatScreenshot ? (emotionalDisclosure || activeCuriosity ? '愿意接话' : normalizeInterestLevel(data.interest_level)) : '低意愿',
+    interest_signals: isChatScreenshot ? (emotionalDisclosure ? buildEmotionalDisclosureSignals(verifiedDialogue) : activeCuriosity ? buildActiveCuriositySignals() : normalizeSignals(data.interest_signals)) : [],
+    conversation_mode: isChatScreenshot ? (emotionalDisclosure ? '情绪倾诉' : activeCuriosity ? '主动了解' : normalizeConversationMode(data.conversation_mode)) : '礼貌回应',
+    reply_strategy: isChatScreenshot ? (emotionalDisclosure ? '先回应她现在的不舒服，给她一点喘息空间，等她愿意继续说再慢慢接话。' : activeCuriosity ? '先认真回答她最后的问题，给一个真实细节，再顺着她的反应慢慢展开。' : cleanText(data.reply_strategy, 100)) : '',
     flirt_level: isChatScreenshot ? (emotionalDisclosure ? '先别暧昧' : normalizeFlirtLevel(data.flirt_level)) : '先别暧昧',
     is_chat_screenshot: isChatScreenshot,
     non_chat_reply: cleanText(data.non_chat_reply, 120) || getDefaultNonChatReply(),
@@ -265,7 +270,7 @@ function parseAdvice(rawText) {
     conversation_summary: isChatScreenshot
       ? buildDialogueSummary(verifiedDialogue) || cleanText(data.conversation_summary, 260)
       : '',
-    chat_guide: isChatScreenshot ? (emotionalDisclosure ? buildEmotionalDisclosureGuide() : normalizeChatGuide(data.chat_guide)) : buildDefaultChatGuide(),
+    chat_guide: isChatScreenshot ? (emotionalDisclosure ? buildEmotionalDisclosureGuide() : activeCuriosity ? buildActiveCuriosityGuide() : normalizeChatGuide(data.chat_guide)) : buildDefaultChatGuide(),
     dialogue: verifiedDialogue,
     suggest_stop: isChatScreenshot && !emotionalDisclosure && (Boolean(data.suggest_stop) || hasRepeatedColdReplies(verifiedDialogue)),
     needs_retry: isChatScreenshot && Boolean(data.needs_retry),
@@ -613,6 +618,16 @@ function buildEmotionalDisclosureSignals(dialogue) {
   return signals.slice(0, 4);
 }
 
+function hasActiveCuriosity(dialogue) {
+  const recentReplies = dialogue.filter((message) => message.speaker === '对方').slice(-6);
+  const questionCount = recentReplies.filter((message) => /[?？]|什么|哪些|哪门|多少|吗|呢|爱好|喜欢|专业|课程|周末|平时/.test(message.text)).length;
+  return recentReplies.length >= 2 && questionCount >= 2;
+}
+
+function buildActiveCuriositySignals() {
+  return ['连续主动提问', '自然延伸话题', '想了解你的日常'];
+}
+
 function normalizeConversationMode(value) {
   return ['冷淡敷衍', '礼貌回应', '愿意接话', '主动了解', '情绪倾诉', '轻松暧昧'].includes(value) ? value : '愿意接话';
 }
@@ -654,6 +669,18 @@ function buildEmotionalDisclosureGuide() {
       '等她状态缓一点，再自然聊轻松的话题。',
     ],
     avoid: '别连续教育她早点睡，也别这时候硬撩或马上邀约。',
+  };
+}
+
+function buildActiveCuriosityGuide() {
+  return {
+    current_move: '先认真回答她最后问的爱好，给一个真实的小细节。',
+    next_steps: [
+      '她对某个爱好有反应时，顺着这个点聊一会儿。',
+      '再自然回问她的兴趣，一次只问一个。',
+      '发现共同点后，再从活动或吃饭轻松邀约。',
+    ],
+    avoid: '别编造自己的爱好，也别还没聊开就马上邀约。',
   };
 }
 

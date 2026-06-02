@@ -10,6 +10,7 @@ import handler, {
   buildReplyRefinementPrompt,
   extractFirstJsonObject,
   getRequestParts,
+  hasActiveCuriosity,
   hasRecentEmotionalDisclosure,
   hasRepeatedColdReplies,
   logUsage,
@@ -56,6 +57,8 @@ test('defines a strict schema for richer attraction analysis', () => {
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /永远是用户准备发送给对方的话/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /暧昧上限，不是必须完成的任务/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /连续倾诉/);
+  assert.match(REPLY_COACH_SYSTEM_PROMPT, /主动了解/);
+  assert.match(REPLY_COACH_SYSTEM_PROMPT, /绝对不要替用户编造/);
   assert.match(REPLY_PERSPECTIVE_EXAMPLES, /先夸我两句/);
 });
 
@@ -295,6 +298,50 @@ test('repairs well-meant but robotic health reminder replies', () => {
 
   assert.equal(needsReplyRefinement(advice), true);
   assert.deepEqual(repairReplyCandidates(advice).replies[1], { text: '先躺会儿吧，作业晚点再说' });
+});
+
+test('recognizes consecutive personal questions as active curiosity', () => {
+  const dialogue = normalizeDialogue([
+    { side: 'left', text: '你是什么专业呀' },
+    { side: 'right', text: '计算机' },
+    { side: 'left', text: '学习压力大吗' },
+    { side: 'right', text: '还行' },
+    { side: 'left', text: '那你平时喜欢做什么' },
+    { side: 'left', text: '有什么爱好吗' },
+  ]);
+
+  assert.equal(hasActiveCuriosity(dialogue), true);
+});
+
+test('upgrades active curiosity and repairs invented personal details', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue({
+    attitude_label: '礼貌回应',
+    interest_score: 45,
+    interest_level: '礼貌回应',
+    conversation_mode: '礼貌回应',
+    dialogue: [
+      { side: 'left', text: '你是什么专业呀' },
+      { side: 'right', text: '计算机' },
+      { side: 'left', text: '学习压力大吗' },
+      { side: 'right', text: '还行' },
+      { side: 'left', text: '那你平时喜欢做什么' },
+      { side: 'left', text: '有什么爱好吗' },
+    ],
+    replies: [
+      { text: '我喜欢看电影和听音乐' },
+      { text: '最近在学做饭，挺有趣的' },
+      { text: '我平时喜欢运动' },
+    ],
+  })));
+  const repaired = repairReplyCandidates(advice);
+
+  assert.equal(advice.attitude_label, '主动了解');
+  assert.equal(advice.conversation_mode, '主动了解');
+  assert.equal(advice.interest_level, '愿意接话');
+  assert.equal(advice.interest_score, 62);
+  assert.match(advice.chat_guide.next_steps[2], /邀约/);
+  assert.equal(needsReplyRefinement(advice), true);
+  assert.deepEqual(repaired.replies[0], { text: '有，我平时比较喜欢___' });
 });
 
 test('flags robotic or perspective-reversed reply candidates for refinement', () => {
