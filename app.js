@@ -4,82 +4,68 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_FILE_COUNT = 6;
 const MAX_TOTAL_IMAGE_BASE64_LENGTH = 3_800_000;
 const ALLOWED_FILE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const EMOTIONAL_DISCLOSURE_PATTERN = /困死|好困|太困|困了|很困|累死|好累|太累|累了|很累|疼|痛|难受|不舒服|烦|焦虑|压力|不想上学|不想去|没写完|睡不着|崩溃|想哭|生病|发烧|胃疼|肚子疼|头疼/;
-const PHYSICAL_DISCOMFORT_PATTERN = /疼|痛|难受|不舒服|生病|发烧|胃疼|肚子疼|头疼/;
+const TAG_CLASS = {
+  '温暖体贴': 'tag-warm',
+  '幽默俏皮': 'tag-playful',
+  '自然真诚': 'tag-natural',
+  '制造好奇': 'tag-curious',
+};
+
+const POSITIVE_KEYWORDS = ['感兴趣','喜欢','热情','积极','主动','心动','在意','期待','有好感','开心','愉快','暧昧','撩'];
+const COLD_KEYWORDS    = ['冷淡','敷衍','消极','不感兴趣','停止','止损','拒绝','建议停','已读','不回'];
 
 let uploadedImages = [];
+let selectedStyle = '温暖体贴';
 
 document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+document.getElementById('chipGroup').addEventListener('click', handleStyleSelection);
 
 async function handleFileUpload(event) {
   const files = Array.from(event.target.files || []);
   if (!files.length) return;
-
-  const validationMessage = validateFiles(files, uploadedImages.length);
-  if (validationMessage) {
-    showToast(validationMessage);
-    event.target.value = '';
-    return;
-  }
-
+  const validationMessage = validateFiles(files);
+  if (validationMessage) { showToast(validationMessage); event.target.value = ''; return; }
   try {
     setSubmitState(true, '正在处理截图...');
-    const addedImages = await optimizeUploads(files, uploadedImages.length + files.length);
-    const combinedImages = [...uploadedImages, ...addedImages];
-    if (getTotalBase64Length(combinedImages) > MAX_TOTAL_IMAGE_BASE64_LENGTH) {
-      throw new Error('截图总量较大，请减少张数或裁剪后再上传');
-    }
-    uploadedImages = combinedImages;
-    renderPreviewGallery();
+    uploadedImages = await optimizeUploads(files);
+    const firstImage = uploadedImages[0];
+    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+    document.getElementById('previewImg').src = firstImage.previewUrl;
+    document.getElementById('previewName').textContent = files.length === 1 ? files[0].name : `${files.length} 张截图 · 将按选择顺序分析`;
+    document.getElementById('previewSize').textContent = `${(totalSize / 1024).toFixed(0)} KB`;
     document.getElementById('previewBox').style.display = 'flex';
     document.getElementById('uploadZone').style.display = 'none';
     document.getElementById('results').style.display = 'none';
-    event.target.value = '';
+    hideStickerPanel();
     setSubmitState(false, '开始分析');
   } catch (error) {
-    event.target.value = '';
-    setSubmitState(uploadedImages.length === 0, uploadedImages.length ? '开始分析' : '上传截图后开始分析');
+    uploadedImages = []; event.target.value = '';
+    setSubmitState(true, '上传截图后开始分析');
     showToast(error.message || '截图处理失败，请重试');
   }
 }
 
-function renderPreviewGallery() {
-  const gallery = document.getElementById('previewGallery');
-  gallery.replaceChildren();
-  uploadedImages.forEach((image, index) => {
-    const item = document.createElement('div');
-    item.className = 'preview-thumb';
-
-    const thumbnail = document.createElement('img');
-    thumbnail.src = image.previewUrl;
-    thumbnail.alt = `截图 ${index + 1}`;
-
-    const order = document.createElement('span');
-    order.textContent = `${index + 1}`;
-
-    item.append(thumbnail, order);
-    gallery.appendChild(item);
-  });
-
-  document.getElementById('previewName').textContent =
-    `${uploadedImages.length} 张截图 · 将按左侧顺序分析`;
-  document.getElementById('previewSize').textContent =
-    `处理后约 ${(getTotalBase64Length(uploadedImages) * 0.75 / 1024).toFixed(0)} KB`;
-  document.getElementById('addScreenshotBtn').hidden = uploadedImages.length >= MAX_FILE_COUNT;
-}
-
-function openFilePicker() {
-  document.getElementById('fileInput').click();
+function handleStyleSelection(event) {
+  const chip = event.target.closest('.chip');
+  if (!chip) return;
+  document.querySelectorAll('.chip').forEach((item) => item.classList.remove('active'));
+  chip.classList.add('active');
+  selectedStyle = chip.dataset.style;
 }
 
 function resetUpload() {
   uploadedImages = [];
-  document.getElementById('previewGallery').replaceChildren();
   document.getElementById('uploadZone').style.display = 'block';
   document.getElementById('previewBox').style.display = 'none';
   document.getElementById('fileInput').value = '';
   document.getElementById('results').style.display = 'none';
+  hideStickerPanel();
   setSubmitState(true, '上传截图后开始分析');
+}
+
+function hideStickerPanel() {
+  const panel = document.getElementById('stickerPanel');
+  if (panel) panel.style.display = 'none';
 }
 
 function scrollToApp() {
@@ -88,41 +74,23 @@ function scrollToApp() {
 
 async function analyze() {
   if (!uploadedImages.length) return;
-
   setSubmitState(true, '分析中...');
   document.getElementById('loadingState').style.display = 'block';
   document.getElementById('results').style.display = 'none';
-
+  hideStickerPanel();
   try {
     const response = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: [{
-          role: 'user',
-          content: [
-            ...uploadedImages.map((image) => ({
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: image.mediaType,
-                data: image.base64,
-              },
-            })),
-            { type: 'text', text: buildPrompt(uploadedImages.length) },
-          ],
-        }],
-      }),
+      body: JSON.stringify({ messages: [{ role: 'user', content: [
+        ...uploadedImages.map((image) => ({ type: 'image', source: { type: 'base64', media_type: image.mediaType, data: image.base64 } })),
+        { type: 'text', text: buildPrompt(uploadedImages.length) },
+      ]}]}),
     });
-
     const data = await response.json();
-    if (!response.ok || data.error) {
-      throw new Error(data.error || '分析服务暂时不可用');
-    }
-
+    if (!response.ok || data.error) throw new Error(data.error || '分析服务暂时不可用');
     const rawText = data.content?.map((part) => part.text || '').join('') || '';
-    const parsed = parseAdvice(rawText);
-    renderResults(parsed);
+    renderResults(parseAdvice(rawText));
   } catch (error) {
     console.error('Analyze failed:', error);
     renderRetryNotice('分析服务暂时繁忙，请稍后再试。你的截图没有问题。');
@@ -132,9 +100,16 @@ async function analyze() {
   }
 }
 
+const STYLE_GUIDE = {
+  '温暖体贴': '像真心在乎对方的朋友，细心注意对方说的细节，偶尔带一点温柔的玩笑。不要说教，让对方感觉被看见。',
+  '幽默俏皮': '用轻松有趣的方式回应，节奏要快，可以接梗或者反将一军。不要强行搞笑，幽默来自对上下文的观察。',
+  '自然真诚': '直接说你真正想说的，不绕弯子，不堆砌词藻。像和普通朋友聊天一样平实，但带着真诚的温度。',
+  '制造好奇': '说一半留一半，让对方想继续问。可以提及某件事但不展开，或者给出让人意外的角度。不要故作神秘。',
+};
+
 function buildPrompt(imageCount) {
   const context = document.getElementById('contextInput').value.trim();
-
+  const styleGuide = STYLE_GUIDE[selectedStyle] || '';
   return `你是一位克制、真实、擅长理解聊天上下文的回复顾问。
 
 请完整阅读上传的 ${imageCount} 张聊天截图。截图已按照聊天时间从早到晚排列；如果有重叠消息，合并时去重。
@@ -142,104 +117,52 @@ function buildPrompt(imageCount) {
 【先判断图片类型】
 - 先判断上传内容中是否至少有一张真正的聊天截图：应能看到聊天气泡、对话列表或清晰的双方消息。
 - 只有明确看到聊天气泡、聊天界面或成组的消息块，才可以将 is_chat_screenshot 设为 true。普通文字排版不是聊天记录。
-- 支持微信、短信、iMessage、WhatsApp、Instagram 私信、Messenger、Telegram、LINE、QQ、Discord、Slack 私信等常见聊天软件。不要依赖某个 App 的名称、颜色或主题。
-- 浅色和深色模式都可能是聊天截图。截图可以被裁剪，也可以包含时间、昵称、头像、系统提示、已读状态、表情反应或不完整的顶部消息。
-- 如果画面中有多个左右对齐的消息气泡，无论气泡是绿色、蓝色、灰色、紫色还是其他颜色，都应当识别为聊天截图并提取可见对话。
-- Discord、Slack 私信等界面可能使用单列消息流而不是左右气泡。如果画面明确显示发送者名称、头像归属或其他可见身份标记，也应当识别为聊天截图。
+- 微信、短信等聊天软件的深色模式截图仍然是聊天截图。截图可以被裁剪，也可以包含时间、昵称、系统提示或不完整的顶部气泡。
+- 如果画面中有多个左右对齐的消息气泡，尤其是左侧灰色气泡和右侧绿色气泡，应当识别为聊天截图并提取可见对话。
 - 作业题目、PDF、网页、代码、笔记、文档、邮件正文、表格、风景、食物和普通照片都不是聊天截图，即使画面中有很多文字。
 - 如果所有图片都不是聊天截图，将 is_chat_screenshot 设为 false，dialogue 和 replies 返回空数组。用 non_chat_reply 写一句轻松、友好的提示，告诉用户换一张聊天截图。可以结合画面做一点幽默，但不要冒犯，也不要编造感情分析。
 - 如果多张图片中只有部分是聊天截图，将 is_chat_screenshot 设为 true，只分析有效聊天截图，忽略无关图片。
 
 【必须先正确区分双方】
-- 对常见左右气泡聊天界面，画面左边的气泡是“对方”发出的，画面右边的气泡是“我”发出的。这是默认硬规则，除非截图有非常明确的反向标识。
-- 对单列消息流界面，仅在画面明确显示发送者名称、头像归属或身份标记时判断双方。此时 side 填写 feed，speaker 根据可见身份标记填写“对方”或“我”。无法可靠区分时，将 needs_retry 设为 true，不要猜。
-- 不要把右侧“我”提出的问题误认为对方的问题，也不要替对方回答我自己刚问的问题。
+- 对常见聊天软件，画面左边的气泡是"对方"发出的，画面右边的气泡是"我"发出的。这是默认硬规则，除非截图有非常明确的反向标识。
+- 不要把右侧"我"提出的问题误认为对方的问题，也不要替对方回答我自己刚问的问题。
 - 忽略时间、日期、头像、昵称、系统提示、拍一拍等非消息内容。
 - 先在内部按从上到下、从旧到新还原对话，再结合整段聊天判断。不要只围绕最后一句生成模板。
-- 判断对方态度时，只使用“对方”发出的内容作为主要证据；“我”的内容只用于理解上下文。
-- 先输出 dialogue。左右气泡界面的 side 只能根据气泡几何位置填写为 left 或 right，不要根据句子内容猜发送者。speaker 必须严格使用固定映射：left = 对方，right = 我。只有单列消息流才使用 side = feed。
-- 不要把“左侧气泡 = 对方发出”“右侧气泡 = 我发出”或类似的辅助说明当成真实聊天消息。
+- 判断对方态度时，只使用"对方"发出的内容作为主要证据；"我"的内容只用于理解上下文。
+- 先输出 dialogue。dialogue 中的 side 只能根据气泡的几何位置填写为 left 或 right。speaker 必须严格使用固定映射：left = 对方，right = 我。
+- 不要把"左侧气泡 = 对方发出"之类的辅助说明当成真实聊天消息。
 
-	【任务一：判断态度】
-	- 不要把“有回复”直接等同于“有好感”。先判断对方是在礼貌回应、愿意接话、轻微好感，还是主动升温。
-	- 重点观察对方是否主动提问、连续发多条、自然延伸话题、接梗、使用表情包、回看前文、关心我、轻微调侃我。这些才是更有价值的回球信号。
-	- 区分“连续敷衍”和“连续倾诉”。如果对方连发多条，说困、累、疼、不舒服、压力、烦躁或学习状态，并补充表情包，这是在释放情绪和信任，不是冷淡短回，也不代表已经暧昧。
-	- 如果对方连续主动询问我的专业、课程、爱好、日常、食物或周末安排，属于“主动了解”。先认真回答，再顺着一个细节聊天，不要立刻硬撩或邀约。
-	- 回复间隔只能作为弱信号。不要因为一次晚回就断定冷淡，也不要因为回复快就擅自认定喜欢。
-	- 用 interest_score 给出 0 到 100 的互动意愿分数；用 interest_level 选择：低意愿、礼貌回应、愿意接话、轻微好感、主动升温。
-	- 用 interest_signals 写出最多 4 个来自截图的具体依据，不要写空泛结论。
-	- 用 conversation_mode 选择当前聊天状态：冷淡敷衍、礼貌回应、愿意接话、主动了解、情绪倾诉、轻松暧昧。愿意倾诉不等于已经有好感，但也绝不是冷淡。
-	- 给出 8 字以内的态度标签，用 100 字以内说明判断依据和下一步节奏。
-- 用 reply_strategy 写一句明确策略：现在应该轻松接话、顺着梗升温、留一个回球点，还是先停一下。
-- 用 flirt_level 选择当前暧昧上限：先别暧昧、轻松接话、轻微暧昧、自然升温。
-- 用 conversation_summary 简洁复述最近的关键对话，明确标注“对方：”和“我：”，让我可以确认你没有读反左右两边。
+【任务一：判断态度】
+- 给出 8 字以内的态度标签。
+- 用 100 字以内说明判断依据和下一步节奏。
+- 用 conversation_summary 简洁复述最近的关键对话，明确标注"对方："和"我："。
 - 如果对方连续敷衍、没有反问、明显不想继续聊，将 suggest_stop 设为 true。
 - 如果截图文字无法可靠读取，将 needs_retry 设为 true，不要猜测，不要编造聊天内容。
 
-【任务二：生成 3 到 5 条可直接发送的回复】
-- 不要让用户预先选择回复风格。先根据整段聊天判断对方真实态度，再自动决定回复尺度。
-- 必须接住截图中对方最近的反应，同时参考整段聊天里的共同梗、昵称、细节和情绪。
-- 候选回复永远是“我”准备发给“对方”的话。先确认对方最后一句的真实方向，不要把谁关心谁、谁哄谁、谁问谁理解反。
-- 像真人聊天，通常控制在 8 到 28 个字。口语化、有一点个人感，不写礼貌客服话术。
-- 每条只放一个重点，给对方留一个轻松回球点。不要连续追问，不要一次问两个问题。
-- 所有候选中最多一条使用问号。至少两条是自然陈述。不要把对方原句重复一遍再反问。
-- 如果对方处于“礼貌回应”，不强行暧昧；如果是“愿意接话”，可以轻微暧昧；如果已经“主动升温”，可以自然回球，但不要突然告白。
-- flirt_level 是暧昧上限，不是必须完成的任务。对方只是在认真提问、澄清或解释时，先正常回答，不要为了暧昧而绕开问题。
-- 如果对方最后一句在问“为什么”“怎么知道”“怎么确定”或类似澄清问题，至少两条候选要真正回应问题。不要全部改成调情、卖关子或反问。
-- 轻松聊天里的追问，不要写成长解释、情感分析或辩解。优先简短承认误判，再自然接住对方。不要编造截图里没有出现的“回复慢”“不积极”等依据。
-	- 避免模板句：少用“听起来”“感觉你”“那你平时”“有需要告诉我”“调整好状态”“看来”。
-	- 避免油腻句：不要凭空说想她、梦到她、心动、命中注定、只对她例外，也不要突然叫宝宝。
-	- 对方在倾诉难受时，先像朋友一样接住情绪。不要说教，不要连续叮嘱，不要强行暧昧，也不要写成客服式关怀或健康提醒作文。避免“身体重要”“照顾好自己”“别太勉强”“放松一下”这类长句。
-	- 绝对不要替用户编造截图或补充背景里没有出现的个人信息，例如爱好、经历、课程、行程和家乡。需要用户自己填写时，用“___”保留一个明显空位。
-	- 不要给每条回复套风格标签，也不要额外解释回复。
-- 如果 suggest_stop 为 true，不要继续采访式追问，也不要硬开新话题。推荐体面收尾、暂停发送或轻松退场。
-	- 如果 needs_retry 为 true，replies 返回空数组。
+【任务二：生成 3 条可直接发送的回复】
+回复风格：${selectedStyle}
+风格说明：${styleGuide}
 
-	【任务三：给出逐步聊天路线】
-	- 用 chat_guide.current_move 写此刻最适合的一个动作。
-	- 用 chat_guide.next_steps 写 2 到 4 步后续路线。每一步都要等对方回应后再决定是否继续，不是让用户一次全部发完。
-	- 用 chat_guide.avoid 写一个当前最需要避免的动作。
-	- 对方在主动了解我时，可以自然沿着“当前话题 → 兴趣爱好 → 轻松邀约”推进；对方在倾诉时，先接住情绪，不急着换话题或邀约。
+回复规则（必须严格遵守）：
+1. 必须贴合截图中对方最后说的话或最近的话题，不能写与截图无关的通用回复
+2. 像真实的年轻人发消息一样自然，可以适当用语气词（哈/哈哈/啊/呀/诶），但不要堆砌
+3. 三条回复的开头必须各不相同，不能都以问句开头，不能都很短或都很长
+4. 不油腻、不强行暧昧、不突然邀约、不说教，每条不超过 40 字
+- 如果 suggest_stop 为 true，推荐体面收尾、暂停发送或轻松退场。
+- 如果 needs_retry 为 true，replies 返回空数组。
 
 ${context ? `【补充背景】${context}` : ''}
 
 只返回 JSON，不要返回 Markdown：
-{
-  "attitude_label": "态度标签",
-  "attitude_desc": "具体分析和策略建议",
-	  "interest_score": 68,
-	  "interest_level": "愿意接话",
-	  "interest_signals": ["会顺着共同梗继续聊", "主动回问"],
-	  "conversation_mode": "愿意接话",
-	  "reply_strategy": "顺着她最后一句轻松回球，留一点自然暧昧。",
-  "flirt_level": "轻微暧昧",
-  "is_chat_screenshot": true,
-  "non_chat_reply": "",
-  "chat_evidence": {
-    "image_kind": "chat",
-    "has_message_bubbles": true,
-    "has_chat_ui": true,
-    "has_two_sided_layout": true
-	  },
-	  "conversation_summary": "对方：...；我：...；对方：...",
-	  "chat_guide": {
-	    "current_move": "先接住对方最后一句，再顺着一个细节展开。",
-	    "next_steps": ["一次只聊一个点，等她回应。", "她愿意回问时，再自然聊到兴趣爱好。", "互动顺畅后，再考虑轻松邀约。"],
-	    "avoid": "不要连续发问，也不要突然硬撩。"
-	  },
-  "dialogue": [
-    {"side": "left", "speaker": "对方", "text": "左侧气泡内容"},
-    {"side": "right", "speaker": "我", "text": "右侧气泡内容"},
-    {"side": "feed", "speaker": "对方", "text": "单列消息流内容，仅在界面明确标记发送者时使用"}
-  ],
-  "suggest_stop": false,
-  "needs_retry": false,
-  "replies": [
-    {"text": "回复内容1"},
-    {"text": "回复内容2"},
-    {"text": "回复内容3"}
-  ]
-}`;
+{"attitude_label":"态度标签","attitude_desc":"具体分析和策略建议","is_chat_screenshot":true,"non_chat_reply":"","chat_evidence":{"image_kind":"chat","has_message_bubbles":true,"has_chat_ui":true,"has_two_sided_layout":true},"conversation_summary":"对方：...；我：...","dialogue":[{"side":"left","speaker":"对方","text":"左侧气泡内容"},{"side":"right","speaker":"我","text":"右侧气泡内容"}],"suggest_stop":false,"needs_retry":false,"replies":[{"tag":"${selectedStyle}","text":"回复内容1"},{"tag":"${selectedStyle}","text":"回复内容2"},{"tag":"${selectedStyle}","text":"回复内容3"}]}`;
+}
+
+function getAttitudeBadgeClass(label) {
+  if (!label) return '';
+  if (POSITIVE_KEYWORDS.some(k => label.includes(k))) return 'badge-positive';
+  if (COLD_KEYWORDS.some(k => label.includes(k))) return 'badge-cold';
+  if (label === '这不是聊天截图' || label === '暂时无法分析') return 'badge-cold';
+  return 'badge-neutral';
 }
 
 function parseAdvice(rawText) {
@@ -248,40 +171,19 @@ function parseAdvice(rawText) {
   const chatEvidence = normalizeChatEvidence(data.chat_evidence);
   const isChatScreenshot = isVerifiedChatScreenshot(data, dialogue, chatEvidence);
   const verifiedDialogue = isChatScreenshot ? dialogue : [];
-  const emotionalDisclosure = isChatScreenshot && hasRecentEmotionalDisclosure(verifiedDialogue);
-  const activeCuriosity = isChatScreenshot && !emotionalDisclosure && hasActiveCuriosity(verifiedDialogue);
   return {
-    attitude_label: isChatScreenshot ? (emotionalDisclosure ? '愿意倾诉' : activeCuriosity ? '主动了解' : cleanText(data.attitude_label, 12) || '态度待判断') : '这不是聊天截图',
-    attitude_desc: emotionalDisclosure
-      ? '对方在连续表达自己的疲惫、不舒服或压力，也愿意补充细节。这是在向你倾诉，不是敷衍，但目前更适合先接住情绪，不急着升温。'
-      : activeCuriosity
-        ? '对方连续主动问你的情况，也会顺着前一个答案继续展开。她至少愿意了解你，先认真回答一个具体点，再看她会不会继续接球。'
-      : (isChatScreenshot ? cleanText(data.attitude_desc, 180) : '')
-        || (isChatScreenshot ? '请结合对方后续行动继续观察。' : '我还没看到可以分析的聊天内容。'),
-    interest_score: isChatScreenshot ? (emotionalDisclosure ? Math.max(52, clampScore(data.interest_score)) : activeCuriosity ? Math.max(62, clampScore(data.interest_score)) : clampScore(data.interest_score)) : 0,
-    interest_level: isChatScreenshot ? (emotionalDisclosure || activeCuriosity ? '愿意接话' : normalizeInterestLevel(data.interest_level)) : '低意愿',
-    interest_signals: isChatScreenshot ? (emotionalDisclosure ? buildEmotionalDisclosureSignals(verifiedDialogue) : activeCuriosity ? buildActiveCuriositySignals() : normalizeSignals(data.interest_signals)) : [],
-    conversation_mode: isChatScreenshot ? (emotionalDisclosure ? '情绪倾诉' : activeCuriosity ? '主动了解' : normalizeConversationMode(data.conversation_mode)) : '礼貌回应',
-    reply_strategy: isChatScreenshot ? (emotionalDisclosure ? '先回应她现在的不舒服，给她一点喘息空间，等她愿意继续说再慢慢接话。' : activeCuriosity ? '先认真回答她最后的问题，给一个真实细节，再顺着她的反应慢慢展开。' : cleanText(data.reply_strategy, 100)) : '',
-    flirt_level: isChatScreenshot ? (emotionalDisclosure ? '先别暧昧' : normalizeFlirtLevel(data.flirt_level)) : '先别暧昧',
+    attitude_label: isChatScreenshot ? cleanText(data.attitude_label, 12) || '态度待判断' : '这不是聊天截图',
+    attitude_desc: (isChatScreenshot ? cleanText(data.attitude_desc, 180) : '') || (isChatScreenshot ? '请结合对方后续行动继续观察。' : '我还没看到可以分析的聊天内容。'),
     is_chat_screenshot: isChatScreenshot,
     non_chat_reply: cleanText(data.non_chat_reply, 120) || getDefaultNonChatReply(),
     chat_evidence: chatEvidence,
-    conversation_summary: isChatScreenshot
-      ? buildDialogueSummary(verifiedDialogue) || cleanText(data.conversation_summary, 260)
-      : '',
-    chat_guide: isChatScreenshot ? (emotionalDisclosure ? buildEmotionalDisclosureGuide() : activeCuriosity ? buildActiveCuriosityGuide() : normalizeChatGuide(data.chat_guide)) : buildDefaultChatGuide(),
+    conversation_summary: isChatScreenshot ? buildDialogueSummary(verifiedDialogue) || cleanText(data.conversation_summary, 260) : '',
     dialogue: verifiedDialogue,
-    suggest_stop: isChatScreenshot && !emotionalDisclosure && (Boolean(data.suggest_stop) || hasRepeatedColdReplies(verifiedDialogue)),
+    suggest_stop: isChatScreenshot && (Boolean(data.suggest_stop) || hasRepeatedColdReplies(verifiedDialogue)),
     needs_retry: isChatScreenshot && Boolean(data.needs_retry),
     degraded: Boolean(data.degraded),
     replies: isChatScreenshot && Array.isArray(data.replies)
-      ? data.replies
-          .map((reply) => ({
-            text: cleanText(reply?.text, 80),
-          }))
-          .filter((reply) => reply.text)
-          .slice(0, 5)
+      ? data.replies.map((r) => ({ tag: cleanText(r?.tag, 12) || selectedStyle, text: cleanText(r?.text, 80) })).filter((r) => r.text).slice(0, 3)
       : [],
   };
 }
@@ -290,168 +192,91 @@ function extractFirstJsonObject(rawText) {
   const cleaned = rawText.replace(/```json|```/gi, '').trim();
   const start = cleaned.indexOf('{');
   if (start < 0) throw new Error('返回内容格式不正确');
-
-  let depth = 0;
-  let inString = false;
-  let isEscaped = false;
-
-  for (let index = start; index < cleaned.length; index += 1) {
-    const character = cleaned[index];
-    if (inString) {
-      if (isEscaped) {
-        isEscaped = false;
-      } else if (character === '\\') {
-        isEscaped = true;
-      } else if (character === '"') {
-        inString = false;
-      }
-      continue;
-    }
-
-    if (character === '"') {
-      inString = true;
-    } else if (character === '{') {
-      depth += 1;
-    } else if (character === '}') {
-      depth -= 1;
-      if (depth === 0) return cleaned.slice(start, index + 1);
-    }
+  let depth = 0, inString = false, isEscaped = false;
+  for (let i = start; i < cleaned.length; i++) {
+    const c = cleaned[i];
+    if (inString) { if (isEscaped) isEscaped = false; else if (c === '\\') isEscaped = true; else if (c === '"') inString = false; continue; }
+    if (c === '"') inString = true;
+    else if (c === '{') depth++;
+    else if (c === '}') { depth--; if (depth === 0) return cleaned.slice(start, i + 1); }
   }
-
   throw new Error('返回内容格式不正确');
 }
 
 function renderResults(data) {
-  document.getElementById('attitudeBadge').textContent = data.attitude_label;
+  const badge = document.getElementById('attitudeBadge');
+  badge.textContent = data.attitude_label;
+  badge.className = 'attitude-badge ' + getAttitudeBadgeClass(data.attitude_label);
   document.getElementById('attitudeDesc').textContent = data.attitude_desc;
-  document.getElementById('interestLevel').textContent = `${data.interest_level} · ${data.interest_score}`;
-  document.getElementById('conversationMode').textContent = data.conversation_mode;
-  document.getElementById('replyStrategy').textContent = data.reply_strategy || '结合对方后续反应调整节奏';
-  document.getElementById('flirtLevel').textContent = data.flirt_level;
-  const insights = document.getElementById('insightGrid');
-  insights.classList.toggle('show', Boolean(data.is_chat_screenshot && !data.needs_retry));
-  const signals = document.getElementById('interestSignals');
-  signals.replaceChildren();
-  data.interest_signals.forEach((signal) => {
-    const item = document.createElement('span');
-    item.textContent = signal;
-    signals.appendChild(item);
-  });
-  signals.classList.toggle('show', Boolean(data.is_chat_screenshot && data.interest_signals.length));
   const summary = document.getElementById('conversationSummary');
   summary.textContent = data.conversation_summary || '';
   summary.classList.toggle('show', Boolean(data.conversation_summary));
-  renderChatGuide(data.chat_guide, Boolean(data.is_chat_screenshot && !data.needs_retry && !data.degraded));
-
   const list = document.getElementById('replyList');
   list.replaceChildren();
-
   if (!data.is_chat_screenshot) {
     list.appendChild(createSystemCard('识图小提示', data.non_chat_reply || getDefaultNonChatReply(), '#c96b52'));
-  } else if (data.suggest_stop) {
-    list.appendChild(createSystemCard('止损提醒', '舔狗照照镜子：对方连续短回，先别硬聊了。停一下，等对方愿意主动再说。', '#e57373'));
-  }
-
-  if (!data.is_chat_screenshot) {
     list.appendChild(createSystemCard('下一步', '换一张能看到左右聊天气泡的截图，我再认真帮你读空气。', '#e8927c'));
   } else if (data.needs_retry || data.degraded) {
-    list.appendChild(createSystemCard('请稍后重试', '免费分析通道暂时繁忙，或者截图不够清晰。本次没有猜测内容，请稍后重新分析。', '#c96b52'));
+    list.appendChild(createSystemCard('请稍后重试', '分析通道暂时繁忙，或截图不够清晰。请稍后重新分析。', '#c96b52'));
   } else if (data.suggest_stop) {
+    list.appendChild(createSystemCard('止损提醒', '对方连续短回，先别硬聊了。停一下，等对方愿意主动再说。', '#e57373'));
     list.appendChild(createSystemCard('建议动作', '先不要继续发消息。看对方之后会不会主动回来，比继续找话题更有参考价值。', '#c96b52'));
   } else {
-    data.replies.forEach((reply, index) => {
-      list.appendChild(createReplyCard(reply, index));
-    });
+    data.replies.forEach((reply, index) => list.appendChild(createReplyCard(reply, index)));
   }
-
   document.getElementById('results').style.display = 'block';
   document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  if (data.is_chat_screenshot && !data.needs_retry && !data.degraded && typeof showStickerPanel === 'function') {
+    showStickerPanel(data.attitude_label);
+  }
 }
 
 function renderRetryNotice(message) {
-  renderResults({
-    attitude_label: '暂时无法分析',
-    attitude_desc: message,
-    interest_score: 0,
-    interest_level: '低意愿',
-    interest_signals: [],
-    conversation_mode: '礼貌回应',
-    reply_strategy: '',
-    flirt_level: '先别暧昧',
-    is_chat_screenshot: true,
-    non_chat_reply: '',
-    chat_evidence: {},
-    conversation_summary: '',
-    chat_guide: buildDefaultChatGuide(),
-    suggest_stop: false,
-    needs_retry: true,
-    degraded: true,
-    replies: [],
-  });
+  renderResults({ attitude_label: '暂时无法分析', attitude_desc: message, is_chat_screenshot: true, non_chat_reply: '', chat_evidence: {}, conversation_summary: '', suggest_stop: false, needs_retry: true, degraded: true, replies: [] });
 }
 
 function createReplyCard(reply, index) {
   const card = document.createElement('div');
   card.className = 'reply-card';
-  card.style.animationDelay = `${index * 0.08}s`;
-
+  card.style.animationDelay = `${index * 0.1}s`;
+  const header = document.createElement('div');
+  header.className = 'reply-card-header';
+  const tag = document.createElement('span');
+  tag.className = `reply-tag ${TAG_CLASS[reply.tag] || 'tag-default'}`;
+  tag.textContent = reply.tag;
+  const num = document.createElement('span');
+  num.className = 'reply-num';
+  num.textContent = `0${index + 1}`;
+  header.append(tag, num);
   const text = document.createElement('div');
   text.className = 'reply-text';
   text.textContent = reply.text;
-
   const copy = document.createElement('div');
   copy.className = 'reply-copy';
   copy.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2 2v1"/></svg>点击复制';
-
-  card.appendChild(text);
-  card.appendChild(copy);
-  card.addEventListener('click', () => copyText(reply.text));
+  card.append(header, text, copy);
+  card.addEventListener('click', () => { copyText(reply.text); card.classList.add('copied'); setTimeout(() => card.classList.remove('copied'), 1200); });
   return card;
-}
-
-function renderChatGuide(guide, visible) {
-  const container = document.getElementById('chatGuide');
-  const normalized = normalizeChatGuide(guide);
-  document.getElementById('guideCurrentMove').textContent = normalized.current_move;
-  document.getElementById('guideAvoid').textContent = normalized.avoid;
-  const list = document.getElementById('guideSteps');
-  list.replaceChildren();
-  normalized.next_steps.forEach((step) => {
-    const item = document.createElement('li');
-    item.textContent = step;
-    list.appendChild(item);
-  });
-  container.classList.toggle('show', visible);
 }
 
 function createSystemCard(tagText, message, color) {
   const card = document.createElement('div');
-  card.className = 'reply-card';
-  card.style.cssText = `border-left: 3px solid ${color}; background: #fff8f6; cursor: default;`;
-
+  card.className = 'reply-card system-card';
+  card.style.cssText = `border-left: 3px solid ${color}; cursor: default;`;
   const tag = document.createElement('span');
   tag.className = 'reply-tag';
-  tag.style.cssText = `background: ${color}; color: #fff;`;
+  tag.style.cssText = `background: ${color}22; color: ${color}; border: 1px solid ${color}44;`;
   tag.textContent = tagText;
-
   const text = document.createElement('div');
   text.className = 'reply-text';
   text.textContent = message;
-
   card.append(tag, text);
   return card;
 }
 
 function copyText(text) {
-  navigator.clipboard.writeText(text).catch(() => {
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand('copy');
-    textarea.remove();
-  });
-  showToast('已复制，去发送吧');
+  navigator.clipboard.writeText(text).catch(() => { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); });
+  showToast('✓ 已复制，去发送吧');
 }
 
 function showToast(message) {
@@ -472,44 +297,19 @@ function cleanText(value, maxLength) {
   return value.replace(/\s+/g, ' ').trim().slice(0, maxLength);
 }
 
-function clampScore(value) {
-  const score = Number(value);
-  if (!Number.isFinite(score)) return 0;
-  return Math.max(0, Math.min(100, Math.round(score)));
-}
-
-function normalizeInterestLevel(value) {
-  return ['低意愿', '礼貌回应', '愿意接话', '轻微好感', '主动升温'].includes(value) ? value : '愿意接话';
-}
-
-function normalizeFlirtLevel(value) {
-  return ['先别暧昧', '轻松接话', '轻微暧昧', '自然升温'].includes(value) ? value : '轻松接话';
-}
-
-function normalizeSignals(signals) {
-  if (!Array.isArray(signals)) return [];
-  return signals.map((signal) => cleanText(signal, 28)).filter(Boolean).slice(0, 4);
-}
-
-function getDefaultNonChatReply() {
-  return '这张图挺有故事，但我还没看到你们聊天。换张聊天截图，我再帮你读空气。';
-}
-
-function validateFiles(files, existingCount = 0) {
-  if (existingCount + files.length > MAX_FILE_COUNT) return `最多上传 ${MAX_FILE_COUNT} 张截图`;
-  if (files.some((file) => !ALLOWED_FILE_TYPES.has(file.type))) return '请上传 JPG、PNG 或 WEBP 截图';
-  if (files.some((file) => file.size > MAX_FILE_SIZE)) return '单张截图不能超过 10MB';
+function getDefaultNonChatReply() { return '这张图挺有故事，但我还没看到你们聊天。换张聊天截图，我再帮你读空气。'; }
+function validateFiles(files) {
+  if (files.length > MAX_FILE_COUNT) return `一次最多上传 ${MAX_FILE_COUNT} 张截图`;
+  if (files.some((f) => !ALLOWED_FILE_TYPES.has(f.type))) return '请上传 JPG、PNG 或 WEBP 截图';
+  if (files.some((f) => f.size > MAX_FILE_SIZE)) return '单张截图不能超过 10MB';
   return '';
 }
 
-async function optimizeUploads(files, totalFileCount = files.length) {
-  let images = await Promise.all(files.map((file) => prepareImage(file, totalFileCount)));
+async function optimizeUploads(files) {
+  let images = await Promise.all(files.map((f) => prepareImage(f, files.length)));
   if (getTotalBase64Length(images) <= MAX_TOTAL_IMAGE_BASE64_LENGTH) return images;
-
-  images = await Promise.all(files.map((file) => prepareImage(file, totalFileCount, true)));
-  if (getTotalBase64Length(images) > MAX_TOTAL_IMAGE_BASE64_LENGTH) {
-    throw new Error('截图总量较大，请减少张数或裁剪后再上传');
-  }
+  images = await Promise.all(files.map((f) => prepareImage(f, files.length, true)));
+  if (getTotalBase64Length(images) > MAX_TOTAL_IMAGE_BASE64_LENGTH) throw new Error('截图总量较大，请减少张数或裁剪后再上传');
   return images;
 }
 
@@ -520,191 +320,49 @@ async function prepareImage(file, fileCount, forceCompression = false) {
   const maxEdge = forceCompression ? 1400 : shouldCompress ? 1900 : 2200;
   const scale = Math.min(1, maxEdge / Math.max(image.naturalWidth, image.naturalHeight));
   if (!shouldCompress && scale === 1) return getImagePayload(originalUrl, file.name);
-
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
   canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
-  const context = canvas.getContext('2d');
-  context.drawImage(image, 0, 0, canvas.width, canvas.height);
-
-  const compressedUrl = canvas.toDataURL('image/webp', forceCompression ? 0.76 : shouldCompress ? 0.88 : 0.94);
-  return getImagePayload(compressedUrl, file.name);
+  canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+  return getImagePayload(canvas.toDataURL('image/webp', forceCompression ? 0.76 : shouldCompress ? 0.88 : 0.94), file.name);
 }
 
 function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('截图读取失败，请重新上传'));
-    reader.readAsDataURL(file);
-  });
+  return new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = () => reject(new Error('截图读取失败，请重新上传')); r.readAsDataURL(file); });
 }
-
 function loadImage(dataUrl) {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error('截图格式无法读取'));
-    image.src = dataUrl;
-  });
+  return new Promise((resolve, reject) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => reject(new Error('截图格式无法读取')); img.src = dataUrl; });
 }
-
 function getImagePayload(dataUrl, name) {
   const [header, base64] = dataUrl.split(',');
   const mediaType = header.match(/^data:([^;]+);base64$/)?.[1];
   if (!mediaType || !base64) throw new Error('截图格式无法读取');
   return { base64, mediaType, name, previewUrl: dataUrl };
 }
-
-function getTotalBase64Length(images) {
-  return images.reduce((sum, image) => sum + image.base64.length, 0);
-}
+function getTotalBase64Length(images) { return images.reduce((sum, img) => sum + img.base64.length, 0); }
 
 function normalizeDialogue(messages) {
   if (!Array.isArray(messages)) return [];
-
-  return messages
-    .map((message) => {
-      const side = ['left', 'right', 'feed'].includes(message?.side) ? message.side : '';
-      const text = cleanText(message?.text, 100);
-      if (!side || !text || isHelperText(text)) return null;
-      if (side === 'feed') {
-        const speaker = message?.speaker === '对方' || message?.speaker === '我' ? message.speaker : '';
-        return speaker ? { side, speaker, text } : null;
-      }
-      return { side, speaker: side === 'left' ? '对方' : '我', text };
-    })
-    .filter(Boolean)
-    .slice(-20);
+  return messages.map((m) => {
+    const side = m?.side === 'left' || m?.side === 'right' ? m.side : '';
+    const text = cleanText(m?.text, 100);
+    if (!side || !text || isHelperText(text)) return null;
+    return { side, speaker: side === 'left' ? '对方' : '我', text };
+  }).filter(Boolean).slice(-20);
 }
-
-function buildDialogueSummary(dialogue) {
-  return dialogue
-    .slice(-8)
-    .map((message) => `${message.speaker}：${message.text}`)
-    .join('；')
-    .slice(0, 260);
-}
-
+function buildDialogueSummary(dialogue) { return dialogue.slice(-8).map((m) => `${m.speaker}：${m.text}`).join('；').slice(0, 260); }
 function hasRepeatedColdReplies(dialogue) {
-  if (hasRecentEmotionalDisclosure(dialogue)) return false;
-  const recentReplies = dialogue
-    .filter((message) => message.speaker === '对方')
-    .slice(-3);
-
-  return recentReplies.length === 3
-    && recentReplies.every((message) => (
-      message.text.length <= 6
-      && !/[?？！!，,。]|哈哈|嘿嘿|表情|困|累|疼|痛|难受|不舒服|压力|烦/.test(message.text)
-    ));
+  const r = dialogue.filter((m) => m.side === 'left').slice(-3);
+  return r.length === 3 && r.every((m) => m.text.length <= 6 && !/[?？]/.test(m.text));
 }
-
-function hasRecentEmotionalDisclosure(dialogue) {
-  const recentReplies = dialogue.filter((message) => message.speaker === '对方').slice(-6);
-  if (recentReplies.length < 2) return false;
-  const disclosureCount = recentReplies.filter((message) => EMOTIONAL_DISCLOSURE_PATTERN.test(message.text)).length;
-  return disclosureCount >= 2 || recentReplies.some((message) => PHYSICAL_DISCOMFORT_PATTERN.test(message.text));
+function normalizeChatEvidence(e) {
+  return { image_kind: cleanText(e?.image_kind, 24), has_message_bubbles: e?.has_message_bubbles === true, has_chat_ui: e?.has_chat_ui === true, has_two_sided_layout: e?.has_two_sided_layout === true };
 }
-
-function hasPhysicalDiscomfort(dialogue) {
-  return dialogue.filter((message) => message.speaker === '对方').slice(-6).some((message) => PHYSICAL_DISCOMFORT_PATTERN.test(message.text));
-}
-
-function buildEmotionalDisclosureSignals(dialogue) {
-  const opponentMessages = dialogue.filter((message) => message.speaker === '对方').slice(-6);
-  const signals = ['连续补充自己的状态', '愿意表达真实情绪'];
-  if (hasPhysicalDiscomfort(dialogue)) signals.push('主动说身体不舒服');
-  if (opponentMessages.some((message) => /表情包|贴图|sticker/i.test(message.text))) signals.push('用表情包继续表达情绪');
-  return signals.slice(0, 4);
-}
-
-function hasActiveCuriosity(dialogue) {
-  const recentReplies = dialogue.filter((message) => message.speaker === '对方').slice(-6);
-  const questionCount = recentReplies.filter((message) => /[?？]|什么|哪些|哪门|多少|吗|呢|爱好|喜欢|专业|课程|周末|平时/.test(message.text)).length;
-  return recentReplies.length >= 2 && questionCount >= 2;
-}
-
-function buildActiveCuriositySignals() {
-  return ['连续主动提问', '自然延伸话题', '想了解你的日常'];
-}
-
-function normalizeConversationMode(value) {
-  return ['冷淡敷衍', '礼貌回应', '愿意接话', '主动了解', '情绪倾诉', '轻松暧昧'].includes(value) ? value : '愿意接话';
-}
-
-function normalizeChatGuide(guide) {
-  const normalized = {
-    current_move: cleanText(guide?.current_move, 80),
-    next_steps: Array.isArray(guide?.next_steps)
-      ? guide.next_steps.map((step) => cleanText(step, 80)).filter(Boolean).slice(0, 4)
-      : [],
-    avoid: cleanText(guide?.avoid, 80),
-  };
-  const fallback = buildDefaultChatGuide();
-  return {
-    current_move: normalized.current_move || fallback.current_move,
-    next_steps: normalized.next_steps.length ? normalized.next_steps : fallback.next_steps,
-    avoid: normalized.avoid || fallback.avoid,
-  };
-}
-
-function buildDefaultChatGuide() {
-  return {
-    current_move: '先接住对方最后一句，再顺着一个细节展开。',
-    next_steps: [
-      '一次只聊一个点，等对方回应再往下走。',
-      '对方愿意回问时，再从兴趣自然延伸到更具体的话题。',
-      '互动顺畅后，再考虑轻松邀约。',
-    ],
-    avoid: '不要连续发问，也不要突然硬撩。',
-  };
-}
-
-function buildEmotionalDisclosureGuide() {
-  return {
-    current_move: '先回应她现在的不舒服，不急着讲道理或换话题。',
-    next_steps: [
-      '先发一句短关心，让她感觉被接住。',
-      '她愿意继续说时，再问一句她现在更想休息、吐槽还是有人陪聊。',
-      '等她状态缓一点，再自然聊轻松的话题。',
-    ],
-    avoid: '别连续教育她早点睡，也别这时候硬撩或马上邀约。',
-  };
-}
-
-function buildActiveCuriosityGuide() {
-  return {
-    current_move: '先认真回答她最后问的爱好，给一个真实的小细节。',
-    next_steps: [
-      '她对某个爱好有反应时，顺着这个点聊一会儿。',
-      '再自然回问她的兴趣，一次只问一个。',
-      '发现共同点后，再从活动或吃饭轻松邀约。',
-    ],
-    avoid: '别编造自己的爱好，也别还没聊开就马上邀约。',
-  };
-}
-
-function normalizeChatEvidence(evidence) {
-  return {
-    image_kind: cleanText(evidence?.image_kind, 24),
-    has_message_bubbles: evidence?.has_message_bubbles === true,
-    has_chat_ui: evidence?.has_chat_ui === true,
-    has_two_sided_layout: evidence?.has_two_sided_layout === true,
-  };
-}
-
 function isVerifiedChatScreenshot(data, dialogue, evidence) {
-  const hasTwoSidedDialogue = dialogue.some((message) => message.side === 'left')
-    && dialogue.some((message) => message.side === 'right');
-  const hasVisualEvidence = evidence.has_message_bubbles
-    || evidence.has_chat_ui
-    || (evidence.has_two_sided_layout && hasTwoSidedDialogue);
-
-  if (!hasVisualEvidence || dialogue.length < 2) return false;
-  if (data.is_chat_screenshot === false && !hasTwoSidedDialogue) return false;
+  const twoSided = dialogue.some((m) => m.side === 'left') && dialogue.some((m) => m.side === 'right');
+  const visual = evidence.has_message_bubbles || evidence.has_chat_ui || (evidence.has_two_sided_layout && twoSided);
+  if (!visual || dialogue.length < 2) return false;
+  if (data.is_chat_screenshot === false && !twoSided) return false;
   return true;
 }
-
-function isHelperText(text) {
-  return /左侧气泡|右侧气泡|对方发出|我发出|顺序从旧到新/.test(text);
-}
+function isHelperText(text) { return /左侧气泡|右侧气泡|对方发出|我发出|顺序从旧到新/.test(text); }
