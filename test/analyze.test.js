@@ -10,6 +10,7 @@ import handler, {
   buildReplyRefinementPrompt,
   extractFirstJsonObject,
   getRequestParts,
+  hasRecentEmotionalDisclosure,
   hasRepeatedColdReplies,
   logUsage,
   needsReplyRefinement,
@@ -44,13 +45,17 @@ test('defines a strict schema for richer attraction analysis', () => {
   assert.equal(CHAT_ADVICE_SCHEMA.additionalProperties, false);
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('interest_score'));
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('interest_signals'));
+  assert.ok(CHAT_ADVICE_SCHEMA.required.includes('conversation_mode'));
+  assert.ok(CHAT_ADVICE_SCHEMA.required.includes('chat_guide'));
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('flirt_level'));
+  assert.equal(CHAT_ADVICE_SCHEMA.properties.chat_guide.additionalProperties, false);
   assert.equal(CHAT_ADVICE_SCHEMA.properties.replies.items.additionalProperties, false);
   assert.deepEqual(Object.keys(CHAT_ADVICE_SCHEMA.properties.replies.items.properties), ['text']);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /主动回球/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /暧昧必须有依据/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /永远是用户准备发送给对方的话/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /暧昧上限，不是必须完成的任务/);
+  assert.match(REPLY_COACH_SYSTEM_PROMPT, /连续倾诉/);
   assert.match(REPLY_PERSPECTIVE_EXAMPLES, /先夸我两句/);
 });
 
@@ -60,6 +65,7 @@ test('parses willingness signals, flirt level, and clean untagged replies', () =
   assert.equal(advice.attitude_label, '愿意回球');
   assert.equal(advice.interest_score, 76);
   assert.equal(advice.interest_level, '轻微好感');
+  assert.equal(advice.conversation_mode, '轻松暧昧');
   assert.equal(advice.flirt_level, '轻微暧昧');
   assert.deepEqual(advice.interest_signals, ['主动回问', '接住共同梗']);
   assert.deepEqual(advice.replies[0], { text: '感受到了，嘴硬但还挺会关心人' });
@@ -180,6 +186,96 @@ test('detects three consecutive short replies as a cold conversation', () => {
     ])),
     true,
   );
+});
+
+test('does not treat consecutive emotional disclosure as cold replies', () => {
+  const dialogue = normalizeDialogue([
+    { side: 'right', text: '先去睡觉吧' },
+    { side: 'left', text: '我也不想 还没写完' },
+    { side: 'left', text: '肚子疼头也疼' },
+    { side: 'left', text: '不想上学' },
+    { side: 'left', text: '[表情包]' },
+  ]);
+
+  assert.equal(hasRecentEmotionalDisclosure(dialogue), true);
+  assert.equal(hasRepeatedColdReplies(dialogue), false);
+});
+
+test('does not over-classify one mild complaint as emotional disclosure', () => {
+  const dialogue = normalizeDialogue([
+    { side: 'left', text: '不想去' },
+    { side: 'right', text: '那算了' },
+    { side: 'left', text: '嗯' },
+    { side: 'left', text: '不知道' },
+  ]);
+
+  assert.equal(hasRecentEmotionalDisclosure(dialogue), false);
+});
+
+test('normalizes emotional disclosure into supportive attitude and guidance', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue({
+    attitude_label: '冷淡',
+    conversation_mode: '冷淡敷衍',
+    flirt_level: '轻微暧昧',
+    suggest_stop: true,
+    dialogue: [
+      { side: 'right', text: '先去睡觉吧' },
+      { side: 'left', text: '我也不想 还没写完' },
+      { side: 'left', text: '肚子疼头也疼' },
+      { side: 'left', text: '不想上学' },
+      { side: 'left', text: '[表情包]' },
+    ],
+    replies: [
+      { text: '早点休息吧' },
+      { text: '不要熬夜了' },
+      { text: '有需要告诉我' },
+    ],
+  })));
+
+  assert.equal(advice.suggest_stop, false);
+  assert.equal(advice.attitude_label, '愿意倾诉');
+  assert.equal(advice.conversation_mode, '情绪倾诉');
+  assert.equal(advice.interest_level, '愿意接话');
+  assert.equal(advice.interest_score, 76);
+  assert.equal(advice.flirt_level, '先别暧昧');
+  assert.match(advice.chat_guide.current_move, /不舒服/);
+});
+
+test('allows an underfilled disclosure response to enter the repair pass', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue({
+    interest_score: 12,
+    dialogue: [
+      { side: 'right', text: '先去睡觉吧' },
+      { side: 'left', text: '我也不想 还没写完' },
+      { side: 'left', text: '肚子疼头也疼' },
+    ],
+    replies: [{ text: '早点休息吧' }],
+  })));
+
+  assert.equal(advice.interest_score, 52);
+  assert.equal(needsReplyRefinement(advice), true);
+  assert.equal(repairReplyCandidates(advice).replies.length, 4);
+});
+
+test('repairs lecturing support replies with natural short messages', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue({
+    dialogue: [
+      { side: 'right', text: '先去睡觉吧' },
+      { side: 'left', text: '我也不想 还没写完' },
+      { side: 'left', text: '肚子疼头也疼' },
+      { side: 'left', text: '不想上学' },
+    ],
+    replies: [
+      { text: '早点休息吧' },
+      { text: '不要熬夜了' },
+      { text: '有需要告诉我' },
+    ],
+  })));
+  const repaired = repairReplyCandidates(advice);
+
+  assert.equal(needsReplyRefinement(advice), true);
+  assert.deepEqual(repaired.replies[0], { text: '肚子和头一起疼也太难顶了' });
+  assert.equal(needsReplyRefinement(repaired), false);
 });
 
 test('flags robotic or perspective-reversed reply candidates for refinement', () => {
@@ -448,6 +544,7 @@ function adviceValue(overrides = {}) {
     interest_score: 76,
     interest_level: '轻微好感',
     interest_signals: ['主动回问', '接住共同梗'],
+    conversation_mode: '轻松暧昧',
     reply_strategy: '顺着她的玩笑轻轻接住，留一个容易回复的小钩子。',
     flirt_level: '轻微暧昧',
     is_chat_screenshot: true,
@@ -459,6 +556,11 @@ function adviceValue(overrides = {}) {
       has_two_sided_layout: true,
     },
     conversation_summary: '',
+    chat_guide: {
+      current_move: '先顺着她的玩笑接一句。',
+      next_steps: ['等她回应后，再沿着共同梗聊下去。', '她继续主动时，再轻轻升温。'],
+      avoid: '不要连续追问。',
+    },
     dialogue: [
       { side: 'left', speaker: '对方', text: '你感受到我的了吗' },
       { side: 'right', speaker: '我', text: '好像遇到我你才对白由向往' },

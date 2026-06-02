@@ -4,6 +4,8 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_FILE_COUNT = 6;
 const MAX_TOTAL_IMAGE_BASE64_LENGTH = 3_800_000;
 const ALLOWED_FILE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const EMOTIONAL_DISCLOSURE_PATTERN = /困死|好困|太困|困了|很困|累死|好累|太累|累了|很累|疼|痛|难受|不舒服|烦|焦虑|压力|不想上学|不想去|没写完|睡不着|崩溃|想哭|生病|发烧|胃疼|肚子疼|头疼/;
+const PHYSICAL_DISCOMFORT_PATTERN = /疼|痛|难受|不舒服|生病|发烧|胃疼|肚子疼|头疼/;
 
 let uploadedImages = [];
 
@@ -158,13 +160,15 @@ function buildPrompt(imageCount) {
 - 先输出 dialogue。左右气泡界面的 side 只能根据气泡几何位置填写为 left 或 right，不要根据句子内容猜发送者。speaker 必须严格使用固定映射：left = 对方，right = 我。只有单列消息流才使用 side = feed。
 - 不要把“左侧气泡 = 对方发出”“右侧气泡 = 我发出”或类似的辅助说明当成真实聊天消息。
 
-【任务一：判断态度】
-- 不要把“有回复”直接等同于“有好感”。先判断对方是在礼貌回应、愿意接话、轻微好感，还是主动升温。
-- 重点观察对方是否主动提问、连续发多条、自然延伸话题、接梗、使用表情包、回看前文、关心我、轻微调侃我。这些才是更有价值的回球信号。
-- 回复间隔只能作为弱信号。不要因为一次晚回就断定冷淡，也不要因为回复快就擅自认定喜欢。
-- 用 interest_score 给出 0 到 100 的互动意愿分数；用 interest_level 选择：低意愿、礼貌回应、愿意接话、轻微好感、主动升温。
-- 用 interest_signals 写出最多 4 个来自截图的具体依据，不要写空泛结论。
-- 给出 8 字以内的态度标签，用 100 字以内说明判断依据和下一步节奏。
+	【任务一：判断态度】
+	- 不要把“有回复”直接等同于“有好感”。先判断对方是在礼貌回应、愿意接话、轻微好感，还是主动升温。
+	- 重点观察对方是否主动提问、连续发多条、自然延伸话题、接梗、使用表情包、回看前文、关心我、轻微调侃我。这些才是更有价值的回球信号。
+	- 区分“连续敷衍”和“连续倾诉”。如果对方连发多条，说困、累、疼、不舒服、压力、烦躁或学习状态，并补充表情包，这是在释放情绪和信任，不是冷淡短回，也不代表已经暧昧。
+	- 回复间隔只能作为弱信号。不要因为一次晚回就断定冷淡，也不要因为回复快就擅自认定喜欢。
+	- 用 interest_score 给出 0 到 100 的互动意愿分数；用 interest_level 选择：低意愿、礼貌回应、愿意接话、轻微好感、主动升温。
+	- 用 interest_signals 写出最多 4 个来自截图的具体依据，不要写空泛结论。
+	- 用 conversation_mode 选择当前聊天状态：冷淡敷衍、礼貌回应、愿意接话、主动了解、情绪倾诉、轻松暧昧。愿意倾诉不等于已经有好感，但也绝不是冷淡。
+	- 给出 8 字以内的态度标签，用 100 字以内说明判断依据和下一步节奏。
 - 用 reply_strategy 写一句明确策略：现在应该轻松接话、顺着梗升温、留一个回球点，还是先停一下。
 - 用 flirt_level 选择当前暧昧上限：先别暧昧、轻松接话、轻微暧昧、自然升温。
 - 用 conversation_summary 简洁复述最近的关键对话，明确标注“对方：”和“我：”，让我可以确认你没有读反左右两边。
@@ -182,11 +186,18 @@ function buildPrompt(imageCount) {
 - flirt_level 是暧昧上限，不是必须完成的任务。对方只是在认真提问、澄清或解释时，先正常回答，不要为了暧昧而绕开问题。
 - 如果对方最后一句在问“为什么”“怎么知道”“怎么确定”或类似澄清问题，至少两条候选要真正回应问题。不要全部改成调情、卖关子或反问。
 - 轻松聊天里的追问，不要写成长解释、情感分析或辩解。优先简短承认误判，再自然接住对方。不要编造截图里没有出现的“回复慢”“不积极”等依据。
-- 避免模板句：少用“听起来”“感觉你”“那你平时”“有需要告诉我”“调整好状态”“看来”。
-- 避免油腻句：不要凭空说想她、梦到她、心动、命中注定、只对她例外，也不要突然叫宝宝。
-- 不要给每条回复套风格标签，也不要额外解释回复。
+	- 避免模板句：少用“听起来”“感觉你”“那你平时”“有需要告诉我”“调整好状态”“看来”。
+	- 避免油腻句：不要凭空说想她、梦到她、心动、命中注定、只对她例外，也不要突然叫宝宝。
+	- 对方在倾诉难受时，先像朋友一样接住情绪。不要说教，不要连续叮嘱，不要强行暧昧，也不要写成客服式关怀。
+	- 不要给每条回复套风格标签，也不要额外解释回复。
 - 如果 suggest_stop 为 true，不要继续采访式追问，也不要硬开新话题。推荐体面收尾、暂停发送或轻松退场。
-- 如果 needs_retry 为 true，replies 返回空数组。
+	- 如果 needs_retry 为 true，replies 返回空数组。
+
+	【任务三：给出逐步聊天路线】
+	- 用 chat_guide.current_move 写此刻最适合的一个动作。
+	- 用 chat_guide.next_steps 写 2 到 4 步后续路线。每一步都要等对方回应后再决定是否继续，不是让用户一次全部发完。
+	- 用 chat_guide.avoid 写一个当前最需要避免的动作。
+	- 对方在主动了解我时，可以自然沿着“当前话题 → 兴趣爱好 → 轻松邀约”推进；对方在倾诉时，先接住情绪，不急着换话题或邀约。
 
 ${context ? `【补充背景】${context}` : ''}
 
@@ -194,10 +205,11 @@ ${context ? `【补充背景】${context}` : ''}
 {
   "attitude_label": "态度标签",
   "attitude_desc": "具体分析和策略建议",
-  "interest_score": 68,
-  "interest_level": "愿意接话",
-  "interest_signals": ["会顺着共同梗继续聊", "主动回问"],
-  "reply_strategy": "顺着她最后一句轻松回球，留一点自然暧昧。",
+	  "interest_score": 68,
+	  "interest_level": "愿意接话",
+	  "interest_signals": ["会顺着共同梗继续聊", "主动回问"],
+	  "conversation_mode": "愿意接话",
+	  "reply_strategy": "顺着她最后一句轻松回球，留一点自然暧昧。",
   "flirt_level": "轻微暧昧",
   "is_chat_screenshot": true,
   "non_chat_reply": "",
@@ -206,8 +218,13 @@ ${context ? `【补充背景】${context}` : ''}
     "has_message_bubbles": true,
     "has_chat_ui": true,
     "has_two_sided_layout": true
-  },
-  "conversation_summary": "对方：...；我：...；对方：...",
+	  },
+	  "conversation_summary": "对方：...；我：...；对方：...",
+	  "chat_guide": {
+	    "current_move": "先接住对方最后一句，再顺着一个细节展开。",
+	    "next_steps": ["一次只聊一个点，等她回应。", "她愿意回问时，再自然聊到兴趣爱好。", "互动顺畅后，再考虑轻松邀约。"],
+	    "avoid": "不要连续发问，也不要突然硬撩。"
+	  },
   "dialogue": [
     {"side": "left", "speaker": "对方", "text": "左侧气泡内容"},
     {"side": "right", "speaker": "我", "text": "右侧气泡内容"},
@@ -229,24 +246,28 @@ function parseAdvice(rawText) {
   const chatEvidence = normalizeChatEvidence(data.chat_evidence);
   const isChatScreenshot = isVerifiedChatScreenshot(data, dialogue, chatEvidence);
   const verifiedDialogue = isChatScreenshot ? dialogue : [];
+  const emotionalDisclosure = isChatScreenshot && hasRecentEmotionalDisclosure(verifiedDialogue);
   return {
-    attitude_label: isChatScreenshot ? cleanText(data.attitude_label, 12) || '态度待判断' : '这不是聊天截图',
-    attitude_desc:
-      (isChatScreenshot ? cleanText(data.attitude_desc, 180) : '')
-      || (isChatScreenshot ? '请结合对方后续行动继续观察。' : '我还没看到可以分析的聊天内容。'),
-    interest_score: isChatScreenshot ? clampScore(data.interest_score) : 0,
-    interest_level: isChatScreenshot ? normalizeInterestLevel(data.interest_level) : '低意愿',
-    interest_signals: isChatScreenshot ? normalizeSignals(data.interest_signals) : [],
-    reply_strategy: isChatScreenshot ? cleanText(data.reply_strategy, 100) : '',
-    flirt_level: isChatScreenshot ? normalizeFlirtLevel(data.flirt_level) : '先别暧昧',
+    attitude_label: isChatScreenshot ? (emotionalDisclosure ? '愿意倾诉' : cleanText(data.attitude_label, 12) || '态度待判断') : '这不是聊天截图',
+    attitude_desc: emotionalDisclosure
+      ? '对方在连续表达自己的疲惫、不舒服或压力，也愿意补充细节。这是在向你倾诉，不是敷衍，但目前更适合先接住情绪，不急着升温。'
+      : (isChatScreenshot ? cleanText(data.attitude_desc, 180) : '')
+        || (isChatScreenshot ? '请结合对方后续行动继续观察。' : '我还没看到可以分析的聊天内容。'),
+    interest_score: isChatScreenshot ? (emotionalDisclosure ? Math.max(52, clampScore(data.interest_score)) : clampScore(data.interest_score)) : 0,
+    interest_level: isChatScreenshot ? (emotionalDisclosure ? '愿意接话' : normalizeInterestLevel(data.interest_level)) : '低意愿',
+    interest_signals: isChatScreenshot ? (emotionalDisclosure ? buildEmotionalDisclosureSignals(verifiedDialogue) : normalizeSignals(data.interest_signals)) : [],
+    conversation_mode: isChatScreenshot ? (emotionalDisclosure ? '情绪倾诉' : normalizeConversationMode(data.conversation_mode)) : '礼貌回应',
+    reply_strategy: isChatScreenshot ? (emotionalDisclosure ? '先回应她现在的不舒服，给她一点喘息空间，等她愿意继续说再慢慢接话。' : cleanText(data.reply_strategy, 100)) : '',
+    flirt_level: isChatScreenshot ? (emotionalDisclosure ? '先别暧昧' : normalizeFlirtLevel(data.flirt_level)) : '先别暧昧',
     is_chat_screenshot: isChatScreenshot,
     non_chat_reply: cleanText(data.non_chat_reply, 120) || getDefaultNonChatReply(),
     chat_evidence: chatEvidence,
     conversation_summary: isChatScreenshot
       ? buildDialogueSummary(verifiedDialogue) || cleanText(data.conversation_summary, 260)
       : '',
+    chat_guide: isChatScreenshot ? (emotionalDisclosure ? buildEmotionalDisclosureGuide() : normalizeChatGuide(data.chat_guide)) : buildDefaultChatGuide(),
     dialogue: verifiedDialogue,
-    suggest_stop: isChatScreenshot && (Boolean(data.suggest_stop) || hasRepeatedColdReplies(verifiedDialogue)),
+    suggest_stop: isChatScreenshot && !emotionalDisclosure && (Boolean(data.suggest_stop) || hasRepeatedColdReplies(verifiedDialogue)),
     needs_retry: isChatScreenshot && Boolean(data.needs_retry),
     degraded: Boolean(data.degraded),
     replies: isChatScreenshot && Array.isArray(data.replies)
@@ -299,6 +320,7 @@ function renderResults(data) {
   document.getElementById('attitudeBadge').textContent = data.attitude_label;
   document.getElementById('attitudeDesc').textContent = data.attitude_desc;
   document.getElementById('interestLevel').textContent = `${data.interest_level} · ${data.interest_score}`;
+  document.getElementById('conversationMode').textContent = data.conversation_mode;
   document.getElementById('replyStrategy').textContent = data.reply_strategy || '结合对方后续反应调整节奏';
   document.getElementById('flirtLevel').textContent = data.flirt_level;
   const insights = document.getElementById('insightGrid');
@@ -314,6 +336,7 @@ function renderResults(data) {
   const summary = document.getElementById('conversationSummary');
   summary.textContent = data.conversation_summary || '';
   summary.classList.toggle('show', Boolean(data.conversation_summary));
+  renderChatGuide(data.chat_guide, Boolean(data.is_chat_screenshot && !data.needs_retry && !data.degraded));
 
   const list = document.getElementById('replyList');
   list.replaceChildren();
@@ -347,12 +370,14 @@ function renderRetryNotice(message) {
     interest_score: 0,
     interest_level: '低意愿',
     interest_signals: [],
+    conversation_mode: '礼貌回应',
     reply_strategy: '',
     flirt_level: '先别暧昧',
     is_chat_screenshot: true,
     non_chat_reply: '',
     chat_evidence: {},
     conversation_summary: '',
+    chat_guide: buildDefaultChatGuide(),
     suggest_stop: false,
     needs_retry: true,
     degraded: true,
@@ -377,6 +402,21 @@ function createReplyCard(reply, index) {
   card.appendChild(copy);
   card.addEventListener('click', () => copyText(reply.text));
   return card;
+}
+
+function renderChatGuide(guide, visible) {
+  const container = document.getElementById('chatGuide');
+  const normalized = normalizeChatGuide(guide);
+  document.getElementById('guideCurrentMove').textContent = normalized.current_move;
+  document.getElementById('guideAvoid').textContent = normalized.avoid;
+  const list = document.getElementById('guideSteps');
+  list.replaceChildren();
+  normalized.next_steps.forEach((step) => {
+    const item = document.createElement('li');
+    item.textContent = step;
+    list.appendChild(item);
+  });
+  container.classList.toggle('show', visible);
 }
 
 function createSystemCard(tagText, message, color) {
@@ -542,12 +582,79 @@ function buildDialogueSummary(dialogue) {
 }
 
 function hasRepeatedColdReplies(dialogue) {
+  if (hasRecentEmotionalDisclosure(dialogue)) return false;
   const recentReplies = dialogue
     .filter((message) => message.speaker === '对方')
     .slice(-3);
 
   return recentReplies.length === 3
-    && recentReplies.every((message) => message.text.length <= 6 && !/[?？]/.test(message.text));
+    && recentReplies.every((message) => (
+      message.text.length <= 6
+      && !/[?？！!，,。]|哈哈|嘿嘿|表情|困|累|疼|痛|难受|不舒服|压力|烦/.test(message.text)
+    ));
+}
+
+function hasRecentEmotionalDisclosure(dialogue) {
+  const recentReplies = dialogue.filter((message) => message.speaker === '对方').slice(-6);
+  if (recentReplies.length < 2) return false;
+  const disclosureCount = recentReplies.filter((message) => EMOTIONAL_DISCLOSURE_PATTERN.test(message.text)).length;
+  return disclosureCount >= 2 || recentReplies.some((message) => PHYSICAL_DISCOMFORT_PATTERN.test(message.text));
+}
+
+function hasPhysicalDiscomfort(dialogue) {
+  return dialogue.filter((message) => message.speaker === '对方').slice(-6).some((message) => PHYSICAL_DISCOMFORT_PATTERN.test(message.text));
+}
+
+function buildEmotionalDisclosureSignals(dialogue) {
+  const opponentMessages = dialogue.filter((message) => message.speaker === '对方').slice(-6);
+  const signals = ['连续补充自己的状态', '愿意表达真实情绪'];
+  if (hasPhysicalDiscomfort(dialogue)) signals.push('主动说身体不舒服');
+  if (opponentMessages.some((message) => /表情包|贴图|sticker/i.test(message.text))) signals.push('用表情包继续表达情绪');
+  return signals.slice(0, 4);
+}
+
+function normalizeConversationMode(value) {
+  return ['冷淡敷衍', '礼貌回应', '愿意接话', '主动了解', '情绪倾诉', '轻松暧昧'].includes(value) ? value : '愿意接话';
+}
+
+function normalizeChatGuide(guide) {
+  const normalized = {
+    current_move: cleanText(guide?.current_move, 80),
+    next_steps: Array.isArray(guide?.next_steps)
+      ? guide.next_steps.map((step) => cleanText(step, 80)).filter(Boolean).slice(0, 4)
+      : [],
+    avoid: cleanText(guide?.avoid, 80),
+  };
+  const fallback = buildDefaultChatGuide();
+  return {
+    current_move: normalized.current_move || fallback.current_move,
+    next_steps: normalized.next_steps.length ? normalized.next_steps : fallback.next_steps,
+    avoid: normalized.avoid || fallback.avoid,
+  };
+}
+
+function buildDefaultChatGuide() {
+  return {
+    current_move: '先接住对方最后一句，再顺着一个细节展开。',
+    next_steps: [
+      '一次只聊一个点，等对方回应再往下走。',
+      '对方愿意回问时，再从兴趣自然延伸到更具体的话题。',
+      '互动顺畅后，再考虑轻松邀约。',
+    ],
+    avoid: '不要连续发问，也不要突然硬撩。',
+  };
+}
+
+function buildEmotionalDisclosureGuide() {
+  return {
+    current_move: '先回应她现在的不舒服，不急着讲道理或换话题。',
+    next_steps: [
+      '先发一句短关心，让她感觉被接住。',
+      '她愿意继续说时，再问一句她现在更想休息、吐槽还是有人陪聊。',
+      '等她状态缓一点，再自然聊轻松的话题。',
+    ],
+    avoid: '别连续教育她早点睡，也别这时候硬撩或马上邀约。',
+  };
 }
 
 function normalizeChatEvidence(evidence) {

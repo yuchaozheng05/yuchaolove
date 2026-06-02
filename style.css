@@ -421,7 +421,7 @@ textarea:focus { outline: none; border-color: var(--rose-light); box-shadow: 0 0
 
 .insight-grid {
   display: none;
-  grid-template-columns: 0.8fr 1.65fr 0.8fr;
+  grid-template-columns: 0.8fr 0.8fr 1.5fr 0.8fr;
   gap: 8px;
   margin-top: 1rem;
 }
@@ -507,6 +507,74 @@ textarea:focus { outline: none; border-color: var(--rose-light); box-shadow: 0 0
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.08em;
+}
+
+.chat-guide {
+  display: none;
+  margin-bottom: 1.25rem;
+  padding: 1.25rem 1.4rem;
+  background: #fff;
+  border: 1px solid var(--border-mid);
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(200,130,100,0.06);
+}
+.chat-guide.show { display: block; }
+.guide-eyebrow {
+  margin-bottom: 0.45rem;
+  color: var(--rose-dark);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+}
+.guide-current {
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.7;
+}
+.guide-steps {
+  counter-reset: guide-step;
+  display: grid;
+  gap: 8px;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.guide-steps li {
+  counter-increment: guide-step;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 7px;
+  color: var(--text-mid);
+  font-size: 13px;
+  line-height: 1.65;
+}
+.guide-steps li::before {
+  content: counter(guide-step);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--blush);
+  color: var(--rose-dark);
+  font-size: 11px;
+  line-height: 20px;
+  text-align: center;
+}
+.guide-avoid {
+  margin-top: 0.95rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--border);
+}
+.guide-avoid span {
+  color: var(--rose-dark);
+  font-size: 11px;
+  font-weight: 500;
+}
+.guide-avoid p {
+  margin-top: 0.2rem;
+  color: var(--text-mid);
+  font-size: 13px;
+  line-height: 1.65;
 }
 
 .reply-tag {

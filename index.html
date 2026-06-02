@@ -178,10 +178,14 @@
           <div class="attitude-eyebrow">对方态度分析</div>
           <div class="attitude-badge" id="attitudeBadge">—</div>
         </div>
-        <p class="attitude-desc" id="attitudeDesc">—</p>
-        <div class="insight-grid" id="insightGrid">
-          <div class="insight-item">
-            <span>互动意愿</span>
+	        <p class="attitude-desc" id="attitudeDesc">—</p>
+	        <div class="insight-grid" id="insightGrid">
+	          <div class="insight-item">
+	            <span>聊天状态</span>
+	            <strong id="conversationMode">—</strong>
+	          </div>
+	          <div class="insight-item">
+	            <span>互动意愿</span>
             <strong id="interestLevel">—</strong>
           </div>
           <div class="insight-item">
@@ -194,10 +198,20 @@
           </div>
         </div>
         <div class="interest-signals" id="interestSignals"></div>
-        <div class="conversation-summary" id="conversationSummary"></div>
-      </div>
+	        <div class="conversation-summary" id="conversationSummary"></div>
+	      </div>
 
-      <!-- Reply cards -->
+	      <div class="chat-guide" id="chatGuide">
+	        <div class="guide-eyebrow">接下来怎么聊</div>
+	        <p class="guide-current" id="guideCurrentMove">—</p>
+	        <ol class="guide-steps" id="guideSteps"></ol>
+	        <div class="guide-avoid">
+	          <span>先别这样聊</span>
+	          <p id="guideAvoid">—</p>
+	        </div>
+	      </div>
+
+	      <!-- Reply cards -->
       <div class="result-replies">
         <div class="replies-header">
           <div class="replies-eyebrow">推荐回复</div>
