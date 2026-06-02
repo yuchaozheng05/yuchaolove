@@ -22,7 +22,7 @@ async function handleFileUpload(event) {
 
   try {
     setSubmitState(true, '正在处理截图...');
-    const addedImages = await optimizeUploads(files);
+    const addedImages = await optimizeUploads(files, uploadedImages.length + files.length);
     const combinedImages = [...uploadedImages, ...addedImages];
     if (getTotalBase64Length(combinedImages) > MAX_TOTAL_IMAGE_BASE64_LENGTH) {
       throw new Error('截图总量较大，请减少张数或裁剪后再上传');
@@ -457,11 +457,11 @@ function validateFiles(files, existingCount = 0) {
   return '';
 }
 
-async function optimizeUploads(files) {
-  let images = await Promise.all(files.map((file) => prepareImage(file, files.length)));
+async function optimizeUploads(files, totalFileCount = files.length) {
+  let images = await Promise.all(files.map((file) => prepareImage(file, totalFileCount)));
   if (getTotalBase64Length(images) <= MAX_TOTAL_IMAGE_BASE64_LENGTH) return images;
 
-  images = await Promise.all(files.map((file) => prepareImage(file, files.length, true)));
+  images = await Promise.all(files.map((file) => prepareImage(file, totalFileCount, true)));
   if (getTotalBase64Length(images) > MAX_TOTAL_IMAGE_BASE64_LENGTH) {
     throw new Error('截图总量较大，请减少张数或裁剪后再上传');
   }
