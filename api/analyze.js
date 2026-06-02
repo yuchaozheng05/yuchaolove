@@ -84,6 +84,9 @@ export default async function handler(req, res) {
         });
         const advice = parseAdvice(rawText);
 
+        // Log usage asynchronously (don't block response)
+        logUsage({ req, advice, imageParts, model }).catch(() => {});
+
         return res.status(200).json({
           content: [{ type: 'text', text: JSON.stringify(advice) }],
           model,
@@ -164,12 +167,7 @@ async function requestOpenAIAdvice({ apiKey, model, imageParts, prompt }) {
     },
     body: JSON.stringify({
       model,
-      messages: [
-        {
-          role: 'user',
-          content: [...imageMessages, { type: 'text', text: prompt }],
-        },
-      ],
+      messages: [{ role: 'user', content: [...imageMessages, { type: 'text', text: prompt }] }],
       temperature: 0.35,
       max_tokens: 1600,
       response_format: { type: 'json_object' },
@@ -197,13 +195,7 @@ async function requestOpenAIAdvice({ apiKey, model, imageParts, prompt }) {
 function parseAdvice(rawText) {
   const value = JSON.parse(extractFirstJsonObject(rawText));
   const replies = Array.isArray(value.replies)
-    ? value.replies
-        .map((reply) => ({
-          tag: cleanText(reply?.tag, 12),
-          text: cleanText(reply?.text, 80),
-        }))
-        .filter((reply) => reply.text)
-        .slice(0, 3)
+    ? value.replies.map((reply) => ({ tag: cleanText(reply?.tag, 12), text: cleanText(reply?.text, 80) })).filter((reply) => reply.text).slice(0, 3)
     : [];
   const needsRetry = Boolean(value.needs_retry);
   const dialogue = normalizeDialogue(value.dialogue);
@@ -218,22 +210,12 @@ function parseAdvice(rawText) {
   }
 
   return {
-    attitude_label: isChatScreenshot
-      ? cleanText(value.attitude_label, 12) || (needsRetry ? '截图不够清晰' : '态度待判断')
-      : '这不是聊天截图',
-    attitude_desc:
-      (isChatScreenshot ? cleanText(value.attitude_desc, 180) : '')
-      || (isChatScreenshot
-        ? needsRetry
-          ? '这张截图暂时无法可靠读取，请换一张更清晰的截图后重试。'
-          : '请结合对方后续行动继续观察。'
-        : '我还没看到可以分析的聊天内容。'),
+    attitude_label: isChatScreenshot ? cleanText(value.attitude_label, 12) || (needsRetry ? '截图不够清晰' : '态度待判断') : '这不是聊天截图',
+    attitude_desc: (isChatScreenshot ? cleanText(value.attitude_desc, 180) : '') || (isChatScreenshot ? (needsRetry ? '这张截图暂时无法可靠读取，请换一张更清晰的截图后重试。' : '请结合对方后续行动继续观察。') : '我还没看到可以分析的聊天内容。'),
     is_chat_screenshot: isChatScreenshot,
     non_chat_reply: cleanText(value.non_chat_reply, 120) || (!isChatScreenshot ? getDefaultNonChatReply() : ''),
     chat_evidence: chatEvidence,
-    conversation_summary: isChatScreenshot
-      ? buildDialogueSummary(verifiedDialogue) || cleanText(value.conversation_summary, 260)
-      : '',
+    conversation_summary: isChatScreenshot ? buildDialogueSummary(verifiedDialogue) || cleanText(value.conversation_summary, 260) : '',
     dialogue: verifiedDialogue,
     suggest_stop: isChatScreenshot && (Boolean(value.suggest_stop) || hasRepeatedColdReplies(verifiedDialogue)),
     needs_retry: isChatScreenshot && needsRetry,
@@ -245,59 +227,26 @@ function extractFirstJsonObject(rawText) {
   const cleaned = rawText.replace(/```json|```/gi, '').trim();
   const start = cleaned.indexOf('{');
   if (start < 0) throw new Error('OpenAI returned invalid JSON');
-
-  let depth = 0;
-  let inString = false;
-  let isEscaped = false;
-
+  let depth = 0, inString = false, isEscaped = false;
   for (let index = start; index < cleaned.length; index += 1) {
     const character = cleaned[index];
     if (inString) {
-      if (isEscaped) {
-        isEscaped = false;
-      } else if (character === '\\') {
-        isEscaped = true;
-      } else if (character === '"') {
-        inString = false;
-      }
+      if (isEscaped) { isEscaped = false; } else if (character === '\\') { isEscaped = true; } else if (character === '"') { inString = false; }
       continue;
     }
-
-    if (character === '"') {
-      inString = true;
-    } else if (character === '{') {
-      depth += 1;
-    } else if (character === '}') {
-      depth -= 1;
-      if (depth === 0) return cleaned.slice(start, index + 1);
-    }
+    if (character === '"') { inString = true; } else if (character === '{') { depth += 1; } else if (character === '}') { depth -= 1; if (depth === 0) return cleaned.slice(start, index + 1); }
   }
-
   throw new Error('OpenAI returned invalid JSON');
 }
 
 function buildFreeTierFallbackAdvice() {
-  return {
-    attitude_label: '服务暂时繁忙',
-    attitude_desc: '当前分析服务暂时不可用。为了避免给你不准确的建议，本次不会猜测截图内容，请稍后点击"重新分析"。',
-    is_chat_screenshot: true,
-    non_chat_reply: '',
-    chat_evidence: {},
-    conversation_summary: '',
-    dialogue: [],
-    suggest_stop: false,
-    needs_retry: true,
-    degraded: true,
-    replies: [],
-  };
+  return { attitude_label: '服务暂时繁忙', attitude_desc: '当前分析服务暂时不可用。为了避免给你不准确的建议，本次不会猜测截图内容，请稍后点击"重新分析"。', is_chat_screenshot: true, non_chat_reply: '', chat_evidence: {}, conversation_summary: '', dialogue: [], suggest_stop: false, needs_retry: true, degraded: true, replies: [] };
 }
 
 function isRetryableModelError(error) {
   if (!error) return false;
   if ([408, 429, 500, 502, 503, 504].includes(error.providerStatus)) return true;
-  return /quota|rate limit|resource exhausted|temporarily|overload|invalid json|empty response|fewer than three/i.test(
-    error.message || '',
-  );
+  return /quota|rate limit|resource exhausted|temporarily|overload|invalid json|empty response|fewer than three/i.test(error.message || '');
 }
 
 function cleanText(value, maxLength) {
@@ -311,55 +260,34 @@ function getDefaultNonChatReply() {
 
 function normalizeDialogue(messages) {
   if (!Array.isArray(messages)) return [];
-
-  return messages
-    .map((message) => {
-      const side = ['left', 'right', 'feed'].includes(message?.side) ? message.side : '';
-      const text = cleanText(message?.text, 100);
-      if (!side || !text || isHelperText(text)) return null;
-      if (side === 'feed') {
-        const speaker = message?.speaker === '对方' || message?.speaker === '我' ? message.speaker : '';
-        return speaker ? { side, speaker, text } : null;
-      }
-      return { side, speaker: side === 'left' ? '对方' : '我', text };
-    })
-    .filter(Boolean)
-    .slice(-20);
+  return messages.map((message) => {
+    const side = ['left', 'right', 'feed'].includes(message?.side) ? message.side : '';
+    const text = cleanText(message?.text, 100);
+    if (!side || !text || isHelperText(text)) return null;
+    if (side === 'feed') {
+      const speaker = message?.speaker === '对方' || message?.speaker === '我' ? message.speaker : '';
+      return speaker ? { side, speaker, text } : null;
+    }
+    return { side, speaker: side === 'left' ? '对方' : '我', text };
+  }).filter(Boolean).slice(-20);
 }
 
 function buildDialogueSummary(dialogue) {
-  return dialogue
-    .slice(-8)
-    .map((message) => `${message.speaker}：${message.text}`)
-    .join('；')
-    .slice(0, 260);
+  return dialogue.slice(-8).map((message) => `${message.speaker}：${message.text}`).join('；').slice(0, 260);
 }
 
 function hasRepeatedColdReplies(dialogue) {
-  const recentReplies = dialogue
-    .filter((message) => message.speaker === '对方')
-    .slice(-3);
-
-  return recentReplies.length === 3
-    && recentReplies.every((message) => message.text.length <= 6 && !/[?？]/.test(message.text));
+  const recentReplies = dialogue.filter((message) => message.speaker === '对方').slice(-3);
+  return recentReplies.length === 3 && recentReplies.every((message) => message.text.length <= 6 && !/[?？]/.test(message.text));
 }
 
 function normalizeChatEvidence(evidence) {
-  return {
-    image_kind: cleanText(evidence?.image_kind, 24),
-    has_message_bubbles: evidence?.has_message_bubbles === true,
-    has_chat_ui: evidence?.has_chat_ui === true,
-    has_two_sided_layout: evidence?.has_two_sided_layout === true,
-  };
+  return { image_kind: cleanText(evidence?.image_kind, 24), has_message_bubbles: evidence?.has_message_bubbles === true, has_chat_ui: evidence?.has_chat_ui === true, has_two_sided_layout: evidence?.has_two_sided_layout === true };
 }
 
 function isVerifiedChatScreenshot(value, dialogue, evidence) {
-  const hasTwoSidedDialogue = dialogue.some((message) => message.side === 'left')
-    && dialogue.some((message) => message.side === 'right');
-  const hasVisualEvidence = evidence.has_message_bubbles
-    || evidence.has_chat_ui
-    || (evidence.has_two_sided_layout && hasTwoSidedDialogue);
-
+  const hasTwoSidedDialogue = dialogue.some((message) => message.side === 'left') && dialogue.some((message) => message.side === 'right');
+  const hasVisualEvidence = evidence.has_message_bubbles || evidence.has_chat_ui || (evidence.has_two_sided_layout && hasTwoSidedDialogue);
   if (!hasVisualEvidence || dialogue.length < 2) return false;
   if (value.is_chat_screenshot === false && !hasTwoSidedDialogue) return false;
   return true;
@@ -380,17 +308,41 @@ function createPublicError(statusCode, publicMessage) {
   return error;
 }
 
-export {
-  CHAT_ADVICE_SCHEMA,
-  MODELS,
-  buildFreeTierFallbackAdvice,
-  extractFirstJsonObject,
-  getRequestParts,
-  hasRepeatedColdReplies,
-  isRetryableModelError,
-  isVerifiedChatScreenshot,
-  normalizeDialogue,
-  normalizeChatEvidence,
-  parseAdvice,
-  requestOpenAIAdvice,
-};
+async function logUsage({ req, advice, imageParts }) {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+  if (!supabaseUrl || !supabaseKey) return;
+
+  try {
+    const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
+    const country = req.headers['x-vercel-ip-country'] || 'unknown';
+    const city = decodeURIComponent(req.headers['x-vercel-ip-city'] || 'unknown');
+    const userAgent = req.headers['user-agent'] || 'unknown';
+
+    const imageUrls = [];
+    for (let i = 0; i < imageParts.length; i++) {
+      const part = imageParts[i];
+      const ext = part.source.media_type.split('/')[1] || 'jpg';
+      const filename = `${Date.now()}-${i}.${ext}`;
+      const buffer = Buffer.from(part.source.data, 'base64');
+      const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/screenshots/${filename}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': part.source.media_type },
+        body: buffer,
+      });
+      if (uploadRes.ok) {
+        imageUrls.push(`${supabaseUrl}/storage/v1/object/authenticated/screenshots/${filename}`);
+      }
+    }
+
+    await fetch(`${supabaseUrl}/rest/v1/usage_logs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseKey}`, 'apikey': supabaseKey },
+      body: JSON.stringify({ ip, country, city, user_agent: userAgent, attitude_label: advice.attitude_label, attitude_desc: advice.attitude_desc, replies: advice.replies, image_urls: imageUrls }),
+    });
+  } catch (err) {
+    console.warn('logUsage failed:', err.message);
+  }
+}
+
+export { CHAT_ADVICE_SCHEMA, MODELS, buildFreeTierFallbackAdvice, extractFirstJsonObject, getRequestParts, hasRepeatedColdReplies, isRetryableModelError, isVerifiedChatScreenshot, normalizeDialogue, normalizeChatEvidence, parseAdvice, requestOpenAIAdvice };
