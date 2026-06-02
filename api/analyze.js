@@ -394,6 +394,9 @@ function needsReplyRefinement(advice) {
   const hasTemplateLanguage = replies.some((reply) => (
     /听起来|感觉你|那你平时|有需要.{0,6}告诉我|调整好状态|看来/.test(reply.text)
   ));
+  const inventsUnsupportedColdEvidence = replies.some((reply) => (
+    /回复.{0,6}(慢|少|不.{0,3}积极)|疏远|没那么主动|不太主动|比较冷淡/.test(reply.text)
+  ));
   const hasReversedComfortPerspective = /哄/.test(latestOpponentText)
     && replies.some((reply) => /^哄你[?？：:]?/.test(reply.text));
   const hasOverlongReplies = replies.some((reply) => reply.text.length > 24);
@@ -403,7 +406,12 @@ function needsReplyRefinement(advice) {
   )).length;
   const evadesDirectQuestion = asksForExplanation && evasiveReplyCount >= 2;
 
-  return questionCount > 1 || hasTemplateLanguage || hasReversedComfortPerspective || hasOverlongReplies || evadesDirectQuestion;
+  return questionCount > 1
+    || hasTemplateLanguage
+    || inventsUnsupportedColdEvidence
+    || hasReversedComfortPerspective
+    || hasOverlongReplies
+    || evadesDirectQuestion;
 }
 
 function buildReplyRefinementPrompt(originalPrompt, advice) {

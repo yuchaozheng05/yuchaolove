@@ -248,6 +248,18 @@ test('flags long explanatory replies for a shorter human rewrite', () => {
   assert.match(buildReplyRefinementPrompt('Analyze.', advice), /不要编造截图里没有出现的/);
 });
 
+test('flags invented cold evidence that is not visible in the screenshot', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue({
+    replies: [
+      { text: '因为你平时回复都不那么积极' },
+      { text: '直觉告诉我你有点疏远我' },
+      { text: '我瞎猜的，那我撤回' },
+    ],
+  })));
+
+  assert.equal(needsReplyRefinement(advice), true);
+});
+
 test('repairs stubborn clarification replies with sendable short messages', () => {
   const advice = parseAdvice(JSON.stringify(adviceValue({
     dialogue: [
