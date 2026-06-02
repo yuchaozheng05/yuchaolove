@@ -278,6 +278,25 @@ test('repairs lecturing support replies with natural short messages', () => {
   assert.equal(needsReplyRefinement(repaired), false);
 });
 
+test('repairs well-meant but robotic health reminder replies', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue({
+    dialogue: [
+      { side: 'right', text: '先去睡觉吧' },
+      { side: 'left', text: '我也不想 还没写完' },
+      { side: 'left', text: '肚子疼头也疼' },
+      { side: 'left', text: '不想上学' },
+    ],
+    replies: [
+      { text: '别太勉强自己，身体重要，先照顾好自己吧' },
+      { text: '先休息一下，写完再说也不迟' },
+      { text: '你这样太辛苦了，先放松一下' },
+    ],
+  })));
+
+  assert.equal(needsReplyRefinement(advice), true);
+  assert.deepEqual(repairReplyCandidates(advice).replies[1], { text: '先躺会儿吧，作业晚点再说' });
+});
+
 test('flags robotic or perspective-reversed reply candidates for refinement', () => {
   const advice = parseAdvice(JSON.stringify(adviceValue({
     dialogue: [
