@@ -5,6 +5,7 @@ import handler, {
   CHAT_ADVICE_SCHEMA,
   MODELS,
   REPLY_COACH_SYSTEM_PROMPT,
+  REPLY_PERSPECTIVE_EXAMPLES,
   buildFreeTierFallbackAdvice,
   extractFirstJsonObject,
   getRequestParts,
@@ -44,6 +45,8 @@ test('defines a strict schema for richer attraction analysis', () => {
   assert.equal(CHAT_ADVICE_SCHEMA.properties.replies.items.additionalProperties, false);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /主动回球/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /暧昧必须有依据/);
+  assert.match(REPLY_COACH_SYSTEM_PROMPT, /永远是用户准备发送给对方的话/);
+  assert.match(REPLY_PERSPECTIVE_EXAMPLES, /先夸我两句/);
 });
 
 test('parses willingness signals, flirt level, and natural reply angles', () => {

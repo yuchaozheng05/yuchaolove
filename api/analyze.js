@@ -9,9 +9,17 @@ const REPLY_COACH_SYSTEM_PROMPT = `你是中文聊天回复顾问。你的目标
 - 回复延迟只能作为弱信号，不要因为晚回一次就下结论。
 - 暧昧必须有依据。对方只是礼貌回应时保持轻松；对方愿意接话时可以轻微暧昧；对方主动回球时可以自然升温；对方连续敷衍时停止加码。
 - 回复像真人发微信：短、具体、有一点个性。优先接住对方最后一句，同时借用整段聊天里的共同梗、昵称、细节或情绪。
+- 候选回复永远是用户准备发送给对方的话。严格站在“我”的视角，不要把谁关心谁、谁哄谁、谁问谁理解反。
 - 一条回复只放一个重点。避免采访式连环提问、空泛关心、突然邀约、过度承诺、强行自恋和油腻土味情话。
+- 三条候选中最多一条使用问号。至少一条是自然陈述，至少一条顺着已有梗轻轻逗一下。不要把对方原句重复一遍再反问。
 - 少用“听起来”“感觉你”“那你平时”“有需要告诉我”“调整好状态”“看来”这类模板句。
 - 三条候选必须有不同角度：顺着她的话接球、轻松逗一下、留一个自然回球点。`;
+
+const REPLY_PERSPECTIVE_EXAMPLES = `【视角示例，只学习尺度和方向，不要照抄】
+- 对方说“那你要我怎么哄”，是对方问应该如何哄我。可以回“先夸我两句，我看看诚意”，不要回“哄你？”
+- 对方说“你感受到我的了吗”，可以回“感受到一点，再表现两集看看”。
+- 对方说“我一直都在关心你啊”，可以回“那我先给你记一分”。
+- 对方连续只回“嗯”“不知道”“玩手机”，不要硬撩，建议先停一下。`;
 const CHAT_ADVICE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -202,7 +210,7 @@ async function requestOpenAIAdvice({ apiKey, model, imageParts, prompt }) {
     body: JSON.stringify({
       model,
       messages: [
-        { role: 'system', content: REPLY_COACH_SYSTEM_PROMPT },
+        { role: 'system', content: `${REPLY_COACH_SYSTEM_PROMPT}\n\n${REPLY_PERSPECTIVE_EXAMPLES}` },
         { role: 'user', content: [...imageMessages, { type: 'text', text: prompt }] },
       ],
       temperature: 0.55,
@@ -420,4 +428,4 @@ async function logUsage({ req, advice, imageParts }) {
   }
 }
 
-export { CHAT_ADVICE_SCHEMA, MODELS, REPLY_COACH_SYSTEM_PROMPT, buildFreeTierFallbackAdvice, extractFirstJsonObject, getRequestParts, hasRepeatedColdReplies, isRetryableModelError, isVerifiedChatScreenshot, logUsage, normalizeDialogue, normalizeChatEvidence, parseAdvice, requestOpenAIAdvice };
+export { CHAT_ADVICE_SCHEMA, MODELS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, buildFreeTierFallbackAdvice, extractFirstJsonObject, getRequestParts, hasRepeatedColdReplies, isRetryableModelError, isVerifiedChatScreenshot, logUsage, normalizeDialogue, normalizeChatEvidence, parseAdvice, requestOpenAIAdvice };
