@@ -265,8 +265,9 @@ test('normalizes emotional disclosure into supportive attitude and guidance', ()
   assert.equal(advice.suggest_stop, false);
   assert.equal(advice.attitude_label, '愿意倾诉');
   assert.equal(advice.conversation_mode, '情绪倾诉');
-  assert.equal(advice.interest_level, '愿意接话');
-  assert.equal(advice.interest_score, 76);
+  assert.equal(advice.interest_level, '愿意倾诉');
+  assert.equal(advice.interest_score, 45);
+  assert.match(advice.attitude_desc, /不能直接换算成好感分数/);
   assert.equal(advice.flirt_level, '先别暧昧');
   assert.match(advice.chat_guide.current_move, /不舒服/);
 });
@@ -282,7 +283,7 @@ test('allows an underfilled disclosure response to enter the repair pass', () =>
     replies: [{ text: '早点休息吧' }],
   })));
 
-  assert.equal(advice.interest_score, 52);
+  assert.equal(advice.interest_score, 12);
   assert.equal(needsReplyRefinement(advice), true);
   assert.equal(repairReplyCandidates(advice).replies.length, 4);
 });
@@ -304,7 +305,7 @@ test('repairs lecturing support replies with natural short messages', () => {
   const repaired = repairReplyCandidates(advice);
 
   assert.equal(needsReplyRefinement(advice), true);
-  assert.deepEqual(repaired.replies[0], { text: '肚子和头一起疼也太难顶了' });
+  assert.deepEqual(repaired.replies[0], { text: '肚子和头一起疼也太难受了' });
   assert.equal(needsReplyRefinement(repaired), false);
 });
 
@@ -324,7 +325,7 @@ test('repairs well-meant but robotic health reminder replies', () => {
   })));
 
   assert.equal(needsReplyRefinement(advice), true);
-  assert.deepEqual(repairReplyCandidates(advice).replies[1], { text: '先躺会儿吧，作业晚点再说' });
+  assert.deepEqual(repairReplyCandidates(advice).replies[1], { text: '先躺一会儿缓缓，作业别硬撑了' });
 });
 
 test('recognizes consecutive personal questions as active curiosity', () => {
@@ -411,23 +412,51 @@ test('infers a stage before building the next conversation route', () => {
   assert.match(buildStageChatGuide('稳定了解').current_move, /互相了解/);
 });
 
-test('normalizes contextual sticker suggestions and falls back by stage', () => {
+test('normalizes sticker suggestions and falls back by stage without phone scenes', () => {
   const stopSuggestions = normalizeStickerSuggestions([{ text: ' 行 你继续 ', mood: 'teasing', scene: 'skeptical' }], '建议停手');
   assert.equal(stopSuggestions.length, 6);
   assert.deepEqual(
     stopSuggestions[0],
-    { text: '行 你继续玩', mood: 'retreat', scene: 'retreat' },
+    { text: '行 你继续玩', mood: 'retreat', scene: 'rest' },
   );
   const contextualSuggestions = normalizeStickerSuggestions([
       { text: ' 有点会聊 ', mood: 'teasing', scene: 'peek' },
-      { text: '真的假的', mood: 'playful', scene: 'shocked' },
-      { text: '我再看看', mood: 'curious', scene: 'phone' },
+      { text: '真的假的', mood: 'playful', scene: 'happy' },
+      { text: '我再看看', mood: 'curious', scene: 'confused' },
     ], '暧昧升温');
   assert.equal(contextualSuggestions.length, 6);
+  assert.equal(new Set(contextualSuggestions.map((suggestion) => suggestion.scene)).size, 6);
+  assert.equal(contextualSuggestions.some((suggestion) => suggestion.scene === 'phone'), false);
   assert.deepEqual(
     contextualSuggestions[0],
     { text: '有点会聊', mood: 'teasing', scene: 'peek' },
   );
+});
+
+test('matches six unique caring stickers to physical discomfort', () => {
+  const dialogue = normalizeDialogue([
+    { side: 'right', text: '先去睡觉吧' },
+    { side: 'left', text: '肚子疼头也疼' },
+    { side: 'left', text: '我也不想 还没写完' },
+  ]);
+  const suggestions = normalizeStickerSuggestions([], '情绪陪伴', dialogue);
+
+  assert.deepEqual(suggestions.map((suggestion) => suggestion.scene), ['comfort', 'rest', 'listen', 'pat', 'cheer', 'study']);
+  assert.equal(suggestions[0].text, '听着就难受');
+});
+
+test('matches study encouragement and happy stickers to chat emotion', () => {
+  const studySuggestions = normalizeStickerSuggestions([], '轻松破冰', normalizeDialogue([
+    { side: 'right', text: '明天考完就好了' },
+    { side: 'left', text: '考试好难 我还没复习完' },
+  ]));
+  const happySuggestions = normalizeStickerSuggestions([], '轻松破冰', normalizeDialogue([
+    { side: 'right', text: '你过啦' },
+    { side: 'left', text: '好耶 我太开心了' },
+  ]));
+
+  assert.deepEqual(studySuggestions[0], { text: '考试加油', mood: 'caring', scene: 'study' });
+  assert.deepEqual(happySuggestions[0], { text: '好耶', mood: 'playful', scene: 'happy' });
 });
 
 test('flags flirt that evades a direct clarification question', () => {
@@ -712,8 +741,8 @@ function adviceValue(overrides = {}) {
     ],
     sticker_suggestions: [
       { text: '有点会聊', mood: 'teasing', scene: 'peek' },
-      { text: '我再观察', mood: 'playful', scene: 'phone' },
-      { text: '行吧 加一分', mood: 'teasing', scene: 'skeptical' },
+      { text: '我再观察', mood: 'playful', scene: 'confused' },
+      { text: '行吧 加一分', mood: 'teasing', scene: 'cheer' },
     ],
     ...overrides,
   };

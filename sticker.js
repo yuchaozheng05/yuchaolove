@@ -21,6 +21,13 @@ const SCENE_PALETTES = {
   sob:       { bg: '#F0F4FF', body: '#F8EDD8', fur: '#7890C0', dark: '#182040', cheek: 'rgba(118,155,218,0.35)', accent: '#5070B0', text: '#101830' },
   shrug:     { bg: '#FFF8F0', body: '#F8EDD8', fur: '#C89870', dark: '#3C2818', cheek: 'rgba(238,168,118,0.40)', accent: '#B88048', text: '#2a1808' },
 };
+Object.assign(SCENE_PALETTES, {
+  comfort: SCENE_PALETTES.caring,
+  rest: SCENE_PALETTES.sleepy,
+  study: SCENE_PALETTES.cheer,
+  listen: SCENE_PALETTES.love,
+  pat: SCENE_PALETTES.blush,
+});
 
 // ─── Shared face helpers ──────────────────────────────────────────────────────
 
@@ -559,13 +566,15 @@ const SCENE_DRAWERS = {
 // Cute hand-drawn meme templates. The canvas characters stay as a graceful
 // fallback if a static asset cannot load.
 const STICKER_TEMPLATES = {
-  phone:     { src: '/assets/stickers/lazy-phone-duck.png', motion: 'float' },
-  skeptical: { src: '/assets/stickers/skeptical-pig.png', motion: 'tilt' },
-  confused:  { src: '/assets/stickers/confused-figure.png', motion: 'shrug' },
-  caring:    { src: '/assets/stickers/caring-cat.png', motion: 'breathe' },
-  shocked:   { src: '/assets/stickers/shocked-duck.png', motion: 'pop' },
-  retreat:   { src: '/assets/stickers/retreat-hamster.png', motion: 'scoot' },
-  peek:      { src: '/assets/stickers/peek-rabbit.png', motion: 'peek' },
+  comfort:  { src: '/assets/stickers/comfort-bunny.png', motion: 'breathe' },
+  rest:     { src: '/assets/stickers/rest-bunny.png', motion: 'breathe' },
+  study:    { src: '/assets/stickers/study-bunny.png', motion: 'tilt' },
+  listen:   { src: '/assets/stickers/listen-hamster.png', motion: 'breathe' },
+  happy:    { src: '/assets/stickers/happy-bunny.png', motion: 'pop' },
+  cheer:    { src: '/assets/stickers/cheer-bunny.png', motion: 'pop' },
+  peek:     { src: '/assets/stickers/peek-bunny-v2.png', motion: 'peek' },
+  confused: { src: '/assets/stickers/confused-bunny.png', motion: 'shrug' },
+  pat:      { src: '/assets/stickers/pat-bunnies.png', motion: 'breathe' },
 };
 
 const stickerTemplateCache = new Map();
@@ -629,8 +638,8 @@ function drawStickerText(ctx, text, size, pal) {
 
 // ─── Animated canvas ──────────────────────────────────────────────────────────
 function makeAnimatedCanvas(scene, text, size) {
-  const pal=SCENE_PALETTES[scene]||SCENE_PALETTES.phone;
-  const drawer=SCENE_DRAWERS[scene]||drawScenePhone;
+  const pal=SCENE_PALETTES[scene]||SCENE_PALETTES.caring;
+  const drawer=SCENE_DRAWERS[scene]||drawSceneCaring;
   const canvas=document.createElement('canvas');
   canvas.width=size; canvas.height=size;
   const ctx=canvas.getContext('2d');
@@ -662,8 +671,8 @@ async function loadGifJs() {
 
 async function exportAsGif(scene, text, size, onProgress) {
   await loadGifJs();
-  const pal=SCENE_PALETTES[scene]||SCENE_PALETTES.phone;
-  const drawer=SCENE_DRAWERS[scene]||drawScenePhone;
+  const pal=SCENE_PALETTES[scene]||SCENE_PALETTES.caring;
+  const drawer=SCENE_DRAWERS[scene]||drawSceneCaring;
   const templateImage=await loadStickerTemplate(scene).catch(()=>null);
   const loopFrames=24, frameDelay=Math.round(1000/12);
   let workerUrl;
@@ -690,35 +699,35 @@ async function exportAsGif(scene, text, size, onProgress) {
   });
 }
 
-// ─── Mood → scene mapping (all 15 scenes) ────────────────────────────────────
+// ─── Mood → scene mapping ─────────────────────────────────────────────────────
 const MOOD_SCENES = {
-  playful:    ['phone', 'happy', 'shocked', 'shrug', 'peek'],
-  teasing:    ['skeptical', 'phone', 'peek', 'shrug', 'blush'],
-  curious:    ['peek', 'confused', 'think', 'phone', 'happy'],
-  caring:     ['caring', 'love', 'peek', 'cheer', 'phone'],
-  speechless: ['confused', 'skeptical', 'shocked', 'shrug', 'sob'],
-  retreat:    ['retreat', 'phone', 'sob', 'skeptical', 'sleepy'],
+  playful:    ['happy', 'peek', 'cheer', 'confused', 'study', 'listen'],
+  teasing:    ['peek', 'happy', 'confused', 'cheer', 'listen', 'pat'],
+  curious:    ['peek', 'confused', 'listen', 'study', 'comfort', 'happy'],
+  caring:     ['comfort', 'rest', 'listen', 'pat', 'cheer', 'study'],
+  speechless: ['confused', 'peek', 'listen', 'rest', 'happy', 'cheer'],
+  retreat:    ['rest', 'peek', 'confused', 'listen', 'comfort', 'pat'],
 };
 
-const VALID_SCENES=new Set(Object.keys(SCENE_DRAWERS));
+const VALID_SCENES=new Set(Object.keys(STICKER_TEMPLATES));
 const STICKER_PANEL_RECOMMENDATION_COUNT=6;
 
 const FALLBACK_SUGGESTIONS = {
-  初次认识: [{text:'哈哈有点意思',mood:'playful',scene:'phone'},{text:'展开说说',mood:'curious',scene:'peek'},{text:'我先听着',mood:'curious',scene:'confused'},{text:'让我想想',mood:'curious',scene:'skeptical'},{text:'收到收到',mood:'playful',scene:'caring'},{text:'真的假的',mood:'playful',scene:'shocked'}],
-  轻松破冰: [{text:'行 你继续',mood:'teasing',scene:'skeptical'},{text:'真的假的',mood:'playful',scene:'shocked'},{text:'我再看看',mood:'curious',scene:'peek'},{text:'有点意思',mood:'playful',scene:'phone'},{text:'让我听听',mood:'curious',scene:'caring'},{text:'什么情况',mood:'speechless',scene:'confused'}],
-  稳定了解: [{text:'原来如此',mood:'curious',scene:'confused'},{text:'继续展开',mood:'curious',scene:'peek'},{text:'记下了',mood:'playful',scene:'phone'},{text:'我有在听',mood:'caring',scene:'caring'},{text:'让我想想',mood:'curious',scene:'skeptical'},{text:'这么回事',mood:'playful',scene:'shocked'}],
-  暧昧升温: [{text:'有点会聊',mood:'teasing',scene:'peek'},{text:'我再观察',mood:'playful',scene:'phone'},{text:'加一分',mood:'teasing',scene:'skeptical'},{text:'被你拿捏了',mood:'playful',scene:'shocked'},{text:'有点可爱',mood:'caring',scene:'caring'},{text:'先别得意',mood:'teasing',scene:'confused'}],
-  情绪陪伴: [{text:'先缓一会儿',mood:'caring',scene:'caring'},{text:'我在听',mood:'caring',scene:'peek'},{text:'今天辛苦了',mood:'caring',scene:'phone'},{text:'嗯嗯 说吧',mood:'caring',scene:'caring'},{text:'给你拍拍',mood:'caring',scene:'retreat'},{text:'慢慢来',mood:'caring',scene:'confused'}],
-  建议停手: [{text:'行 你继续玩',mood:'retreat',scene:'retreat'},{text:'那我先撤了',mood:'retreat',scene:'phone'},{text:'所以我算什么',mood:'speechless',scene:'confused'},{text:'好吧好吧',mood:'retreat',scene:'skeptical'},{text:'我先消失',mood:'retreat',scene:'peek'},{text:'当我没说',mood:'speechless',scene:'shocked'}],
+  初次认识: [{text:'哈哈有点意思',mood:'playful',scene:'happy'},{text:'展开说说',mood:'curious',scene:'peek'},{text:'我先听着',mood:'curious',scene:'listen'},{text:'让我想想',mood:'curious',scene:'confused'},{text:'收到收到',mood:'playful',scene:'cheer'},{text:'继续继续',mood:'playful',scene:'pat'}],
+  轻松破冰: [{text:'行 你继续',mood:'teasing',scene:'happy'},{text:'真的假的',mood:'playful',scene:'confused'},{text:'我再看看',mood:'curious',scene:'peek'},{text:'有点意思',mood:'playful',scene:'cheer'},{text:'让我听听',mood:'caring',scene:'listen'},{text:'什么情况',mood:'speechless',scene:'comfort'}],
+  稳定了解: [{text:'原来如此',mood:'curious',scene:'confused'},{text:'继续展开',mood:'curious',scene:'peek'},{text:'记下了',mood:'playful',scene:'study'},{text:'我有在听',mood:'caring',scene:'listen'},{text:'慢慢说',mood:'caring',scene:'comfort'},{text:'这么回事',mood:'playful',scene:'happy'}],
+  暧昧升温: [{text:'有点会聊',mood:'teasing',scene:'peek'},{text:'我再观察',mood:'playful',scene:'confused'},{text:'加一分',mood:'teasing',scene:'cheer'},{text:'被你拿捏了',mood:'playful',scene:'happy'},{text:'有点可爱',mood:'caring',scene:'pat'},{text:'先别得意',mood:'teasing',scene:'comfort'}],
+  情绪陪伴: [{text:'先缓一会儿',mood:'caring',scene:'rest'},{text:'我在听',mood:'caring',scene:'listen'},{text:'给你抱抱',mood:'caring',scene:'comfort'},{text:'给你拍拍',mood:'caring',scene:'pat'},{text:'慢慢来',mood:'caring',scene:'cheer'},{text:'先别着急',mood:'caring',scene:'peek'}],
+  建议停手: [{text:'行 你继续玩',mood:'retreat',scene:'rest'},{text:'那我先撤了',mood:'retreat',scene:'peek'},{text:'所以我算什么',mood:'speechless',scene:'confused'},{text:'好吧好吧',mood:'retreat',scene:'listen'},{text:'我先消失',mood:'retreat',scene:'comfort'},{text:'当我没说',mood:'speechless',scene:'pat'}],
 };
 
 function getStickerSuggestions(advice) {
   const s=Array.isArray(advice?.sticker_suggestions)
-    ?advice.sticker_suggestions.map((s)=>({text:typeof s?.text==='string'?s.text.trim().slice(0,16):'',mood:MOOD_SCENES[s?.mood]?s.mood:'playful',scene:VALID_SCENES.has(s?.scene)?s.scene:''})).filter(s=>s.text).slice(0,STICKER_PANEL_RECOMMENDATION_COUNT):[];
+    ?advice.sticker_suggestions.map((s)=>({text:typeof s?.text==='string'?s.text.trim().slice(0,16):'',mood:MOOD_SCENES[s?.mood]?s.mood:'playful',scene:VALID_SCENES.has(s?.scene)?s.scene:''})).filter(s=>s.text&&s.scene).slice(0,STICKER_PANEL_RECOMMENDATION_COUNT):[];
   const fallback=FALLBACK_SUGGESTIONS[advice?.conversation_stage]||FALLBACK_SUGGESTIONS['轻松破冰'];
   if(s.length<3) return fallback;
   return [...s,...fallback]
-    .filter((item,index,items)=>items.findIndex((candidate)=>candidate.text===item.text&&candidate.scene===item.scene)===index)
+    .filter((item,index,items)=>items.findIndex((candidate)=>candidate.text===item.text||candidate.scene===item.scene)===index)
     .slice(0,STICKER_PANEL_RECOMMENDATION_COUNT);
 }
 
@@ -760,10 +769,10 @@ function showStickerModal(scene, text) {
   document.getElementById('stickerModalName').textContent=`配字：${text}`;
   document.getElementById('stickerDlPng').onclick=async()=>{
     const c=document.createElement('canvas'); c.width=420; c.height=420;
-    const ctx=c.getContext('2d'), pal=SCENE_PALETTES[scene]||SCENE_PALETTES.phone;
+    const ctx=c.getContext('2d'), pal=SCENE_PALETTES[scene]||SCENE_PALETTES.caring;
     const templateImage=await loadStickerTemplate(scene).catch(()=>null);
     if(templateImage) drawTemplateSticker(ctx,scene,420,0,templateImage);
-    else { drawBg(ctx,420,pal); (SCENE_DRAWERS[scene]||drawScenePhone)(ctx,420,pal,0); }
+    else { drawBg(ctx,420,pal); (SCENE_DRAWERS[scene]||drawSceneCaring)(ctx,420,pal,0); }
     drawStickerText(ctx,text,420,pal);
     c.toBlob((blob)=>{ const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='yuchaolove-sticker.png'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000); },'image/png');
   };

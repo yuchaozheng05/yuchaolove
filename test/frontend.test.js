@@ -32,20 +32,24 @@ test('shows contextual stickers only after a usable chat result', () => {
   assert.match(stickers, /drawTemplateSticker/);
   assert.match(stickers, /STICKER_PANEL_RECOMMENDATION_COUNT=6/);
   assert.match(stickers, /sticker_suggestions/);
-  assert.match(stickers, /assets\/stickers\/lazy-phone-duck\.png/);
+  assert.match(stickers, /assets\/stickers\/comfort-bunny\.png/);
+  assert.match(stickers, /assets\/stickers\/study-bunny\.png/);
+  assert.doesNotMatch(stickers, /assets\/stickers\/lazy-phone-duck\.png/);
   assert.match(html, /每次推荐 6 个/);
   assert.doesNotMatch(app, /selectedStyle|chipGroup/);
 });
 
 test('ships the generated meme sticker templates', () => {
   [
-    'lazy-phone-duck.png',
-    'skeptical-pig.png',
-    'confused-figure.png',
-    'caring-cat.png',
-    'shocked-duck.png',
-    'retreat-hamster.png',
-    'peek-rabbit.png',
+    'comfort-bunny.png',
+    'rest-bunny.png',
+    'study-bunny.png',
+    'listen-hamster.png',
+    'happy-bunny.png',
+    'cheer-bunny.png',
+    'peek-bunny-v2.png',
+    'confused-bunny.png',
+    'pat-bunnies.png',
   ].forEach((file) => assert.equal(existsSync(join(root, 'assets', 'stickers', file)), true));
 });
 

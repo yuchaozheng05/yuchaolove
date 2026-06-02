@@ -6,6 +6,8 @@ const MAX_TOTAL_IMAGE_BASE64_LENGTH = 3_800_000;
 const ALLOWED_FILE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const EMOTIONAL_DISCLOSURE_PATTERN = /困死|好困|太困|困了|很困|累死|好累|太累|累了|很累|疼|痛|难受|不舒服|烦|焦虑|压力|不想上学|不想去|没写完|睡不着|崩溃|想哭|生病|发烧|胃疼|肚子疼|头疼/;
 const PHYSICAL_DISCOMFORT_PATTERN = /疼|痛|难受|不舒服|生病|发烧|胃疼|肚子疼|头疼/;
+const STUDY_STRESS_PATTERN = /考试|考完|考砸|复习|作业|没写完|论文|ddl|期中|期末|测验|quiz|midterm|final/i;
+const HAPPY_EMOTION_PATTERN = /哈哈|开心|好耶|太好了|笑死|嘿嘿|嘻嘻|期待|成功|过了|收到|喜欢|可以呀|行呀|耶/;
 
 let uploadedImages = [];
 
@@ -164,13 +166,13 @@ function parseAdvice(rawText) {
   return {
     attitude_label: isChatScreenshot ? (emotionalDisclosure ? '愿意倾诉' : activeCuriosity ? '主动了解' : cleanText(data.attitude_label, 12) || '态度待判断') : '这不是聊天截图',
     attitude_desc: emotionalDisclosure
-      ? '对方在连续表达自己的疲惫、不舒服或压力，也愿意补充细节。这是在向你倾诉，不是敷衍，但目前更适合先接住情绪，不急着升温。'
+      ? '对方在连续表达自己的疲惫、不舒服或压力，也愿意补充细节。这是在向你倾诉，不是敷衍，但不能直接换算成好感分数。目前更适合先接住情绪，不急着升温。'
       : activeCuriosity
         ? '对方连续主动问你的情况，也会顺着前一个答案继续展开。她至少愿意了解你，先认真回答一个具体点，再看她会不会继续接球。'
         : (isChatScreenshot ? cleanText(data.attitude_desc, 180) : '')
           || (isChatScreenshot ? '请结合对方后续行动继续观察。' : '我还没看到可以分析的聊天内容。'),
-    interest_score: isChatScreenshot ? (emotionalDisclosure ? Math.max(52, clampScore(data.interest_score)) : activeCuriosity ? Math.max(62, clampScore(data.interest_score)) : clampScore(data.interest_score)) : 0,
-    interest_level: isChatScreenshot ? (emotionalDisclosure || activeCuriosity ? '愿意接话' : normalizeInterestLevel(data.interest_level)) : '低意愿',
+    interest_score: isChatScreenshot ? (emotionalDisclosure ? Math.min(45, clampScore(data.interest_score)) : activeCuriosity ? Math.max(62, clampScore(data.interest_score)) : clampScore(data.interest_score)) : 0,
+    interest_level: isChatScreenshot ? (emotionalDisclosure ? '愿意倾诉' : activeCuriosity ? '愿意接话' : normalizeInterestLevel(data.interest_level)) : '低意愿',
     interest_signals: isChatScreenshot ? (emotionalDisclosure ? buildEmotionalDisclosureSignals(verifiedDialogue) : activeCuriosity ? buildActiveCuriositySignals() : normalizeSignals(data.interest_signals)) : [],
     conversation_mode: isChatScreenshot ? (emotionalDisclosure ? '情绪倾诉' : activeCuriosity ? '主动了解' : normalizeConversationMode(data.conversation_mode)) : '礼貌回应',
     conversation_stage: isChatScreenshot ? conversationStage : '初次认识',
@@ -195,7 +197,7 @@ function parseAdvice(rawText) {
           .filter((reply) => reply.text)
           .slice(0, 5)
       : [],
-    sticker_suggestions: isChatScreenshot ? normalizeStickerSuggestions(data.sticker_suggestions, conversationStage) : [],
+    sticker_suggestions: isChatScreenshot ? normalizeStickerSuggestions(data.sticker_suggestions, conversationStage, verifiedDialogue) : [],
   };
 }
 
@@ -237,7 +239,9 @@ function extractFirstJsonObject(rawText) {
 function renderResults(data) {
   document.getElementById('attitudeBadge').textContent = data.attitude_label;
   document.getElementById('attitudeDesc').textContent = data.attitude_desc;
-  document.getElementById('interestLevel').textContent = `${data.interest_level} · ${data.interest_score}`;
+  document.getElementById('interestLevel').textContent = data.interest_level === '愿意倾诉'
+    ? '愿意倾诉 · 暂不判断好感'
+    : `${data.interest_level} · ${data.interest_score}`;
   document.getElementById('conversationMode').textContent = data.conversation_mode;
   document.getElementById('conversationStage').textContent = data.conversation_stage;
   document.getElementById('replyStrategy').textContent = data.reply_strategy || '结合对方后续反应调整节奏';
@@ -404,7 +408,7 @@ function clampScore(value) {
 }
 
 function normalizeInterestLevel(value) {
-  return ['低意愿', '礼貌回应', '愿意接话', '轻微好感', '主动升温'].includes(value) ? value : '愿意接话';
+  return ['低意愿', '礼貌回应', '愿意接话', '愿意倾诉', '轻微好感', '主动升温'].includes(value) ? value : '愿意接话';
 }
 
 function normalizeFlirtLevel(value) {
@@ -535,6 +539,14 @@ function hasPhysicalDiscomfort(dialogue) {
   return dialogue.filter((message) => message.speaker === '对方').slice(-6).some((message) => PHYSICAL_DISCOMFORT_PATTERN.test(message.text));
 }
 
+function hasStudyStress(dialogue) {
+  return dialogue.filter((message) => message.speaker === '对方').slice(-6).some((message) => STUDY_STRESS_PATTERN.test(message.text));
+}
+
+function hasHappyEmotion(dialogue) {
+  return dialogue.filter((message) => message.speaker === '对方').slice(-6).some((message) => HAPPY_EMOTION_PATTERN.test(message.text));
+}
+
 function buildEmotionalDisclosureSignals(dialogue) {
   const opponentMessages = dialogue.filter((message) => message.speaker === '对方').slice(-6);
   const signals = ['连续补充自己的状态', '愿意表达真实情绪'];
@@ -632,24 +644,63 @@ function buildActiveCuriosityGuide() {
 }
 
 const STICKER_MOODS = new Set(['playful', 'teasing', 'curious', 'caring', 'speechless', 'retreat']);
-const STICKER_SCENES = new Set(['phone', 'skeptical', 'confused', 'caring', 'shocked', 'retreat', 'peek']);
+const STICKER_SCENES = new Set(['comfort', 'rest', 'study', 'listen', 'happy', 'cheer', 'peek', 'confused', 'pat']);
 const STICKER_RECOMMENDATION_COUNT = 6;
 
-function normalizeStickerSuggestions(suggestions, stage = '轻松破冰') {
+function buildDefaultStickerSuggestions(stage) {
+  const suggestions = {
+    初次认识: [{ text: '哈哈有点意思', mood: 'playful', scene: 'happy' }, { text: '展开说说', mood: 'curious', scene: 'peek' }, { text: '我先听着', mood: 'curious', scene: 'listen' }, { text: '让我想想', mood: 'curious', scene: 'confused' }, { text: '收到收到', mood: 'playful', scene: 'cheer' }, { text: '继续继续', mood: 'playful', scene: 'pat' }],
+    轻松破冰: [{ text: '行 你继续', mood: 'teasing', scene: 'happy' }, { text: '真的假的', mood: 'playful', scene: 'confused' }, { text: '我再看看', mood: 'curious', scene: 'peek' }, { text: '有点意思', mood: 'playful', scene: 'cheer' }, { text: '让我听听', mood: 'caring', scene: 'listen' }, { text: '什么情况', mood: 'speechless', scene: 'comfort' }],
+    稳定了解: [{ text: '原来如此', mood: 'curious', scene: 'confused' }, { text: '继续展开', mood: 'curious', scene: 'peek' }, { text: '记下了', mood: 'playful', scene: 'study' }, { text: '我有在听', mood: 'caring', scene: 'listen' }, { text: '慢慢说', mood: 'caring', scene: 'comfort' }, { text: '这么回事', mood: 'playful', scene: 'happy' }],
+    暧昧升温: [{ text: '有点会聊', mood: 'teasing', scene: 'peek' }, { text: '我再观察', mood: 'playful', scene: 'confused' }, { text: '行吧 加一分', mood: 'teasing', scene: 'cheer' }, { text: '被你拿捏了', mood: 'playful', scene: 'happy' }, { text: '有点可爱', mood: 'caring', scene: 'pat' }, { text: '先别得意', mood: 'teasing', scene: 'comfort' }],
+    情绪陪伴: [{ text: '先缓一会儿', mood: 'caring', scene: 'rest' }, { text: '我在听', mood: 'caring', scene: 'listen' }, { text: '给你抱抱', mood: 'caring', scene: 'comfort' }, { text: '给你拍拍', mood: 'caring', scene: 'pat' }, { text: '慢慢来', mood: 'caring', scene: 'cheer' }, { text: '先别着急', mood: 'caring', scene: 'peek' }],
+    建议停手: [{ text: '行 你继续玩', mood: 'retreat', scene: 'rest' }, { text: '那我先撤了', mood: 'retreat', scene: 'peek' }, { text: '所以我算什么', mood: 'speechless', scene: 'confused' }, { text: '好吧好吧', mood: 'retreat', scene: 'listen' }, { text: '我先消失', mood: 'retreat', scene: 'comfort' }, { text: '当我没说', mood: 'speechless', scene: 'pat' }],
+  };
+  return suggestions[normalizeConversationStage(stage)];
+}
+
+function buildContextualStickerSuggestions(context, stage = '轻松破冰') {
+  const contextualSuggestions = {
+    physical_discomfort: [{ text: '听着就难受', mood: 'caring', scene: 'comfort' }, { text: '先缓一会儿', mood: 'caring', scene: 'rest' }, { text: '我在这儿', mood: 'caring', scene: 'listen' }, { text: '给你拍拍', mood: 'caring', scene: 'pat' }, { text: '别硬撑啦', mood: 'caring', scene: 'cheer' }, { text: '作业先放放', mood: 'caring', scene: 'study' }],
+    study_stress: [{ text: '考试加油', mood: 'caring', scene: 'study' }, { text: '稳住 能行', mood: 'caring', scene: 'cheer' }, { text: '先别慌', mood: 'caring', scene: 'comfort' }, { text: '累了歇会儿', mood: 'caring', scene: 'rest' }, { text: '我在听', mood: 'caring', scene: 'listen' }, { text: '给你拍拍', mood: 'caring', scene: 'pat' }],
+    happy: [{ text: '好耶', mood: 'playful', scene: 'happy' }, { text: '替你开心', mood: 'playful', scene: 'cheer' }, { text: '可以可以', mood: 'playful', scene: 'pat' }, { text: '有点可爱', mood: 'teasing', scene: 'peek' }, { text: '收到快乐', mood: 'playful', scene: 'listen' }, { text: '继续保持', mood: 'playful', scene: 'study' }],
+    emotional_disclosure: buildDefaultStickerSuggestions('情绪陪伴'),
+  };
+  return contextualSuggestions[context] || buildDefaultStickerSuggestions(stage);
+}
+
+function getStickerContext(dialogue) {
+  if (hasPhysicalDiscomfort(dialogue)) return 'physical_discomfort';
+  if (hasStudyStress(dialogue)) return 'study_stress';
+  if (hasHappyEmotion(dialogue)) return 'happy';
+  if (hasRecentEmotionalDisclosure(dialogue)) return 'emotional_disclosure';
+  return 'generic';
+}
+
+function uniqueStickerSuggestions(suggestions) {
+  const seenScenes = new Set();
+  const seenTexts = new Set();
+  return suggestions.filter((suggestion) => {
+    if (!suggestion.text || !suggestion.scene || seenScenes.has(suggestion.scene) || seenTexts.has(suggestion.text)) return false;
+    seenScenes.add(suggestion.scene);
+    seenTexts.add(suggestion.text);
+    return true;
+  });
+}
+
+function normalizeStickerSuggestions(suggestions, stage = '轻松破冰', dialogue = []) {
+  const context = getStickerContext(dialogue);
+  if (context !== 'generic') return buildContextualStickerSuggestions(context, stage);
   const normalized = Array.isArray(suggestions)
     ? suggestions.map((suggestion) => ({
         text: cleanText(suggestion?.text, 16),
         mood: STICKER_MOODS.has(suggestion?.mood) ? suggestion.mood : 'playful',
         scene: STICKER_SCENES.has(suggestion?.scene) ? suggestion.scene : '',
-      })).filter((suggestion) => suggestion.text).slice(0, STICKER_RECOMMENDATION_COUNT)
+      })).filter((suggestion) => suggestion.text && suggestion.scene).slice(0, STICKER_RECOMMENDATION_COUNT)
     : [];
-  const fallback = {
-    情绪陪伴: [{ text: '先缓一会儿', mood: 'caring', scene: 'caring' }, { text: '我在听', mood: 'caring', scene: 'peek' }, { text: '今天辛苦了', mood: 'caring', scene: 'phone' }, { text: '嗯嗯 说吧', mood: 'caring', scene: 'caring' }, { text: '给你拍拍', mood: 'caring', scene: 'retreat' }, { text: '慢慢来', mood: 'caring', scene: 'confused' }],
-    建议停手: [{ text: '行 你继续玩', mood: 'retreat', scene: 'retreat' }, { text: '那我先撤了', mood: 'retreat', scene: 'phone' }, { text: '所以我算什么', mood: 'speechless', scene: 'confused' }, { text: '好吧好吧', mood: 'retreat', scene: 'skeptical' }, { text: '我先消失', mood: 'retreat', scene: 'peek' }, { text: '当我没说', mood: 'speechless', scene: 'shocked' }],
-  }[stage] || [{ text: '行 你继续', mood: 'teasing', scene: 'skeptical' }, { text: '真的假的', mood: 'playful', scene: 'shocked' }, { text: '我再看看', mood: 'curious', scene: 'peek' }, { text: '有点意思', mood: 'playful', scene: 'phone' }, { text: '让我听听', mood: 'caring', scene: 'caring' }, { text: '什么情况', mood: 'speechless', scene: 'confused' }];
+  const fallback = buildDefaultStickerSuggestions(stage);
   if (normalized.length < 3) return fallback;
-  return [...normalized, ...fallback]
-    .filter((suggestion, index, items) => items.findIndex((item) => item.text === suggestion.text && item.scene === suggestion.scene) === index)
+  return uniqueStickerSuggestions([...normalized, ...fallback])
     .slice(0, STICKER_RECOMMENDATION_COUNT);
 }
 
