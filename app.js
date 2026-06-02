@@ -9,10 +9,11 @@ const TAG_CLASS = {
   '幽默俏皮': 'tag-playful',
   '自然真诚': 'tag-natural',
   '制造好奇': 'tag-curious',
+  '自然暧昧': 'tag-flirty',
 };
 
 let uploadedImages = [];
-let selectedStyle = '温暖体贴';
+let selectedStyle = '自然暧昧';
 
 document.getElementById('fileInput').addEventListener('change', handleFileUpload);
 document.getElementById('chipGroup').addEventListener('click', handleStyleSelection);
@@ -147,17 +148,28 @@ function buildPrompt(imageCount) {
 - 不要把“左侧气泡 = 对方发出”“右侧气泡 = 我发出”或类似的辅助说明当成真实聊天消息。
 
 【任务一：判断态度】
-- 给出 8 字以内的态度标签。
-- 用 100 字以内说明判断依据和下一步节奏。
+- 不要把“有回复”直接等同于“有好感”。先判断对方是在礼貌回应、愿意接话、轻微好感，还是主动升温。
+- 重点观察对方是否主动提问、连续发多条、自然延伸话题、接梗、使用表情包、回看前文、关心我、轻微调侃我。这些才是更有价值的回球信号。
+- 回复间隔只能作为弱信号。不要因为一次晚回就断定冷淡，也不要因为回复快就擅自认定喜欢。
+- 用 interest_score 给出 0 到 100 的互动意愿分数；用 interest_level 选择：低意愿、礼貌回应、愿意接话、轻微好感、主动升温。
+- 用 interest_signals 写出最多 4 个来自截图的具体依据，不要写空泛结论。
+- 给出 8 字以内的态度标签，用 100 字以内说明判断依据和下一步节奏。
+- 用 reply_strategy 写一句明确策略：现在应该轻松接话、顺着梗升温、留一个回球点，还是先停一下。
+- 用 flirt_level 选择当前暧昧上限：先别暧昧、轻松接话、轻微暧昧、自然升温。
 - 用 conversation_summary 简洁复述最近的关键对话，明确标注“对方：”和“我：”，让我可以确认你没有读反左右两边。
 - 如果对方连续敷衍、没有反问、明显不想继续聊，将 suggest_stop 设为 true。
 - 如果截图文字无法可靠读取，将 needs_retry 设为 true，不要猜测，不要编造聊天内容。
 
 【任务二：生成 3 条可直接发送的回复】
 - 回复风格：${selectedStyle}
-- 必须贴合截图中的真实话题和对方反应。
-- 像真人聊天，简洁自然，不油腻，不强行暧昧，不突然邀约。
-- 三条回复角度不同，每条不超过 50 字。
+- 必须接住截图中对方最近的反应，同时参考整段聊天里的共同梗、昵称、细节和情绪。
+- 像真人聊天，通常控制在 8 到 28 个字。口语化、有一点个人感，不写礼貌客服话术。
+- 每条只放一个重点，给对方留一个轻松回球点。不要连续追问，不要一次问两个问题。
+- 三条回复角度不同：一条顺着她的话自然接球，一条轻松逗一下，一条留一个容易回复的小钩子。
+- 如果对方处于“礼貌回应”，不强行暧昧；如果是“愿意接话”，可以轻微暧昧；如果已经“主动升温”，可以自然回球，但不要突然告白。
+- 避免模板句：少用“听起来”“感觉你”“那你平时”“有需要告诉我”“调整好状态”“看来”。
+- 避免油腻句：不要凭空说想她、梦到她、心动、命中注定、只对她例外，也不要突然叫宝宝。
+- 每条回复增加 angle，用 20 字以内说明它为什么容易让对方接住。
 - 如果 suggest_stop 为 true，不要继续采访式追问，也不要硬开新话题。推荐体面收尾、暂停发送或轻松退场。
 - 如果 needs_retry 为 true，replies 返回空数组。
 
@@ -167,6 +179,11 @@ ${context ? `【补充背景】${context}` : ''}
 {
   "attitude_label": "态度标签",
   "attitude_desc": "具体分析和策略建议",
+  "interest_score": 68,
+  "interest_level": "愿意接话",
+  "interest_signals": ["会顺着共同梗继续聊", "主动回问"],
+  "reply_strategy": "顺着她最后一句轻松回球，留一点自然暧昧。",
+  "flirt_level": "轻微暧昧",
   "is_chat_screenshot": true,
   "non_chat_reply": "",
   "chat_evidence": {
@@ -184,9 +201,9 @@ ${context ? `【补充背景】${context}` : ''}
   "suggest_stop": false,
   "needs_retry": false,
   "replies": [
-    {"tag": "${selectedStyle}", "text": "回复内容1"},
-    {"tag": "${selectedStyle}", "text": "回复内容2"},
-    {"tag": "${selectedStyle}", "text": "回复内容3"}
+    {"tag": "${selectedStyle}", "text": "回复内容1", "angle": "接住她的梗"},
+    {"tag": "${selectedStyle}", "text": "回复内容2", "angle": "轻松逗一下"},
+    {"tag": "${selectedStyle}", "text": "回复内容3", "angle": "留一个回球点"}
   ]
 }`;
 }
@@ -202,6 +219,11 @@ function parseAdvice(rawText) {
     attitude_desc:
       (isChatScreenshot ? cleanText(data.attitude_desc, 180) : '')
       || (isChatScreenshot ? '请结合对方后续行动继续观察。' : '我还没看到可以分析的聊天内容。'),
+    interest_score: isChatScreenshot ? clampScore(data.interest_score) : 0,
+    interest_level: isChatScreenshot ? normalizeInterestLevel(data.interest_level) : '低意愿',
+    interest_signals: isChatScreenshot ? normalizeSignals(data.interest_signals) : [],
+    reply_strategy: isChatScreenshot ? cleanText(data.reply_strategy, 100) : '',
+    flirt_level: isChatScreenshot ? normalizeFlirtLevel(data.flirt_level) : '先别暧昧',
     is_chat_screenshot: isChatScreenshot,
     non_chat_reply: cleanText(data.non_chat_reply, 120) || getDefaultNonChatReply(),
     chat_evidence: chatEvidence,
@@ -217,6 +239,7 @@ function parseAdvice(rawText) {
           .map((reply) => ({
             tag: cleanText(reply?.tag, 12) || selectedStyle,
             text: cleanText(reply?.text, 80),
+            angle: cleanText(reply?.angle, 60),
           }))
           .filter((reply) => reply.text)
           .slice(0, 3)
@@ -262,6 +285,19 @@ function extractFirstJsonObject(rawText) {
 function renderResults(data) {
   document.getElementById('attitudeBadge').textContent = data.attitude_label;
   document.getElementById('attitudeDesc').textContent = data.attitude_desc;
+  document.getElementById('interestLevel').textContent = `${data.interest_level} · ${data.interest_score}`;
+  document.getElementById('replyStrategy').textContent = data.reply_strategy || '结合对方后续反应调整节奏';
+  document.getElementById('flirtLevel').textContent = data.flirt_level;
+  const insights = document.getElementById('insightGrid');
+  insights.classList.toggle('show', Boolean(data.is_chat_screenshot && !data.needs_retry));
+  const signals = document.getElementById('interestSignals');
+  signals.replaceChildren();
+  data.interest_signals.forEach((signal) => {
+    const item = document.createElement('span');
+    item.textContent = signal;
+    signals.appendChild(item);
+  });
+  signals.classList.toggle('show', Boolean(data.is_chat_screenshot && data.interest_signals.length));
   const summary = document.getElementById('conversationSummary');
   summary.textContent = data.conversation_summary || '';
   summary.classList.toggle('show', Boolean(data.conversation_summary));
@@ -295,6 +331,11 @@ function renderRetryNotice(message) {
   renderResults({
     attitude_label: '暂时无法分析',
     attitude_desc: message,
+    interest_score: 0,
+    interest_level: '低意愿',
+    interest_signals: [],
+    reply_strategy: '',
+    flirt_level: '先别暧昧',
     is_chat_screenshot: true,
     non_chat_reply: '',
     chat_evidence: {},
@@ -319,11 +360,17 @@ function createReplyCard(reply, index) {
   text.className = 'reply-text';
   text.textContent = reply.text;
 
+  const angle = document.createElement('div');
+  angle.className = 'reply-angle';
+  angle.textContent = reply.angle || '';
+
   const copy = document.createElement('div');
   copy.className = 'reply-copy';
   copy.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2 2v1"/></svg>点击复制';
 
-  card.append(tag, text, copy);
+  card.append(tag, text);
+  if (reply.angle) card.appendChild(angle);
+  card.appendChild(copy);
   card.addEventListener('click', () => copyText(reply.text));
   return card;
 }
@@ -374,6 +421,25 @@ function setSubmitState(disabled, text) {
 function cleanText(value, maxLength) {
   if (typeof value !== 'string') return '';
   return value.replace(/\s+/g, ' ').trim().slice(0, maxLength);
+}
+
+function clampScore(value) {
+  const score = Number(value);
+  if (!Number.isFinite(score)) return 0;
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function normalizeInterestLevel(value) {
+  return ['低意愿', '礼貌回应', '愿意接话', '轻微好感', '主动升温'].includes(value) ? value : '愿意接话';
+}
+
+function normalizeFlirtLevel(value) {
+  return ['先别暧昧', '轻松接话', '轻微暧昧', '自然升温'].includes(value) ? value : '轻松接话';
+}
+
+function normalizeSignals(signals) {
+  if (!Array.isArray(signals)) return [];
+  return signals.map((signal) => cleanText(signal, 28)).filter(Boolean).slice(0, 4);
 }
 
 function getDefaultNonChatReply() {

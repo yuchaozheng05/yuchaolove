@@ -419,6 +419,49 @@ textarea:focus { outline: none; border-color: var(--rose-light); box-shadow: 0 0
 }
 .attitude-desc { font-size: 14px; color: var(--text-mid); line-height: 1.75; font-family: var(--font-body); }
 
+.insight-grid {
+  display: none;
+  grid-template-columns: 0.8fr 1.65fr 0.8fr;
+  gap: 8px;
+  margin-top: 1rem;
+}
+.insight-grid.show { display: grid; }
+.insight-item {
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--cream);
+  border: 1px solid var(--border);
+}
+.insight-item span {
+  display: block;
+  color: var(--text-soft);
+  font-size: 11px;
+  margin-bottom: 3px;
+}
+.insight-item strong {
+  display: block;
+  color: var(--text-mid);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.55;
+}
+.interest-signals {
+  display: none;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 0.75rem;
+}
+.interest-signals.show { display: flex; }
+.interest-signals span {
+  padding: 3px 8px;
+  border-radius: 20px;
+  border: 1px solid rgba(232,146,124,0.26);
+  background: rgba(245,197,181,0.2);
+  color: var(--rose-dark);
+  font-size: 11px;
+}
+
 .result-replies {}
 .replies-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -475,9 +518,11 @@ textarea:focus { outline: none; border-color: var(--rose-light); box-shadow: 0 0
 .tag-playful { background: rgba(240,130,180,0.12); color: #b03070; border: 1px solid rgba(240,130,180,0.3); }
 .tag-natural { background: rgba(140,190,120,0.15); color: #3a7a30; border: 1px solid rgba(140,190,120,0.3); }
 .tag-curious { background: rgba(100,160,240,0.12); color: #2050b0; border: 1px solid rgba(100,160,240,0.3); }
+.tag-flirty { background: rgba(235,120,160,0.12); color: #ad3760; border: 1px solid rgba(235,120,160,0.3); }
 .tag-default { background: var(--blush); color: var(--rose-dark); border: 1px solid rgba(232,146,124,0.3); }
 
 .reply-text { font-size: 15px; color: var(--text); line-height: 1.7; font-family: var(--font-body); margin-bottom: 8px; }
+.reply-angle { font-size: 12px; color: var(--rose-dark); margin: -2px 0 7px; }
 .reply-copy { font-size: 12px; color: var(--text-soft); display: flex; align-items: center; gap: 4px; }
 
 .reanalyze-btn {
@@ -544,4 +589,5 @@ footer {
   .app-section { padding: 4rem 1.5rem 5rem; }
   .hero-title { font-size: 2.2rem; }
   .hero-sub br { display: none; }
+  .insight-grid { grid-template-columns: 1fr; }
 }

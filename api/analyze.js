@@ -2,15 +2,41 @@ const MODELS = ['gpt-4.1-mini'];
 const ALLOWED_MEDIA_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_IMAGE_COUNT = 6;
 const MAX_TOTAL_IMAGE_BASE64_LENGTH = 4_000_000;
+const REPLY_COACH_SYSTEM_PROMPT = `你是中文聊天回复顾问。你的目标不是替用户表白，也不是输出礼貌客服话术，而是根据整段对话判断对方真实意愿，再给出自然、可发送、容易接住的回复。
+
+生成回复时遵守这些规则：
+- 先判断对方是否在主动回球：主动提问、连续发多条、延伸话题、接梗、使用表情包、回看前文、关心用户、轻微调侃，都是积极信号。单纯回复不等于有好感。
+- 回复延迟只能作为弱信号，不要因为晚回一次就下结论。
+- 暧昧必须有依据。对方只是礼貌回应时保持轻松；对方愿意接话时可以轻微暧昧；对方主动回球时可以自然升温；对方连续敷衍时停止加码。
+- 回复像真人发微信：短、具体、有一点个性。优先接住对方最后一句，同时借用整段聊天里的共同梗、昵称、细节或情绪。
+- 一条回复只放一个重点。避免采访式连环提问、空泛关心、突然邀约、过度承诺、强行自恋和油腻土味情话。
+- 少用“听起来”“感觉你”“那你平时”“有需要告诉我”“调整好状态”“看来”这类模板句。
+- 三条候选必须有不同角度：顺着她的话接球、轻松逗一下、留一个自然回球点。`;
 const CHAT_ADVICE_SCHEMA = {
   type: 'object',
+  additionalProperties: false,
   properties: {
     attitude_label: { type: 'string' },
     attitude_desc: { type: 'string' },
+    interest_score: { type: 'integer', minimum: 0, maximum: 100 },
+    interest_level: {
+      type: 'string',
+      enum: ['低意愿', '礼貌回应', '愿意接话', '轻微好感', '主动升温'],
+    },
+    interest_signals: {
+      type: 'array',
+      items: { type: 'string' },
+    },
+    reply_strategy: { type: 'string' },
+    flirt_level: {
+      type: 'string',
+      enum: ['先别暧昧', '轻松接话', '轻微暧昧', '自然升温'],
+    },
     is_chat_screenshot: { type: 'boolean' },
     non_chat_reply: { type: 'string' },
     chat_evidence: {
       type: 'object',
+      additionalProperties: false,
       properties: {
         image_kind: { type: 'string' },
         has_message_bubbles: { type: 'boolean' },
@@ -24,6 +50,7 @@ const CHAT_ADVICE_SCHEMA = {
       type: 'array',
       items: {
         type: 'object',
+        additionalProperties: false,
         properties: {
           side: { type: 'string', enum: ['left', 'right', 'feed'] },
           speaker: { type: 'string' },
@@ -38,17 +65,24 @@ const CHAT_ADVICE_SCHEMA = {
       type: 'array',
       items: {
         type: 'object',
+        additionalProperties: false,
         properties: {
           tag: { type: 'string' },
           text: { type: 'string' },
+          angle: { type: 'string' },
         },
-        required: ['tag', 'text'],
+        required: ['tag', 'text', 'angle'],
       },
     },
   },
   required: [
     'attitude_label',
     'attitude_desc',
+    'interest_score',
+    'interest_level',
+    'interest_signals',
+    'reply_strategy',
+    'flirt_level',
     'is_chat_screenshot',
     'non_chat_reply',
     'chat_evidence',
@@ -167,10 +201,20 @@ async function requestOpenAIAdvice({ apiKey, model, imageParts, prompt }) {
     },
     body: JSON.stringify({
       model,
-      messages: [{ role: 'user', content: [...imageMessages, { type: 'text', text: prompt }] }],
-      temperature: 0.35,
-      max_tokens: 1600,
-      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: REPLY_COACH_SYSTEM_PROMPT },
+        { role: 'user', content: [...imageMessages, { type: 'text', text: prompt }] },
+      ],
+      temperature: 0.55,
+      max_tokens: 2200,
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'chat_advice',
+          strict: true,
+          schema: CHAT_ADVICE_SCHEMA,
+        },
+      },
     }),
   });
 
@@ -195,7 +239,14 @@ async function requestOpenAIAdvice({ apiKey, model, imageParts, prompt }) {
 function parseAdvice(rawText) {
   const value = JSON.parse(extractFirstJsonObject(rawText));
   const replies = Array.isArray(value.replies)
-    ? value.replies.map((reply) => ({ tag: cleanText(reply?.tag, 12), text: cleanText(reply?.text, 80) })).filter((reply) => reply.text).slice(0, 3)
+    ? value.replies
+        .map((reply) => ({
+          tag: cleanText(reply?.tag, 12),
+          text: cleanText(reply?.text, 80),
+          angle: cleanText(reply?.angle, 60),
+        }))
+        .filter((reply) => reply.text)
+        .slice(0, 3)
     : [];
   const needsRetry = Boolean(value.needs_retry);
   const dialogue = normalizeDialogue(value.dialogue);
@@ -212,6 +263,11 @@ function parseAdvice(rawText) {
   return {
     attitude_label: isChatScreenshot ? cleanText(value.attitude_label, 12) || (needsRetry ? '截图不够清晰' : '态度待判断') : '这不是聊天截图',
     attitude_desc: (isChatScreenshot ? cleanText(value.attitude_desc, 180) : '') || (isChatScreenshot ? (needsRetry ? '这张截图暂时无法可靠读取，请换一张更清晰的截图后重试。' : '请结合对方后续行动继续观察。') : '我还没看到可以分析的聊天内容。'),
+    interest_score: isChatScreenshot ? clampScore(value.interest_score) : 0,
+    interest_level: isChatScreenshot ? normalizeInterestLevel(value.interest_level) : '低意愿',
+    interest_signals: isChatScreenshot ? normalizeSignals(value.interest_signals) : [],
+    reply_strategy: isChatScreenshot ? cleanText(value.reply_strategy, 100) : '',
+    flirt_level: isChatScreenshot ? normalizeFlirtLevel(value.flirt_level) : '先别暧昧',
     is_chat_screenshot: isChatScreenshot,
     non_chat_reply: cleanText(value.non_chat_reply, 120) || (!isChatScreenshot ? getDefaultNonChatReply() : ''),
     chat_evidence: chatEvidence,
@@ -240,7 +296,7 @@ function extractFirstJsonObject(rawText) {
 }
 
 function buildFreeTierFallbackAdvice() {
-  return { attitude_label: '服务暂时繁忙', attitude_desc: '当前分析服务暂时不可用。为了避免给你不准确的建议，本次不会猜测截图内容，请稍后点击"重新分析"。', is_chat_screenshot: true, non_chat_reply: '', chat_evidence: {}, conversation_summary: '', dialogue: [], suggest_stop: false, needs_retry: true, degraded: true, replies: [] };
+  return { attitude_label: '服务暂时繁忙', attitude_desc: '当前分析服务暂时不可用。为了避免给你不准确的建议，本次不会猜测截图内容，请稍后点击"重新分析"。', interest_score: 0, interest_level: '低意愿', interest_signals: [], reply_strategy: '', flirt_level: '先别暧昧', is_chat_screenshot: true, non_chat_reply: '', chat_evidence: {}, conversation_summary: '', dialogue: [], suggest_stop: false, needs_retry: true, degraded: true, replies: [] };
 }
 
 function isRetryableModelError(error) {
@@ -252,6 +308,25 @@ function isRetryableModelError(error) {
 function cleanText(value, maxLength) {
   if (typeof value !== 'string') return '';
   return value.replace(/\s+/g, ' ').trim().slice(0, maxLength);
+}
+
+function clampScore(value) {
+  const score = Number(value);
+  if (!Number.isFinite(score)) return 0;
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function normalizeInterestLevel(value) {
+  return ['低意愿', '礼貌回应', '愿意接话', '轻微好感', '主动升温'].includes(value) ? value : '愿意接话';
+}
+
+function normalizeFlirtLevel(value) {
+  return ['先别暧昧', '轻松接话', '轻微暧昧', '自然升温'].includes(value) ? value : '轻松接话';
+}
+
+function normalizeSignals(signals) {
+  if (!Array.isArray(signals)) return [];
+  return signals.map((signal) => cleanText(signal, 28)).filter(Boolean).slice(0, 4);
 }
 
 function getDefaultNonChatReply() {
@@ -345,4 +420,4 @@ async function logUsage({ req, advice, imageParts }) {
   }
 }
 
-export { CHAT_ADVICE_SCHEMA, MODELS, buildFreeTierFallbackAdvice, extractFirstJsonObject, getRequestParts, hasRepeatedColdReplies, isRetryableModelError, isVerifiedChatScreenshot, normalizeDialogue, normalizeChatEvidence, parseAdvice, requestOpenAIAdvice };
+export { CHAT_ADVICE_SCHEMA, MODELS, REPLY_COACH_SYSTEM_PROMPT, buildFreeTierFallbackAdvice, extractFirstJsonObject, getRequestParts, hasRepeatedColdReplies, isRetryableModelError, isVerifiedChatScreenshot, logUsage, normalizeDialogue, normalizeChatEvidence, parseAdvice, requestOpenAIAdvice };

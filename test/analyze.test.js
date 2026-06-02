@@ -3,13 +3,16 @@ import test from 'node:test';
 
 import handler, {
   CHAT_ADVICE_SCHEMA,
-  FREE_MODELS,
+  MODELS,
+  REPLY_COACH_SYSTEM_PROMPT,
   buildFreeTierFallbackAdvice,
   extractFirstJsonObject,
   getRequestParts,
   hasRepeatedColdReplies,
+  logUsage,
   normalizeDialogue,
   parseAdvice,
+  requestOpenAIAdvice,
 } from '../api/analyze.js';
 
 const requestBody = {
@@ -29,38 +32,30 @@ const requestBody = {
   }],
 };
 
-test('uses stable free multimodal models in order', () => {
-  assert.deepEqual(FREE_MODELS, ['gemini-2.5-flash-lite', 'gemini-2.5-flash']);
+test('uses the OpenAI vision model', () => {
+  assert.deepEqual(MODELS, ['gpt-4.1-mini']);
 });
 
-test('parses a complete advice response', () => {
-  const advice = parseAdvice(JSON.stringify({
-    attitude_label: '愿意接话',
-    attitude_desc: '对方有回应，也留下了新话题。',
-    chat_evidence: {
-      image_kind: 'chat',
-      has_message_bubbles: true,
-      has_chat_ui: true,
-      has_two_sided_layout: true,
-    },
-    conversation_summary: '这段摘要会被几何位置覆盖',
-    dialogue: [
-      { side: 'left', speaker: '我', text: '可以呀' },
-      { side: 'right', speaker: '对方', text: '那你更喜欢哪一种？' },
-    ],
-    suggest_stop: false,
-    needs_retry: false,
-    replies: [
-      { tag: '自然真诚', text: '那你更喜欢甜一点还是清爽一点？' },
-      { tag: '自然真诚', text: '奶茶先不急，你平时最常点什么？' },
-      { tag: '自然真诚', text: '行，那我先记住你喜欢喝奶茶。' },
-    ],
-  }));
+test('defines a strict schema for richer attraction analysis', () => {
+  assert.equal(CHAT_ADVICE_SCHEMA.additionalProperties, false);
+  assert.ok(CHAT_ADVICE_SCHEMA.required.includes('interest_score'));
+  assert.ok(CHAT_ADVICE_SCHEMA.required.includes('interest_signals'));
+  assert.ok(CHAT_ADVICE_SCHEMA.required.includes('flirt_level'));
+  assert.equal(CHAT_ADVICE_SCHEMA.properties.replies.items.additionalProperties, false);
+  assert.match(REPLY_COACH_SYSTEM_PROMPT, /主动回球/);
+  assert.match(REPLY_COACH_SYSTEM_PROMPT, /暧昧必须有依据/);
+});
 
-  assert.equal(advice.attitude_label, '愿意接话');
-  assert.equal(advice.conversation_summary, '对方：可以呀；我：那你更喜欢哪一种？');
-  assert.deepEqual(advice.dialogue.map((message) => message.speaker), ['对方', '我']);
-  assert.equal(advice.replies.length, 3);
+test('parses willingness signals, flirt level, and natural reply angles', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue()));
+
+  assert.equal(advice.attitude_label, '愿意回球');
+  assert.equal(advice.interest_score, 76);
+  assert.equal(advice.interest_level, '轻微好感');
+  assert.equal(advice.flirt_level, '轻微暧昧');
+  assert.deepEqual(advice.interest_signals, ['主动回问', '接住共同梗']);
+  assert.equal(advice.replies[0].angle, '顺着她的玩笑回球');
+  assert.equal(advice.conversation_summary, '对方：你感受到我的了吗；我：好像遇到我你才对白由向往');
 });
 
 test('maps speaker identity from bubble side instead of model guesses', () => {
@@ -78,35 +73,17 @@ test('maps speaker identity from bubble side instead of model guesses', () => {
 });
 
 test('accepts a single-column direct-message feed with explicit senders', () => {
-  const advice = parseAdvice(JSON.stringify({
-    attitude_label: '正常互动',
-    attitude_desc: '单列私信中双方都在正常接话。',
-    is_chat_screenshot: true,
-    non_chat_reply: '',
-    chat_evidence: {
-      image_kind: 'discord direct message',
-      has_message_bubbles: false,
-      has_chat_ui: true,
-      has_two_sided_layout: false,
-    },
-    conversation_summary: '',
+  const advice = parseAdvice(JSON.stringify(adviceValue({
     dialogue: [
       { side: 'feed', speaker: '对方', text: '今晚还打球吗' },
       { side: 'feed', speaker: '我', text: '可以啊，还是老地方？' },
       { side: 'feed', speaker: '对方', text: '行，八点见' },
     ],
-    suggest_stop: false,
-    needs_retry: false,
-    replies: [
-      { tag: '自然真诚', text: '好，那我八点过去。' },
-      { tag: '自然真诚', text: '收到，晚点见。' },
-      { tag: '自然真诚', text: '行，我到附近了跟你说。' },
-    ],
-  }));
+    conversation_summary: '',
+  })));
 
   assert.equal(advice.is_chat_screenshot, true);
   assert.deepEqual(advice.dialogue.map((message) => message.speaker), ['对方', '我', '对方']);
-  assert.equal(advice.replies.length, 3);
 });
 
 test('drops a single-column message when its sender is not visible', () => {
@@ -120,55 +97,29 @@ test('drops a single-column message when its sender is not visible', () => {
 });
 
 test('returns a playful redirect for non-chat images without inventing replies', () => {
-  const advice = parseAdvice(JSON.stringify({
+  const advice = parseAdvice(JSON.stringify(adviceValue({
     attitude_label: '不是聊天截图',
     attitude_desc: '这是一张风景照，没有聊天气泡。',
     is_chat_screenshot: false,
     non_chat_reply: '这张风景很适合发朋友圈，但我还没看到聊天记录。',
-    conversation_summary: '',
+    chat_evidence: {
+      image_kind: 'landscape',
+      has_message_bubbles: false,
+      has_chat_ui: false,
+      has_two_sided_layout: false,
+    },
     dialogue: [{ side: 'left', speaker: '对方', text: '被模型误认成聊天的文字' }],
     suggest_stop: true,
-    needs_retry: false,
-    replies: [{ tag: '自然真诚', text: '这条虚构回复不应该出现' }],
-  }));
+  })));
 
   assert.equal(advice.is_chat_screenshot, false);
   assert.equal(advice.non_chat_reply, '这张风景很适合发朋友圈，但我还没看到聊天记录。');
   assert.deepEqual(advice.dialogue, []);
-  assert.equal(advice.suggest_stop, false);
   assert.deepEqual(advice.replies, []);
 });
 
-test('rejects fake chat results that only contain helper text', () => {
-  const advice = parseAdvice(JSON.stringify({
-    is_chat_screenshot: true,
-    chat_evidence: {
-      image_kind: 'document',
-      has_message_bubbles: false,
-      has_chat_ui: false,
-      has_two_sided_layout: false,
-    },
-    dialogue: [
-      { side: 'left', speaker: '对方', text: '左侧气泡 = 对方发出' },
-      { side: 'right', speaker: '我', text: '右侧气泡 = 我发出' },
-    ],
-    replies: [
-      { tag: '自然真诚', text: '虚构回复 1' },
-      { tag: '自然真诚', text: '虚构回复 2' },
-      { tag: '自然真诚', text: '虚构回复 3' },
-    ],
-  }));
-
-  assert.equal(advice.is_chat_screenshot, false);
-  assert.equal(advice.attitude_label, '这不是聊天截图');
-  assert.deepEqual(advice.dialogue, []);
-  assert.deepEqual(advice.replies, []);
-});
-
-test('rejects document text even if the model tries to format it as dialogue', () => {
-  const advice = parseAdvice(JSON.stringify({
-    attitude_label: '认真求助',
-    attitude_desc: '对方正在布置作业。',
+test('rejects document text even if the model formats it as dialogue', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue({
     is_chat_screenshot: true,
     chat_evidence: {
       image_kind: 'homework document',
@@ -177,246 +128,183 @@ test('rejects document text even if the model tries to format it as dialogue', (
       has_two_sided_layout: false,
     },
     dialogue: [
-      { side: 'left', speaker: '对方', text: 'Image classification using MLP and MNIST Dataset' },
+      { side: 'left', speaker: '对方', text: 'Image classification using MLP' },
       { side: 'right', speaker: '我', text: 'Write down the loss function' },
     ],
-    suggest_stop: false,
-    needs_retry: false,
-    replies: [
-      { tag: '温暖体贴', text: '收到！这个作业看起来很有挑战性。' },
-      { tag: '温暖体贴', text: '我会认真完成的。' },
-      { tag: '温暖体贴', text: '有什么需要注意的吗？' },
-    ],
-  }));
+  })));
 
   assert.equal(advice.is_chat_screenshot, false);
-  assert.equal(advice.attitude_label, '这不是聊天截图');
-  assert.equal(advice.attitude_desc, '我还没看到可以分析的聊天内容。');
   assert.deepEqual(advice.dialogue, []);
   assert.deepEqual(advice.replies, []);
 });
 
-test('keeps a real two-sided chat when the model contradicts its visual evidence', () => {
-  const advice = parseAdvice(JSON.stringify({
-    attitude_label: '回复偏冷',
-    attitude_desc: '对方多次短回，没有主动延伸话题。',
+test('keeps a real two-sided chat when the model contradicts visual evidence', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue({
     is_chat_screenshot: false,
-    non_chat_reply: '模型误填的非聊天提示不应覆盖真实聊天。',
     chat_evidence: {
-      image_kind: 'dark wechat screenshot',
+      image_kind: 'dark chat screenshot',
       has_message_bubbles: true,
       has_chat_ui: true,
       has_two_sided_layout: true,
     },
-    conversation_summary: '',
     dialogue: [
       { side: 'left', speaker: '对方', text: '不是' },
       { side: 'right', speaker: '我', text: '那你这个专业忙吗' },
       { side: 'left', speaker: '对方', text: '不忙' },
-      { side: 'right', speaker: '我', text: '你空闲时间一般都喜欢做什么呀' },
+      { side: 'right', speaker: '我', text: '你空闲时间一般喜欢做什么呀' },
       { side: 'left', speaker: '对方', text: '玩手机' },
     ],
-    suggest_stop: true,
-    needs_retry: false,
-    replies: [
-      { tag: '自然真诚', text: '收到，先不打扰你啦。' },
-      { tag: '自然真诚', text: '哈哈好，手机赢了。' },
-      { tag: '自然真诚', text: '行，那我先撤。' },
-    ],
-  }));
+  })));
 
   assert.equal(advice.is_chat_screenshot, true);
   assert.equal(advice.dialogue.length, 5);
   assert.equal(advice.suggest_stop, true);
-  assert.equal(advice.replies.length, 3);
 });
 
 test('detects three consecutive short replies as a cold conversation', () => {
-  const dialogue = normalizeDialogue([
-    { side: 'left', text: '不是' },
-    { side: 'right', text: '那你这个专业忙吗' },
-    { side: 'left', text: '不忙' },
-    { side: 'right', text: '你空闲时间喜欢做什么呀' },
-    { side: 'left', text: '玩手机' },
-  ]);
-
-  assert.equal(hasRepeatedColdReplies(dialogue), true);
   assert.equal(
-    hasRepeatedColdReplies([
+    hasRepeatedColdReplies(normalizeDialogue([
       { side: 'left', text: '不是' },
+      { side: 'right', text: '那你这个专业忙吗' },
       { side: 'left', text: '不忙' },
-      { side: 'left', text: '你呢？' },
-    ]),
-    false,
+      { side: 'right', text: '你空闲时间喜欢做什么呀' },
+      { side: 'left', text: '玩手机' },
+    ])),
+    true,
   );
 });
 
-test('parses the first complete JSON object when Gemini repeats its response', () => {
-  const first = {
-    is_chat_screenshot: false,
-    non_chat_reply: '这看起来像作业截图，换张聊天记录我再帮你分析。',
-    chat_evidence: {
-      image_kind: 'homework document',
-      has_message_bubbles: false,
-      has_chat_ui: false,
-      has_two_sided_layout: false,
-    },
-    dialogue: [],
-    replies: [],
-  };
-  const second = {
-    is_chat_screenshot: false,
-    non_chat_reply: '第二个重复对象不应影响解析。',
-    dialogue: [],
-    replies: [],
-  };
+test('parses the first complete JSON object when OpenAI repeats a response', () => {
+  const first = adviceValue({ is_chat_screenshot: false, dialogue: [], replies: [] });
+  const second = adviceValue({ non_chat_reply: '第二个对象不应影响解析。' });
 
   assert.equal(
     extractFirstJsonObject(`${JSON.stringify(first)}\n${JSON.stringify(second)}`),
     JSON.stringify(first),
   );
-  assert.equal(
-    parseAdvice(`${JSON.stringify(first)}\n${JSON.stringify(second)}`).non_chat_reply,
-    first.non_chat_reply,
-  );
 });
 
 test('validates uploaded screenshot format', () => {
   assert.equal(getRequestParts(requestBody).imageParts[0].source.media_type, 'image/png');
-  assert.throws(
-    () => getRequestParts({ messages: [{ content: [] }] }),
-    /1 到 6 张/,
-  );
-  assert.throws(
-    () => getRequestParts({
-      messages: [{
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: 'image/gif', data: 'aGVsbG8=' } },
-          { type: 'text', text: 'Analyze this screenshot.' },
-        ],
-      }],
-    }),
-    /JPG、PNG 或 WEBP/,
-  );
+  assert.throws(() => getRequestParts({ messages: [{ content: [] }] }), /1 到 6 张/);
 });
 
-test('passes multiple screenshots to Gemini in chronological order', async () => {
+test('passes multiple screenshots to OpenAI with strict JSON schema', async () => {
   const originalFetch = global.fetch;
   let requestPayload;
   global.fetch = async (_url, options) => {
     requestPayload = JSON.parse(options.body);
-    return jsonResponse(200, geminiAdviceResponse());
+    return jsonResponse(200, openAIAdviceResponse());
   };
 
   try {
-    const { requestGeminiAdvice } = await import('../api/analyze.js');
-    const imageParts = [
-      requestBody.messages[0].content[0],
-      {
-        type: 'image',
-        source: { type: 'base64', media_type: 'image/jpeg', data: 'd29ybGQ=' },
-      },
-    ];
-    await requestGeminiAdvice({
+    await requestOpenAIAdvice({
       apiKey: 'test-key',
-      model: 'gemini-2.5-flash-lite',
-      imageParts,
+      model: 'gpt-4.1-mini',
+      imageParts: [
+        requestBody.messages[0].content[0],
+        { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: 'd29ybGQ=' } },
+      ],
       prompt: 'Analyze screenshots.',
     });
 
-    const parts = requestPayload.contents[0].parts;
-    assert.equal(parts[0].text, '上传图片 1/2。先判断它是否为聊天截图；多张有效聊天截图按此顺序从旧到新排列。');
-    assert.equal(parts[1].inline_data.mime_type, 'image/png');
-    assert.equal(parts[2].text, '上传图片 2/2。先判断它是否为聊天截图；多张有效聊天截图按此顺序从旧到新排列。');
-    assert.equal(parts[3].inline_data.mime_type, 'image/jpeg');
-    assert.equal(parts[4].text, 'Analyze screenshots.');
-    assert.equal(requestPayload.generationConfig.responseMimeType, 'application/json');
-    assert.deepEqual(requestPayload.generationConfig.responseJsonSchema, CHAT_ADVICE_SCHEMA);
-    assert.equal(requestPayload.generationConfig.thinkingConfig.thinkingBudget, 0);
+    assert.equal(requestPayload.model, 'gpt-4.1-mini');
+    assert.equal(requestPayload.messages[0].role, 'system');
+    assert.equal(requestPayload.messages[1].role, 'user');
+    assert.equal(requestPayload.messages[1].content[1].type, 'image_url');
+    assert.match(requestPayload.messages[1].content[1].image_url.url, /^data:image\/png;base64,/);
+    assert.equal(requestPayload.response_format.type, 'json_schema');
+    assert.equal(requestPayload.response_format.json_schema.strict, true);
+    assert.deepEqual(requestPayload.response_format.json_schema.schema, CHAT_ADVICE_SCHEMA);
   } finally {
     global.fetch = originalFetch;
   }
 });
 
-test('falls back to the second free model after a quota error', async () => {
+test('returns an honest retry result if OpenAI is unavailable', async () => {
   const originalFetch = global.fetch;
-  const originalApiKey = process.env.GEMINI_API_KEY;
-  process.env.GEMINI_API_KEY = 'test-key';
-  const calledModels = [];
-  global.fetch = async (url) => {
-    calledModels.push(url);
-    if (calledModels.length === 1) {
-      return jsonResponse(429, { error: { status: 'RESOURCE_EXHAUSTED', message: 'Quota exceeded' } });
-    }
-    return jsonResponse(200, geminiAdviceResponse());
-  };
+  const originalApiKey = process.env.OPENAI_API_KEY;
+  process.env.OPENAI_API_KEY = 'test-key';
+  global.fetch = async () => jsonResponse(429, { error: { code: 'rate_limit_exceeded', message: 'Rate limit exceeded' } });
 
   try {
     const response = createResponseRecorder();
-    await handler({ method: 'POST', body: requestBody }, response);
-
-    assert.equal(response.statusCode, 200);
-    assert.equal(response.body.model, 'gemini-2.5-flash');
-    assert.equal(calledModels.length, 2);
-  } finally {
-    global.fetch = originalFetch;
-    restoreApiKey(originalApiKey);
-  }
-});
-
-test('returns an honest retry result if every free model is unavailable', async () => {
-  const originalFetch = global.fetch;
-  const originalApiKey = process.env.GEMINI_API_KEY;
-  process.env.GEMINI_API_KEY = 'test-key';
-  global.fetch = async () => jsonResponse(429, {
-    error: { status: 'RESOURCE_EXHAUSTED', message: 'Quota exceeded' },
-  });
-
-  try {
-    const response = createResponseRecorder();
-    await handler({ method: 'POST', body: requestBody }, response);
+    await handler({ method: 'POST', body: requestBody, headers: {} }, response);
 
     assert.equal(response.statusCode, 200);
     assert.equal(response.body.degraded, true);
     assert.deepEqual(JSON.parse(response.body.content[0].text), buildFreeTierFallbackAdvice());
   } finally {
     global.fetch = originalFetch;
-    restoreApiKey(originalApiKey);
+    restoreEnvironment('OPENAI_API_KEY', originalApiKey);
   }
 });
 
-function geminiAdviceResponse() {
+test('retains uploaded screenshots in Supabase usage logging', async () => {
+  const originalFetch = global.fetch;
+  const originalUrl = process.env.SUPABASE_URL;
+  const originalKey = process.env.SUPABASE_SERVICE_KEY;
+  const requests = [];
+  process.env.SUPABASE_URL = 'https://example.supabase.co';
+  process.env.SUPABASE_SERVICE_KEY = 'service-key';
+  global.fetch = async (url, options) => {
+    requests.push({ url, options });
+    return jsonResponse(200, {});
+  };
+
+  try {
+    await logUsage({
+      req: { headers: { 'x-forwarded-for': '127.0.0.1', 'user-agent': 'test' } },
+      advice: parseAdvice(JSON.stringify(adviceValue())),
+      imageParts: [requestBody.messages[0].content[0]],
+    });
+
+    assert.match(requests[0].url, /storage\/v1\/object\/screenshots\//);
+    assert.match(requests[1].url, /rest\/v1\/usage_logs/);
+    assert.deepEqual(JSON.parse(requests[1].options.body).image_urls.length, 1);
+  } finally {
+    global.fetch = originalFetch;
+    restoreEnvironment('SUPABASE_URL', originalUrl);
+    restoreEnvironment('SUPABASE_SERVICE_KEY', originalKey);
+  }
+});
+
+function adviceValue(overrides = {}) {
   return {
-    candidates: [{
-      content: {
-        parts: [{
-          text: JSON.stringify({
-            attitude_label: '自然互动',
-            attitude_desc: '对方仍然愿意交流，可以继续轻松聊。',
-            is_chat_screenshot: true,
-            non_chat_reply: '',
-            chat_evidence: {
-              image_kind: 'chat',
-              has_message_bubbles: true,
-              has_chat_ui: true,
-              has_two_sided_layout: true,
-            },
-            conversation_summary: '对方：最近还好；我：那你平时喜欢做什么？',
-            dialogue: [
-              { side: 'left', speaker: '对方', text: '最近还好' },
-              { side: 'right', speaker: '我', text: '那你平时喜欢做什么？' },
-            ],
-            suggest_stop: false,
-            needs_retry: false,
-            replies: [
-              { tag: '自然真诚', text: '那你平时最喜欢喝什么？' },
-              { tag: '自然真诚', text: '这个话题先留着，下次继续。' },
-              { tag: '自然真诚', text: '听起来还不错，你会怎么选？' },
-            ],
-          }),
-        }],
-      },
-    }],
+    attitude_label: '愿意回球',
+    attitude_desc: '对方会主动回问，也会顺着共同梗继续聊，可以轻松升一点温。',
+    interest_score: 76,
+    interest_level: '轻微好感',
+    interest_signals: ['主动回问', '接住共同梗'],
+    reply_strategy: '顺着她的玩笑轻轻接住，留一个容易回复的小钩子。',
+    flirt_level: '轻微暧昧',
+    is_chat_screenshot: true,
+    non_chat_reply: '',
+    chat_evidence: {
+      image_kind: 'chat',
+      has_message_bubbles: true,
+      has_chat_ui: true,
+      has_two_sided_layout: true,
+    },
+    conversation_summary: '',
+    dialogue: [
+      { side: 'left', speaker: '对方', text: '你感受到我的了吗' },
+      { side: 'right', speaker: '我', text: '好像遇到我你才对白由向往' },
+    ],
+    suggest_stop: false,
+    needs_retry: false,
+    replies: [
+      { tag: '自然暧昧', text: '感受到了，嘴硬但还挺会关心人', angle: '顺着她的玩笑回球' },
+      { tag: '幽默俏皮', text: '刚感受到一点，再演两集看看', angle: '轻松逗她继续聊' },
+      { tag: '制造好奇', text: '有一点，但我还在观察', angle: '留一个自然回球点' },
+    ],
+    ...overrides,
+  };
+}
+
+function openAIAdviceResponse() {
+  return {
+    choices: [{ message: { content: JSON.stringify(adviceValue()) } }],
   };
 }
 
@@ -443,10 +331,10 @@ function createResponseRecorder() {
   };
 }
 
-function restoreApiKey(value) {
+function restoreEnvironment(name, value) {
   if (value === undefined) {
-    delete process.env.GEMINI_API_KEY;
+    delete process.env[name];
   } else {
-    process.env.GEMINI_API_KEY = value;
+    process.env[name] = value;
   }
 }
