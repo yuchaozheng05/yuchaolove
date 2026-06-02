@@ -4,19 +4,10 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_FILE_COUNT = 6;
 const MAX_TOTAL_IMAGE_BASE64_LENGTH = 3_800_000;
 const ALLOWED_FILE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const TAG_CLASS = {
-  '温暖体贴': 'tag-warm',
-  '幽默俏皮': 'tag-playful',
-  '自然真诚': 'tag-natural',
-  '制造好奇': 'tag-curious',
-  '自然暧昧': 'tag-flirty',
-};
 
 let uploadedImages = [];
-let selectedStyle = '自然暧昧';
 
 document.getElementById('fileInput').addEventListener('change', handleFileUpload);
-document.getElementById('chipGroup').addEventListener('click', handleStyleSelection);
 
 async function handleFileUpload(event) {
   const files = Array.from(event.target.files || []);
@@ -49,15 +40,6 @@ async function handleFileUpload(event) {
     setSubmitState(true, '上传截图后开始分析');
     showToast(error.message || '截图处理失败，请重试');
   }
-}
-
-function handleStyleSelection(event) {
-  const chip = event.target.closest('.chip');
-  if (!chip) return;
-
-  document.querySelectorAll('.chip').forEach((item) => item.classList.remove('active'));
-  chip.classList.add('active');
-  selectedStyle = chip.dataset.style;
 }
 
 function resetUpload() {
@@ -160,18 +142,19 @@ function buildPrompt(imageCount) {
 - 如果对方连续敷衍、没有反问、明显不想继续聊，将 suggest_stop 设为 true。
 - 如果截图文字无法可靠读取，将 needs_retry 设为 true，不要猜测，不要编造聊天内容。
 
-【任务二：生成 3 条可直接发送的回复】
-- 回复风格：${selectedStyle}
+【任务二：生成 3 到 5 条可直接发送的回复】
+- 不要让用户预先选择回复风格。先根据整段聊天判断对方真实态度，再自动决定回复尺度。
 - 必须接住截图中对方最近的反应，同时参考整段聊天里的共同梗、昵称、细节和情绪。
 - 候选回复永远是“我”准备发给“对方”的话。先确认对方最后一句的真实方向，不要把谁关心谁、谁哄谁、谁问谁理解反。
 - 像真人聊天，通常控制在 8 到 28 个字。口语化、有一点个人感，不写礼貌客服话术。
 - 每条只放一个重点，给对方留一个轻松回球点。不要连续追问，不要一次问两个问题。
-- 三条候选中最多一条使用问号。至少一条是自然陈述，至少一条顺着已有梗轻轻逗一下。不要把对方原句重复一遍再反问。
-- 三条回复角度不同：一条顺着她的话自然接球，一条轻松逗一下，一条留一个容易回复的小钩子。
+- 所有候选中最多一条使用问号。至少两条是自然陈述。不要把对方原句重复一遍再反问。
 - 如果对方处于“礼貌回应”，不强行暧昧；如果是“愿意接话”，可以轻微暧昧；如果已经“主动升温”，可以自然回球，但不要突然告白。
+- flirt_level 是暧昧上限，不是必须完成的任务。对方只是在认真提问、澄清或解释时，先正常回答，不要为了暧昧而绕开问题。
+- 如果对方最后一句在问“为什么”“怎么知道”“怎么确定”或类似澄清问题，至少两条候选要真正回应问题。不要全部改成调情、卖关子或反问。
 - 避免模板句：少用“听起来”“感觉你”“那你平时”“有需要告诉我”“调整好状态”“看来”。
 - 避免油腻句：不要凭空说想她、梦到她、心动、命中注定、只对她例外，也不要突然叫宝宝。
-- 每条回复增加 angle，用 20 字以内说明它为什么容易让对方接住。
+- 不要给每条回复套风格标签，也不要额外解释回复。
 - 如果 suggest_stop 为 true，不要继续采访式追问，也不要硬开新话题。推荐体面收尾、暂停发送或轻松退场。
 - 如果 needs_retry 为 true，replies 返回空数组。
 
@@ -203,9 +186,9 @@ ${context ? `【补充背景】${context}` : ''}
   "suggest_stop": false,
   "needs_retry": false,
   "replies": [
-    {"tag": "${selectedStyle}", "text": "回复内容1", "angle": "接住她的梗"},
-    {"tag": "${selectedStyle}", "text": "回复内容2", "angle": "轻松逗一下"},
-    {"tag": "${selectedStyle}", "text": "回复内容3", "angle": "留一个回球点"}
+    {"text": "回复内容1"},
+    {"text": "回复内容2"},
+    {"text": "回复内容3"}
   ]
 }`;
 }
@@ -239,12 +222,10 @@ function parseAdvice(rawText) {
     replies: isChatScreenshot && Array.isArray(data.replies)
       ? data.replies
           .map((reply) => ({
-            tag: cleanText(reply?.tag, 12) || selectedStyle,
             text: cleanText(reply?.text, 80),
-            angle: cleanText(reply?.angle, 60),
           }))
           .filter((reply) => reply.text)
-          .slice(0, 3)
+          .slice(0, 5)
       : [],
   };
 }
@@ -354,24 +335,15 @@ function createReplyCard(reply, index) {
   card.className = 'reply-card';
   card.style.animationDelay = `${index * 0.08}s`;
 
-  const tag = document.createElement('span');
-  tag.className = `reply-tag ${TAG_CLASS[reply.tag] || 'tag-default'}`;
-  tag.textContent = reply.tag;
-
   const text = document.createElement('div');
   text.className = 'reply-text';
   text.textContent = reply.text;
-
-  const angle = document.createElement('div');
-  angle.className = 'reply-angle';
-  angle.textContent = reply.angle || '';
 
   const copy = document.createElement('div');
   copy.className = 'reply-copy';
   copy.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2 2v1"/></svg>点击复制';
 
-  card.append(tag, text);
-  if (reply.angle) card.appendChild(angle);
+  card.appendChild(text);
   card.appendChild(copy);
   card.addEventListener('click', () => copyText(reply.text));
   return card;

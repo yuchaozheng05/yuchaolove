@@ -345,20 +345,6 @@ textarea {
 textarea::placeholder { color: var(--text-soft); }
 textarea:focus { outline: none; border-color: var(--rose-light); box-shadow: 0 0 0 3px rgba(232,146,124,0.1); }
 
-.chip-group { display: flex; gap: 8px; flex-wrap: wrap; }
-.chip {
-  font-size: 13px; padding: 7px 16px; border-radius: 50px;
-  border: 1px solid var(--border-mid);
-  background: #fff; cursor: pointer; color: var(--text-mid);
-  font-family: var(--font-ui);
-  transition: all 0.18s; user-select: none;
-}
-.chip:hover { border-color: var(--rose-light); color: var(--rose); }
-.chip.active {
-  background: var(--blush); border-color: var(--rose-light);
-  color: var(--rose-dark); font-weight: 500;
-}
-
 /* Submit */
 .submit-btn {
   width: 100%; margin-top: 1.5rem;
@@ -514,15 +500,7 @@ textarea:focus { outline: none; border-color: var(--rose-light); box-shadow: 0 0
   padding: 3px 10px; border-radius: 50px; margin-bottom: 8px;
   letter-spacing: 0.05em;
 }
-.tag-warm { background: rgba(255,180,120,0.15); color: #c47820; border: 1px solid rgba(255,180,120,0.3); }
-.tag-playful { background: rgba(240,130,180,0.12); color: #b03070; border: 1px solid rgba(240,130,180,0.3); }
-.tag-natural { background: rgba(140,190,120,0.15); color: #3a7a30; border: 1px solid rgba(140,190,120,0.3); }
-.tag-curious { background: rgba(100,160,240,0.12); color: #2050b0; border: 1px solid rgba(100,160,240,0.3); }
-.tag-flirty { background: rgba(235,120,160,0.12); color: #ad3760; border: 1px solid rgba(235,120,160,0.3); }
-.tag-default { background: var(--blush); color: var(--rose-dark); border: 1px solid rgba(232,146,124,0.3); }
-
 .reply-text { font-size: 15px; color: var(--text); line-height: 1.7; font-family: var(--font-body); margin-bottom: 8px; }
-.reply-angle { font-size: 12px; color: var(--rose-dark); margin: -2px 0 7px; }
 .reply-copy { font-size: 12px; color: var(--text-soft); display: flex; align-items: center; gap: 4px; }
 
 .reanalyze-btn {

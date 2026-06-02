@@ -45,13 +45,15 @@ test('defines a strict schema for richer attraction analysis', () => {
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('interest_signals'));
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('flirt_level'));
   assert.equal(CHAT_ADVICE_SCHEMA.properties.replies.items.additionalProperties, false);
+  assert.deepEqual(Object.keys(CHAT_ADVICE_SCHEMA.properties.replies.items.properties), ['text']);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /主动回球/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /暧昧必须有依据/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /永远是用户准备发送给对方的话/);
+  assert.match(REPLY_COACH_SYSTEM_PROMPT, /暧昧上限，不是必须完成的任务/);
   assert.match(REPLY_PERSPECTIVE_EXAMPLES, /先夸我两句/);
 });
 
-test('parses willingness signals, flirt level, and natural reply angles', () => {
+test('parses willingness signals, flirt level, and clean untagged replies', () => {
   const advice = parseAdvice(JSON.stringify(adviceValue()));
 
   assert.equal(advice.attitude_label, '愿意回球');
@@ -59,7 +61,7 @@ test('parses willingness signals, flirt level, and natural reply angles', () => 
   assert.equal(advice.interest_level, '轻微好感');
   assert.equal(advice.flirt_level, '轻微暧昧');
   assert.deepEqual(advice.interest_signals, ['主动回问', '接住共同梗']);
-  assert.equal(advice.replies[0].angle, '顺着她的玩笑回球');
+  assert.deepEqual(advice.replies[0], { text: '感受到了，嘴硬但还挺会关心人' });
   assert.equal(advice.conversation_summary, '对方：你感受到我的了吗；我：好像遇到我你才对白由向往');
 });
 
@@ -186,9 +188,9 @@ test('flags robotic or perspective-reversed reply candidates for refinement', ()
       { side: 'left', speaker: '对方', text: '那你要我怎么哄' },
     ],
     replies: [
-      { tag: '自然暧昧', text: '哄你？先说说你想怎么被哄', angle: '视角错位' },
-      { tag: '自然暧昧', text: '你觉得怎么才算哄到我？', angle: '问号过多' },
-      { tag: '自然暧昧', text: '先夸我两句，我看看诚意', angle: '自然陈述' },
+      { text: '哄你？先说说你想怎么被哄' },
+      { text: '你觉得怎么才算哄到我？' },
+      { text: '先夸我两句，我看看诚意' },
     ],
   })));
 
@@ -198,6 +200,38 @@ test('flags robotic or perspective-reversed reply candidates for refinement', ()
 
 test('keeps a short, varied, correctly oriented reply set', () => {
   assert.equal(needsReplyRefinement(parseAdvice(JSON.stringify(adviceValue()))), false);
+});
+
+test('flags flirt that evades a direct clarification question', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue({
+    dialogue: [
+      { side: 'right', speaker: '我', text: '看得出来' },
+      { side: 'left', speaker: '对方', text: '你不是说我很难懂吗，那你怎么就确定了呢' },
+    ],
+    replies: [
+      { text: '那就让我多观察观察你这个难懂的秘密吧' },
+      { text: '看来你还挺会吊人胃口的嘛' },
+      { text: '那你说说，我哪里猜错了？' },
+    ],
+  })));
+
+  assert.equal(needsReplyRefinement(advice), true);
+  assert.match(buildReplyRefinementPrompt('Analyze.', advice), /至少两条直接回应问题/);
+});
+
+test('keeps up to five clean reply candidates', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue({
+    replies: [
+      { text: '回复一' },
+      { text: '回复二' },
+      { text: '回复三' },
+      { text: '回复四' },
+      { text: '回复五' },
+      { text: '回复六' },
+    ],
+  })));
+
+  assert.deepEqual(advice.replies.map((reply) => reply.text), ['回复一', '回复二', '回复三', '回复四', '回复五']);
 });
 
 test('parses the first complete JSON object when OpenAI repeats a response', () => {
@@ -280,9 +314,9 @@ test('asks OpenAI for one refinement pass when initial replies feel robotic', as
           { side: 'left', speaker: '对方', text: '那你要我怎么哄' },
         ],
         replies: [
-          { tag: '自然暧昧', text: '哄你？你觉得怎样才算哄好？', angle: '视角错位' },
-          { tag: '自然暧昧', text: '那你平时喜欢怎么被哄？', angle: '模板追问' },
-          { tag: '自然暧昧', text: '听起来你挺会哄人', angle: '模板语言' },
+          { text: '哄你？你觉得怎样才算哄好？' },
+          { text: '那你平时喜欢怎么被哄？' },
+          { text: '听起来你挺会哄人' },
         ],
       })));
     }
@@ -356,9 +390,9 @@ function adviceValue(overrides = {}) {
     suggest_stop: false,
     needs_retry: false,
     replies: [
-      { tag: '自然暧昧', text: '感受到了，嘴硬但还挺会关心人', angle: '顺着她的玩笑回球' },
-      { tag: '幽默俏皮', text: '刚感受到一点，再演两集看看', angle: '轻松逗她继续聊' },
-      { tag: '制造好奇', text: '有一点，但我还在观察', angle: '留一个自然回球点' },
+      { text: '感受到了，嘴硬但还挺会关心人' },
+      { text: '刚感受到一点，再演两集看看' },
+      { text: '有一点，但我还在观察' },
     ],
     ...overrides,
   };

@@ -11,14 +11,17 @@ const REPLY_COACH_SYSTEM_PROMPT = `你是中文聊天回复顾问。你的目标
 - 回复像真人发微信：短、具体、有一点个性。优先接住对方最后一句，同时借用整段聊天里的共同梗、昵称、细节或情绪。
 - 候选回复永远是用户准备发送给对方的话。严格站在“我”的视角，不要把谁关心谁、谁哄谁、谁问谁理解反。
 - 一条回复只放一个重点。避免采访式连环提问、空泛关心、突然邀约、过度承诺、强行自恋和油腻土味情话。
-- 三条候选中最多一条使用问号。至少一条是自然陈述，至少一条顺着已有梗轻轻逗一下。不要把对方原句重复一遍再反问。
+- 生成 3 到 5 条候选，最多一条使用问号。至少两条是可以直接发送的自然陈述。不要把对方原句重复一遍再反问。
+- flirt_level 是暧昧上限，不是必须完成的任务。对方只是认真提问、澄清或解释时，先正常回答，不要为了暧昧而绕开问题。
+- 如果对方最后一句在问“为什么”“怎么知道”“怎么确定”或类似澄清问题，至少两条候选要真正回应问题，不要全部改成调情、卖关子或反问。
 - 少用“听起来”“感觉你”“那你平时”“有需要告诉我”“调整好状态”“看来”这类模板句。
-- 三条候选必须有不同角度：顺着她的话接球、轻松逗一下、留一个自然回球点。`;
+- 候选要自然、有变化，但不要给每条回复套风格标签。`;
 
 const REPLY_PERSPECTIVE_EXAMPLES = `【视角示例，只学习尺度和方向，不要照抄】
 - 对方说“那你要我怎么哄”，是对方问应该如何哄我。可以回“先夸我两句，我看看诚意”，不要回“哄你？”
 - 对方说“你感受到我的了吗”，可以回“感受到一点，再表现两集看看”。
 - 对方说“我一直都在关心你啊”，可以回“那我先给你记一分”。
+- 对方说“你不是说我很难懂吗，那你怎么就确定了呢”，是在追问判断依据。可以回“我瞎猜的，撤回刚刚那句”或“那我判断错了，你还是愿意理我的”。不要回“让我观察你这个难懂的秘密”。
 - 对方连续只回“嗯”“不知道”“玩手机”，不要硬撩，建议先停一下。`;
 const CHAT_ADVICE_SCHEMA = {
   type: 'object',
@@ -75,11 +78,9 @@ const CHAT_ADVICE_SCHEMA = {
         type: 'object',
         additionalProperties: false,
         properties: {
-          tag: { type: 'string' },
           text: { type: 'string' },
-          angle: { type: 'string' },
         },
-        required: ['tag', 'text', 'angle'],
+        required: ['text'],
       },
     },
   },
@@ -264,12 +265,10 @@ function parseAdvice(rawText) {
   const replies = Array.isArray(value.replies)
     ? value.replies
         .map((reply) => ({
-          tag: cleanText(reply?.tag, 12),
           text: cleanText(reply?.text, 80),
-          angle: cleanText(reply?.angle, 60),
         }))
         .filter((reply) => reply.text)
-        .slice(0, 3)
+        .slice(0, 5)
     : [];
   const needsRetry = Boolean(value.needs_retry);
   const dialogue = normalizeDialogue(value.dialogue);
@@ -393,8 +392,13 @@ function needsReplyRefinement(advice) {
   ));
   const hasReversedComfortPerspective = /哄/.test(latestOpponentText)
     && replies.some((reply) => /^哄你[?？：:]?/.test(reply.text));
+  const asksForExplanation = /为什么|怎么(?:知道|确定|就确定|看出来)|如何|凭什么|哪里猜错|你不是.{0,12}吗/.test(latestOpponentText);
+  const evasiveReplyCount = replies.filter((reply) => (
+    /观察|秘密|吊人胃口|慢慢了解|慢慢发现|你说说|哪里猜错|猜猜|以后再告诉你/.test(reply.text)
+  )).length;
+  const evadesDirectQuestion = asksForExplanation && evasiveReplyCount >= 2;
 
-  return questionCount > 1 || hasTemplateLanguage || hasReversedComfortPerspective;
+  return questionCount > 1 || hasTemplateLanguage || hasReversedComfortPerspective || evadesDirectQuestion;
 }
 
 function buildReplyRefinementPrompt(originalPrompt, advice) {
@@ -410,7 +414,8 @@ function buildReplyRefinementPrompt(originalPrompt, advice) {
 - 候选必须是“我”准备发送给“对方”的话。
 - 对方最后一句是：“${latestOpponentText}”
 - 严格确认谁在哄谁、谁在关心谁。不要出现“哄你？”这种把方向说反的话。
-- 三条候选最多一条带问号；至少两条是可以直接发送的短陈述句。
+- 输出 3 到 5 条候选，最多一条带问号；至少两条是可以直接发送的短陈述句。
+- 如果对方最后是在认真追问原因或澄清，至少两条直接回应问题。暧昧尺度是上限，不是任务；不要用调情、卖关子或反问躲开问题。
 - 每条尽量控制在 8 到 24 个字，不要重复对方原句，不要像客服，不要解释策略。`;
 }
 
