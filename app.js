@@ -8,6 +8,10 @@ const EMOTIONAL_DISCLOSURE_PATTERN = /困死|好困|太困|困了|很困|累死|
 const PHYSICAL_DISCOMFORT_PATTERN = /疼|痛|难受|不舒服|生病|发烧|胃疼|肚子疼|头疼/;
 const STUDY_STRESS_PATTERN = /考试|考完|考砸|复习|作业|没写完|论文|ddl|期中|期末|测验|quiz|midterm|final/i;
 const HAPPY_EMOTION_PATTERN = /哈哈|开心|好耶|太好了|笑死|嘿嘿|嘻嘻|期待|成功|过了|收到|喜欢|可以呀|行呀|耶/;
+const LATE_NIGHT_MISS_PATTERN = /睡了吗|睡了|睡醒|刚醒|醒了|晚安|熬夜|想你|等你|梦里|白睡|困但想聊|在等/;
+const PLAYFUL_FLIRT_PATTERN = /想你|喜欢你|喜欢我|心动|见面|想我|等我|香味|新人|新包|嘴硬|亲亲|钓|上钩|暧昧|犯规|靠近|只想你|在等我|自由向往/;
+const QUESTION_TEASE_PATTERN = /你在干嘛|干嘛|为啥|为什么|真的假的|质疑|怀疑|可疑|你问|问你|说了啥|听不懂|看出来|猜/;
+const NEW_FRIEND_PATTERN = /好友|friend request|let'?s chat|hi|hello|你好|名字|英文名|备注|摩西|小巧思|认识一下/i;
 
 let uploadedImages = [];
 
@@ -148,6 +152,7 @@ function buildPrompt(imageCount) {
   const context = document.getElementById('contextInput').value.trim();
   return `请分析上传的 ${imageCount} 张图片。截图已经按聊天时间从早到晚排列。
 按系统规则识别有效聊天截图、还原 dialogue、判断态度，并生成自然可发送的回复。
+回复可以是一行，也可以用换行分成 2 到 3 条短气泡。
 表情包只给 3 个最贴合当前聊天的创意，页面会自动补足到 6 个。
 ${context ? `补充背景：${context}` : ''}
 只返回符合 schema 的 JSON。`;
@@ -191,8 +196,8 @@ function parseAdvice(rawText) {
     degraded: Boolean(data.degraded),
     replies: isChatScreenshot && Array.isArray(data.replies)
       ? data.replies
-          .map((reply) => ({
-            text: cleanText(reply?.text, 100),
+        .map((reply) => ({
+            text: cleanReplyText(reply?.text, 140),
           }))
           .filter((reply) => reply.text)
           .slice(0, 5)
@@ -401,6 +406,19 @@ function cleanText(value, maxLength) {
   return value.replace(/\s+/g, ' ').trim().slice(0, maxLength);
 }
 
+function cleanReplyText(value, maxLength = 140) {
+  if (typeof value !== 'string') return '';
+  return value
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map((line) => line.replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .slice(0, 3)
+    .join('\n')
+    .slice(0, maxLength)
+    .trim();
+}
+
 function clampScore(value) {
   const score = Number(value);
   if (!Number.isFinite(score)) return 0;
@@ -547,6 +565,26 @@ function hasHappyEmotion(dialogue) {
   return dialogue.filter((message) => message.speaker === '对方').slice(-6).some((message) => HAPPY_EMOTION_PATTERN.test(message.text));
 }
 
+function recentDialogueText(dialogue, count = 8) {
+  return (dialogue || []).slice(-count).map((message) => message.text).join(' ');
+}
+
+function hasLateNightMiss(dialogue) {
+  return LATE_NIGHT_MISS_PATTERN.test(recentDialogueText(dialogue));
+}
+
+function hasPlayfulFlirt(dialogue) {
+  return PLAYFUL_FLIRT_PATTERN.test(recentDialogueText(dialogue));
+}
+
+function hasQuestionTease(dialogue) {
+  return QUESTION_TEASE_PATTERN.test(recentDialogueText(dialogue));
+}
+
+function hasNewFriendOpening(dialogue) {
+  return NEW_FRIEND_PATTERN.test(recentDialogueText(dialogue, 10));
+}
+
 function buildEmotionalDisclosureSignals(dialogue) {
   const opponentMessages = dialogue.filter((message) => message.speaker === '对方').slice(-6);
   const signals = ['连续补充自己的状态', '愿意表达真实情绪'];
@@ -644,26 +682,30 @@ function buildActiveCuriosityGuide() {
 }
 
 const STICKER_MOODS = new Set(['playful', 'teasing', 'curious', 'caring', 'speechless', 'retreat']);
-const STICKER_SCENES = new Set(['comfort', 'rest', 'study', 'listen', 'happy', 'cheer', 'peek', 'confused', 'pat']);
+const STICKER_SCENES = new Set(['comfort', 'rest', 'study', 'listen', 'happy', 'cheer', 'peek', 'confused', 'pat', 'miss', 'doubt', 'hello', 'night', 'love', 'think', 'sleepy', 'sob']);
 const STICKER_RECOMMENDATION_COUNT = 6;
 
 function buildDefaultStickerSuggestions(stage) {
   const suggestions = {
-    初次认识: [{ text: '哈哈有点意思', mood: 'playful', scene: 'happy' }, { text: '展开说说', mood: 'curious', scene: 'peek' }, { text: '我先听着', mood: 'curious', scene: 'listen' }, { text: '让我想想', mood: 'curious', scene: 'confused' }, { text: '收到收到', mood: 'playful', scene: 'cheer' }, { text: '继续继续', mood: 'playful', scene: 'pat' }],
-    轻松破冰: [{ text: '行 你继续', mood: 'teasing', scene: 'happy' }, { text: '真的假的', mood: 'playful', scene: 'confused' }, { text: '我再看看', mood: 'curious', scene: 'peek' }, { text: '有点意思', mood: 'playful', scene: 'cheer' }, { text: '让我听听', mood: 'caring', scene: 'listen' }, { text: '什么情况', mood: 'speechless', scene: 'comfort' }],
-    稳定了解: [{ text: '原来如此', mood: 'curious', scene: 'confused' }, { text: '继续展开', mood: 'curious', scene: 'peek' }, { text: '记下了', mood: 'playful', scene: 'study' }, { text: '我有在听', mood: 'caring', scene: 'listen' }, { text: '慢慢说', mood: 'caring', scene: 'comfort' }, { text: '这么回事', mood: 'playful', scene: 'happy' }],
-    暧昧升温: [{ text: '有点会聊', mood: 'teasing', scene: 'peek' }, { text: '我再观察', mood: 'playful', scene: 'confused' }, { text: '行吧 加一分', mood: 'teasing', scene: 'cheer' }, { text: '被你拿捏了', mood: 'playful', scene: 'happy' }, { text: '有点可爱', mood: 'caring', scene: 'pat' }, { text: '先别得意', mood: 'teasing', scene: 'comfort' }],
-    情绪陪伴: [{ text: '先缓一会儿', mood: 'caring', scene: 'rest' }, { text: '我在听', mood: 'caring', scene: 'listen' }, { text: '给你抱抱', mood: 'caring', scene: 'comfort' }, { text: '给你拍拍', mood: 'caring', scene: 'pat' }, { text: '慢慢来', mood: 'caring', scene: 'cheer' }, { text: '先别着急', mood: 'caring', scene: 'peek' }],
-    建议停手: [{ text: '行 你继续玩', mood: 'retreat', scene: 'rest' }, { text: '那我先撤了', mood: 'retreat', scene: 'peek' }, { text: '所以我算什么', mood: 'speechless', scene: 'confused' }, { text: '好吧好吧', mood: 'retreat', scene: 'listen' }, { text: '我先消失', mood: 'retreat', scene: 'comfort' }, { text: '当我没说', mood: 'speechless', scene: 'pat' }],
+    初次认识: [{ text: 'Hi', mood: 'playful', scene: 'hello' }, { text: '你好呀', mood: 'playful', scene: 'happy' }, { text: '小巧思', mood: 'curious', scene: 'think' }, { text: '展开说说', mood: 'curious', scene: 'peek' }, { text: '我听着呢', mood: 'caring', scene: 'listen' }, { text: '有点可爱', mood: 'teasing', scene: 'miss' }],
+    轻松破冰: [{ text: '说了啥', mood: 'curious', scene: 'hello' }, { text: '真的假的', mood: 'playful', scene: 'doubt' }, { text: '有点意思', mood: 'playful', scene: 'cheer' }, { text: '我听听', mood: 'caring', scene: 'listen' }, { text: '再聊一会', mood: 'teasing', scene: 'miss' }, { text: '让我想想', mood: 'curious', scene: 'think' }],
+    稳定了解: [{ text: '好巧', mood: 'playful', scene: 'hello' }, { text: '记下了', mood: 'playful', scene: 'study' }, { text: '一家人', mood: 'teasing', scene: 'miss' }, { text: '继续展开', mood: 'curious', scene: 'peek' }, { text: '我有在听', mood: 'caring', scene: 'listen' }, { text: '学到了', mood: 'curious', scene: 'think' }],
+    暧昧升温: [{ text: '你在质疑我', mood: 'teasing', scene: 'doubt' }, { text: '有点犯规', mood: 'teasing', scene: 'miss' }, { text: '我只想你', mood: 'teasing', scene: 'love' }, { text: '嘴硬啦', mood: 'playful', scene: 'peek' }, { text: '再聊一会', mood: 'playful', scene: 'hello' }, { text: '优雅离场', mood: 'retreat', scene: 'happy' }],
+    情绪陪伴: [{ text: '先缓一会儿', mood: 'caring', scene: 'rest' }, { text: '我在听', mood: 'caring', scene: 'listen' }, { text: '给你抱抱', mood: 'caring', scene: 'comfort' }, { text: '给你拍拍', mood: 'caring', scene: 'pat' }, { text: '很辛苦呀', mood: 'caring', scene: 'sob' }, { text: '慢慢来', mood: 'caring', scene: 'cheer' }],
+    建议停手: [{ text: '我先撤啦', mood: 'retreat', scene: 'rest' }, { text: '当我没说', mood: 'speechless', scene: 'doubt' }, { text: '优雅离场', mood: 'retreat', scene: 'peek' }, { text: '好吧好吧', mood: 'retreat', scene: 'listen' }, { text: '先消失', mood: 'retreat', scene: 'sob' }, { text: '不打扰啦', mood: 'retreat', scene: 'comfort' }],
   };
   return suggestions[normalizeConversationStage(stage)];
 }
 
 function buildContextualStickerSuggestions(context, stage = '轻松破冰') {
   const contextualSuggestions = {
-    physical_discomfort: [{ text: '听着就难受', mood: 'caring', scene: 'comfort' }, { text: '先缓一会儿', mood: 'caring', scene: 'rest' }, { text: '我在这儿', mood: 'caring', scene: 'listen' }, { text: '给你拍拍', mood: 'caring', scene: 'pat' }, { text: '别硬撑啦', mood: 'caring', scene: 'cheer' }, { text: '作业先放放', mood: 'caring', scene: 'study' }],
-    study_stress: [{ text: '考试加油', mood: 'caring', scene: 'study' }, { text: '稳住 能行', mood: 'caring', scene: 'cheer' }, { text: '先别慌', mood: 'caring', scene: 'comfort' }, { text: '累了歇会儿', mood: 'caring', scene: 'rest' }, { text: '我在听', mood: 'caring', scene: 'listen' }, { text: '给你拍拍', mood: 'caring', scene: 'pat' }],
-    happy: [{ text: '好耶', mood: 'playful', scene: 'happy' }, { text: '替你开心', mood: 'playful', scene: 'cheer' }, { text: '可以可以', mood: 'playful', scene: 'pat' }, { text: '有点可爱', mood: 'teasing', scene: 'peek' }, { text: '收到快乐', mood: 'playful', scene: 'listen' }, { text: '继续保持', mood: 'playful', scene: 'study' }],
+    physical_discomfort: [{ text: '听着就难受', mood: 'caring', scene: 'comfort' }, { text: '先缓一会儿', mood: 'caring', scene: 'rest' }, { text: '我在这儿', mood: 'caring', scene: 'listen' }, { text: '给你拍拍', mood: 'caring', scene: 'pat' }, { text: '很辛苦呀', mood: 'caring', scene: 'sob' }, { text: '别硬撑啦', mood: 'caring', scene: 'cheer' }],
+    study_stress: [{ text: '考试加油', mood: 'caring', scene: 'study' }, { text: '稳住 能行', mood: 'caring', scene: 'cheer' }, { text: '先别慌', mood: 'caring', scene: 'comfort' }, { text: '累了歇会儿', mood: 'caring', scene: 'rest' }, { text: '给你拍拍', mood: 'caring', scene: 'pat' }, { text: '辛苦啦', mood: 'caring', scene: 'sob' }],
+    late_night_miss: [{ text: '晚安要给你', mood: 'teasing', scene: 'night' }, { text: '刚醒想你', mood: 'teasing', scene: 'miss' }, { text: '梦里见', mood: 'playful', scene: 'sleepy' }, { text: '再聊一会', mood: 'playful', scene: 'love' }, { text: '在等你呀', mood: 'teasing', scene: 'peek' }, { text: '别熬太晚', mood: 'caring', scene: 'rest' }],
+    new_friend: [{ text: 'Hi', mood: 'playful', scene: 'hello' }, { text: '你好呀', mood: 'playful', scene: 'happy' }, { text: '小巧思', mood: 'curious', scene: 'think' }, { text: '展开说说', mood: 'curious', scene: 'peek' }, { text: '我听着呢', mood: 'caring', scene: 'listen' }, { text: '有点可爱', mood: 'teasing', scene: 'miss' }],
+    playful_flirt: [{ text: '你在质疑我', mood: 'teasing', scene: 'doubt' }, { text: '我只想你', mood: 'teasing', scene: 'miss' }, { text: '有点犯规', mood: 'teasing', scene: 'love' }, { text: '再聊一会', mood: 'playful', scene: 'hello' }, { text: '嘴硬啦', mood: 'playful', scene: 'peek' }, { text: '心动了吗', mood: 'teasing', scene: 'happy' }],
+    question_tease: [{ text: '你在质疑我', mood: 'teasing', scene: 'doubt' }, { text: '让我想想', mood: 'curious', scene: 'think' }, { text: '听不懂啦', mood: 'speechless', scene: 'confused' }, { text: '我看出来了', mood: 'playful', scene: 'peek' }, { text: '说了啥', mood: 'playful', scene: 'hello' }, { text: '有点可疑', mood: 'teasing', scene: 'happy' }],
+    happy: [{ text: '好耶', mood: 'playful', scene: 'happy' }, { text: '替你开心', mood: 'playful', scene: 'cheer' }, { text: '可以可以', mood: 'playful', scene: 'hello' }, { text: '收到快乐', mood: 'playful', scene: 'love' }, { text: '有点可爱', mood: 'teasing', scene: 'pat' }, { text: '继续保持', mood: 'playful', scene: 'miss' }],
     emotional_disclosure: buildDefaultStickerSuggestions('情绪陪伴'),
   };
   return contextualSuggestions[context] || buildDefaultStickerSuggestions(stage);
@@ -672,8 +714,12 @@ function buildContextualStickerSuggestions(context, stage = '轻松破冰') {
 function getStickerContext(dialogue) {
   if (hasPhysicalDiscomfort(dialogue)) return 'physical_discomfort';
   if (hasStudyStress(dialogue)) return 'study_stress';
-  if (hasHappyEmotion(dialogue)) return 'happy';
   if (hasRecentEmotionalDisclosure(dialogue)) return 'emotional_disclosure';
+  if (hasLateNightMiss(dialogue)) return 'late_night_miss';
+  if (hasNewFriendOpening(dialogue)) return 'new_friend';
+  if (hasPlayfulFlirt(dialogue)) return 'playful_flirt';
+  if (hasQuestionTease(dialogue)) return 'question_tease';
+  if (hasHappyEmotion(dialogue)) return 'happy';
   return 'generic';
 }
 

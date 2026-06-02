@@ -72,6 +72,9 @@ test('defines a strict schema for richer attraction analysis', () => {
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /连续倾诉/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /主动了解/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /绝对不要替用户编造/);
+  assert.match(REPLY_COACH_SYSTEM_PROMPT, /换行表示用户可以分成几条气泡/);
+  assert.ok(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.items.properties.scene.enum.includes('miss'));
+  assert.ok(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.items.properties.scene.enum.includes('doubt'));
   assert.match(IMAGE_READING_RULES, /左侧 = 对方，右侧 = 我/);
   assert.match(REPLY_PERSPECTIVE_EXAMPLES, /先夸我两句/);
 });
@@ -100,6 +103,19 @@ test('merges lightweight text-only reply refinements into the original advice', 
 
   assert.deepEqual(merged.replies, [{ text: '回复一' }, { text: '回复二' }, { text: '回复三' }]);
   assert.equal(merged.attitude_label, advice.attitude_label);
+});
+
+test('preserves multi-bubble reply candidates with line breaks', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue({
+    replies: [
+      { text: '其实也没想很多\n就是睡前想到你一下\n结果一下有点久' },
+      { text: '你这句话有点犯规\n我本来想正常回的' },
+      { text: '那我先认真听你说' },
+    ],
+  })));
+
+  assert.equal(advice.replies[0].text, '其实也没想很多\n就是睡前想到你一下\n结果一下有点久');
+  assert.equal(needsReplyRefinement(advice), false);
 });
 
 test('maps speaker identity from bubble side instead of model guesses', () => {

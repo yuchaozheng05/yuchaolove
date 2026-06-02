@@ -27,6 +27,10 @@ Object.assign(SCENE_PALETTES, {
   study: SCENE_PALETTES.cheer,
   listen: SCENE_PALETTES.love,
   pat: SCENE_PALETTES.blush,
+  miss: SCENE_PALETTES.love,
+  doubt: SCENE_PALETTES.think,
+  hello: SCENE_PALETTES.happy,
+  night: SCENE_PALETTES.sleepy,
 });
 
 // ─── Shared face helpers ──────────────────────────────────────────────────────
@@ -554,6 +558,110 @@ function drawSceneShrug(ctx, size, pal, t=0) {
   const ey=cy-r*0.26; drawEyes(ctx,cx,ey,r,pal,'shrug'); drawCheeks(ctx,cx,ey,r,pal); drawMouth(ctx,cx,ey+r*0.4,r,pal,'shrug');
 }
 
+function drawSceneMiss(ctx, size, pal, t=0) {
+  const cx=size*0.5, cy=size*0.55, r=size*0.29;
+  const float=Math.sin(t*Math.PI*2)*r*0.025;
+  ctx.save(); ctx.translate(0,float);
+  ctx.fillStyle=pal.fur;
+  [[-0.35,-1.06],[0.35,-1.06]].forEach(([dx,dy])=>{ ctx.beginPath(); ctx.ellipse(cx+r*dx,cy+r*dy,r*0.18,r*0.48,dx<0?-0.12:0.12,0,Math.PI*2); ctx.fill(); });
+  ctx.fillStyle='rgba(255,200,210,0.72)';
+  [[-0.35,-1.06],[0.35,-1.06]].forEach(([dx,dy])=>{ ctx.beginPath(); ctx.ellipse(cx+r*dx,cy+r*dy,r*0.08,r*0.32,dx<0?-0.12:0.12,0,Math.PI*2); ctx.fill(); });
+  ctx.fillStyle=pal.body; ctx.beginPath(); ctx.arc(cx,cy,r*0.92,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle=pal.dark; ctx.lineWidth=r*0.045; ctx.stroke();
+  ctx.strokeStyle=pal.fur; ctx.lineWidth=r*0.22; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(cx-r*0.5,cy+r*0.32); ctx.lineTo(cx-r*0.1,cy+r*0.56); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx+r*0.5,cy+r*0.32); ctx.lineTo(cx+r*0.1,cy+r*0.56); ctx.stroke();
+  const heartY=cy+r*0.52+Math.sin(t*Math.PI*2)*r*0.02;
+  ctx.fillStyle=pal.accent;
+  ctx.beginPath(); ctx.moveTo(cx,heartY+r*0.24);
+  ctx.bezierCurveTo(cx-r*0.42,heartY-r*0.04,cx-r*0.36,heartY-r*0.38,cx,heartY-r*0.12);
+  ctx.bezierCurveTo(cx+r*0.36,heartY-r*0.38,cx+r*0.42,heartY-r*0.04,cx,heartY+r*0.24);
+  ctx.fill();
+  [[-0.88,-0.62],[0.88,-0.7],[0.74,0.05]].forEach(([dx,dy],i)=>{
+    const hx=cx+r*dx, hy=cy+r*dy+Math.sin(t*Math.PI*2+i)*r*0.03, hr=r*(0.08+i*0.015);
+    ctx.globalAlpha=0.65;
+    ctx.beginPath(); ctx.moveTo(hx,hy+hr*0.65);
+    ctx.bezierCurveTo(hx-hr*1.2,hy-hr*0.3,hx-hr*1.2,hy-hr,hx,hy-hr*0.25);
+    ctx.bezierCurveTo(hx+hr*1.2,hy-hr,hx+hr*1.2,hy-hr*0.3,hx,hy+hr*0.65);
+    ctx.fill();
+    ctx.globalAlpha=1;
+  });
+  const ey=cy-r*0.22; drawEyes(ctx,cx,ey,r,pal,'blush_shy'); drawCheeks(ctx,cx,ey,r,pal); drawMouth(ctx,cx,ey+r*0.42,r,pal,'love');
+  ctx.restore();
+}
+
+function drawSceneDoubt(ctx, size, pal, t=0) {
+  const cx=size*0.5, cy=size*0.54, r=size*0.29;
+  const tilt=Math.sin(t*Math.PI*2)*2.2*Math.PI/180;
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(tilt); ctx.translate(-cx,-cy);
+  ctx.fillStyle=pal.fur;
+  [[-0.55,-0.82],[0.55,-0.82]].forEach(([dx,dy])=>{ ctx.beginPath(); ctx.arc(cx+r*dx,cy+r*dy,r*0.2,0,Math.PI*2); ctx.fill(); });
+  ctx.fillStyle='rgba(255,205,210,0.68)';
+  [[-0.55,-0.82],[0.55,-0.82]].forEach(([dx,dy])=>{ ctx.beginPath(); ctx.arc(cx+r*dx,cy+r*dy,r*0.1,0,Math.PI*2); ctx.fill(); });
+  ctx.fillStyle=pal.body; ctx.beginPath(); ctx.arc(cx,cy,r*0.92,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle=pal.dark; ctx.lineWidth=r*0.045; ctx.stroke();
+  ctx.fillStyle=pal.fur;
+  ctx.beginPath(); ctx.ellipse(cx-r*0.72,cy+r*0.18,r*0.2,r*0.28,-0.45,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx+r*0.54,cy-r*0.02,r*0.22,r*0.18,-0.45,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+  const bob=Math.sin(t*Math.PI*2)*r*0.05;
+  ctx.fillStyle=pal.accent; ctx.font=`700 ${r*0.46}px "Noto Sans SC",sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('?',cx+r*0.86,cy-r*0.92+bob);
+  ctx.font=`700 ${r*0.28}px "Noto Sans SC",sans-serif`; ctx.fillText('?',cx-r*0.9,cy-r*0.72-bob);
+  const ey=cy-r*0.18; drawEyes(ctx,cx,ey,r,pal,'skeptical'); drawCheeks(ctx,cx,ey,r,pal); drawMouth(ctx,cx,ey+r*0.42,r,pal,'think');
+}
+
+function drawSceneHello(ctx, size, pal, t=0) {
+  const cx=size*0.5, cy=size*0.55, r=size*0.29;
+  const wave=Math.sin(t*Math.PI*4)*0.2;
+  ctx.fillStyle=pal.fur;
+  [[-0.58,-0.9],[0.58,-0.9]].forEach(([dx,dy],i)=>{ ctx.beginPath(); ctx.moveTo(cx+r*dx,cy+r*dy+r*0.32); ctx.lineTo(cx+r*dx+(i===0?-1:1)*r*0.22,cy+r*dy-r*0.28); ctx.lineTo(cx+r*dx+(i===0?1:-1)*r*0.22,cy+r*dy-r*0.08); ctx.closePath(); ctx.fill(); });
+  ctx.fillStyle='rgba(255,205,190,0.66)';
+  [[-0.58,-0.9],[0.58,-0.9]].forEach(([dx,dy],i)=>{ ctx.beginPath(); ctx.moveTo(cx+r*dx,cy+r*dy+r*0.16); ctx.lineTo(cx+r*dx+(i===0?-1:1)*r*0.1,cy+r*dy-r*0.14); ctx.lineTo(cx+r*dx+(i===0?1:-1)*r*0.1,cy+r*dy-r*0.03); ctx.closePath(); ctx.fill(); });
+  ctx.fillStyle=pal.body; ctx.beginPath(); ctx.arc(cx,cy,r*0.9,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle=pal.dark; ctx.lineWidth=r*0.045; ctx.stroke();
+  ctx.save();
+  ctx.translate(cx+r*0.78,cy-r*0.18); ctx.rotate(wave);
+  ctx.fillStyle=pal.fur; ctx.beginPath(); ctx.ellipse(0,0,r*0.2,r*0.34,-0.35,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle=pal.accent; ctx.lineWidth=r*0.04; ctx.lineCap='round';
+  [[0.92,-0.48],[1.05,-0.28],[0.9,-0.1]].forEach(([dx,dy])=>{ ctx.beginPath(); ctx.moveTo(cx+r*dx,cy+r*dy); ctx.lineTo(cx+r*(dx+0.22),cy+r*(dy-0.06)); ctx.stroke(); });
+  ctx.fillStyle=pal.accent; ctx.font=`${r*0.28}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('✦',cx-r*0.95,cy-r*0.62+Math.sin(t*Math.PI*2)*r*0.04);
+  ctx.fillText('✦',cx+r*0.08,cy-r*1.06);
+  const ey=cy-r*0.2; drawEyes(ctx,cx,ey,r,pal,'happy'); drawCheeks(ctx,cx,ey,r,pal); drawMouth(ctx,cx,ey+r*0.42,r,pal,'happy');
+}
+
+function drawSceneNight(ctx, size, pal, t=0) {
+  const cx=size*0.5, cy=size*0.58, r=size*0.28;
+  const breathe=1+Math.sin(t*Math.PI*2)*0.014;
+  ctx.fillStyle='rgba(125,145,210,0.18)';
+  ctx.beginPath(); ctx.arc(size*0.78,size*0.28,r*0.34,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=pal.bg;
+  ctx.beginPath(); ctx.arc(size*0.86,size*0.22,r*0.32,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=pal.accent;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ['✦','✦','z'].forEach((mark,i)=>{
+    ctx.globalAlpha=0.45+Math.abs(Math.sin(t*Math.PI*2+i))*0.35;
+    ctx.font=`700 ${r*(i===2?0.22:0.18)}px sans-serif`;
+    ctx.fillText(mark,size*(0.22+i*0.16),size*(0.28+i*0.08));
+  });
+  ctx.globalAlpha=1;
+  ctx.save(); ctx.translate(cx,cy); ctx.scale(1,breathe); ctx.translate(-cx,-cy);
+  ctx.fillStyle=pal.fur;
+  [[-0.32,-1.0],[0.32,-1.0]].forEach(([dx,dy])=>{ ctx.beginPath(); ctx.ellipse(cx+r*dx,cy+r*dy,r*0.18,r*0.44,dx<0?-0.12:0.12,0,Math.PI*2); ctx.fill(); });
+  ctx.fillStyle='rgba(255,205,210,0.68)';
+  [[-0.32,-1.0],[0.32,-1.0]].forEach(([dx,dy])=>{ ctx.beginPath(); ctx.ellipse(cx+r*dx,cy+r*dy,r*0.08,r*0.3,dx<0?-0.12:0.12,0,Math.PI*2); ctx.fill(); });
+  ctx.fillStyle=pal.body; ctx.beginPath(); ctx.arc(cx,cy-r*0.08,r*0.82,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle=pal.dark; ctx.lineWidth=r*0.04; ctx.stroke();
+  ctx.fillStyle='rgba(170,185,230,0.65)';
+  ctx.beginPath(); ctx.roundRect(cx-r*0.95,cy+r*0.35,r*1.9,r*0.58,r*0.2); ctx.fill();
+  ctx.strokeStyle=pal.fur; ctx.lineWidth=r*0.08;
+  ctx.beginPath(); ctx.moveTo(cx-r*0.78,cy+r*0.48); ctx.quadraticCurveTo(cx,cy+r*0.66,cx+r*0.78,cy+r*0.48); ctx.stroke();
+  const ey=cy-r*0.32; drawEyes(ctx,cx,ey,r,pal,'sleepy'); drawCheeks(ctx,cx,ey,r,pal); drawMouth(ctx,cx,ey+r*0.42,r,pal,'sleepy');
+  ctx.restore();
+}
+
 // ─── Scene registry ───────────────────────────────────────────────────────────
 const SCENE_DRAWERS = {
   phone: drawScenePhone, skeptical: drawSceneSkeptical, confused: drawSceneConfused,
@@ -561,6 +669,7 @@ const SCENE_DRAWERS = {
   peek: drawScenePeek, happy: drawSceneHappy, blush: drawSceneBlush,
   sleepy: drawSceneSleepy, cheer: drawSceneCheer, love: drawSceneLove,
   think: drawSceneThink, sob: drawSceneSob, shrug: drawSceneShrug,
+  miss: drawSceneMiss, doubt: drawSceneDoubt, hello: drawSceneHello, night: drawSceneNight,
 };
 
 // Cute hand-drawn meme templates. The canvas characters stay as a graceful
@@ -701,24 +810,24 @@ async function exportAsGif(scene, text, size, onProgress) {
 
 // ─── Mood → scene mapping ─────────────────────────────────────────────────────
 const MOOD_SCENES = {
-  playful:    ['happy', 'peek', 'cheer', 'confused', 'study', 'listen'],
-  teasing:    ['peek', 'happy', 'confused', 'cheer', 'listen', 'pat'],
-  curious:    ['peek', 'confused', 'listen', 'study', 'comfort', 'happy'],
-  caring:     ['comfort', 'rest', 'listen', 'pat', 'cheer', 'study'],
-  speechless: ['confused', 'peek', 'listen', 'rest', 'happy', 'cheer'],
-  retreat:    ['rest', 'peek', 'confused', 'listen', 'comfort', 'pat'],
+  playful:    ['hello', 'happy', 'miss', 'peek', 'cheer', 'think'],
+  teasing:    ['doubt', 'miss', 'love', 'peek', 'confused', 'hello'],
+  curious:    ['doubt', 'think', 'peek', 'listen', 'hello', 'confused'],
+  caring:     ['comfort', 'rest', 'listen', 'pat', 'sob', 'cheer'],
+  speechless: ['doubt', 'think', 'confused', 'peek', 'sob', 'rest'],
+  retreat:    ['rest', 'peek', 'doubt', 'sob', 'listen', 'comfort'],
 };
 
-const VALID_SCENES=new Set(Object.keys(STICKER_TEMPLATES));
+const VALID_SCENES=new Set([...Object.keys(STICKER_TEMPLATES),'miss','doubt','hello','night','love','think','sleepy','sob']);
 const STICKER_PANEL_RECOMMENDATION_COUNT=6;
 
 const FALLBACK_SUGGESTIONS = {
-  初次认识: [{text:'哈哈有点意思',mood:'playful',scene:'happy'},{text:'展开说说',mood:'curious',scene:'peek'},{text:'我先听着',mood:'curious',scene:'listen'},{text:'让我想想',mood:'curious',scene:'confused'},{text:'收到收到',mood:'playful',scene:'cheer'},{text:'继续继续',mood:'playful',scene:'pat'}],
-  轻松破冰: [{text:'行 你继续',mood:'teasing',scene:'happy'},{text:'真的假的',mood:'playful',scene:'confused'},{text:'我再看看',mood:'curious',scene:'peek'},{text:'有点意思',mood:'playful',scene:'cheer'},{text:'让我听听',mood:'caring',scene:'listen'},{text:'什么情况',mood:'speechless',scene:'comfort'}],
-  稳定了解: [{text:'原来如此',mood:'curious',scene:'confused'},{text:'继续展开',mood:'curious',scene:'peek'},{text:'记下了',mood:'playful',scene:'study'},{text:'我有在听',mood:'caring',scene:'listen'},{text:'慢慢说',mood:'caring',scene:'comfort'},{text:'这么回事',mood:'playful',scene:'happy'}],
-  暧昧升温: [{text:'有点会聊',mood:'teasing',scene:'peek'},{text:'我再观察',mood:'playful',scene:'confused'},{text:'加一分',mood:'teasing',scene:'cheer'},{text:'被你拿捏了',mood:'playful',scene:'happy'},{text:'有点可爱',mood:'caring',scene:'pat'},{text:'先别得意',mood:'teasing',scene:'comfort'}],
-  情绪陪伴: [{text:'先缓一会儿',mood:'caring',scene:'rest'},{text:'我在听',mood:'caring',scene:'listen'},{text:'给你抱抱',mood:'caring',scene:'comfort'},{text:'给你拍拍',mood:'caring',scene:'pat'},{text:'慢慢来',mood:'caring',scene:'cheer'},{text:'先别着急',mood:'caring',scene:'peek'}],
-  建议停手: [{text:'行 你继续玩',mood:'retreat',scene:'rest'},{text:'那我先撤了',mood:'retreat',scene:'peek'},{text:'所以我算什么',mood:'speechless',scene:'confused'},{text:'好吧好吧',mood:'retreat',scene:'listen'},{text:'我先消失',mood:'retreat',scene:'comfort'},{text:'当我没说',mood:'speechless',scene:'pat'}],
+  初次认识: [{text:'Hi',mood:'playful',scene:'hello'},{text:'你好呀',mood:'playful',scene:'happy'},{text:'小巧思',mood:'curious',scene:'think'},{text:'展开说说',mood:'curious',scene:'peek'},{text:'我听着呢',mood:'caring',scene:'listen'},{text:'有点可爱',mood:'teasing',scene:'miss'}],
+  轻松破冰: [{text:'说了啥',mood:'curious',scene:'hello'},{text:'真的假的',mood:'playful',scene:'doubt'},{text:'有点意思',mood:'playful',scene:'cheer'},{text:'我听听',mood:'caring',scene:'listen'},{text:'再聊一会',mood:'teasing',scene:'miss'},{text:'让我想想',mood:'curious',scene:'think'}],
+  稳定了解: [{text:'好巧',mood:'playful',scene:'hello'},{text:'记下了',mood:'playful',scene:'study'},{text:'一家人',mood:'teasing',scene:'miss'},{text:'继续展开',mood:'curious',scene:'peek'},{text:'我有在听',mood:'caring',scene:'listen'},{text:'学到了',mood:'curious',scene:'think'}],
+  暧昧升温: [{text:'你在质疑我',mood:'teasing',scene:'doubt'},{text:'有点犯规',mood:'teasing',scene:'miss'},{text:'我只想你',mood:'teasing',scene:'love'},{text:'嘴硬啦',mood:'playful',scene:'peek'},{text:'再聊一会',mood:'playful',scene:'hello'},{text:'优雅离场',mood:'retreat',scene:'happy'}],
+  情绪陪伴: [{text:'先缓一会儿',mood:'caring',scene:'rest'},{text:'我在听',mood:'caring',scene:'listen'},{text:'给你抱抱',mood:'caring',scene:'comfort'},{text:'给你拍拍',mood:'caring',scene:'pat'},{text:'很辛苦呀',mood:'caring',scene:'sob'},{text:'慢慢来',mood:'caring',scene:'cheer'}],
+  建议停手: [{text:'我先撤啦',mood:'retreat',scene:'rest'},{text:'当我没说',mood:'speechless',scene:'doubt'},{text:'优雅离场',mood:'retreat',scene:'peek'},{text:'好吧好吧',mood:'retreat',scene:'listen'},{text:'先消失',mood:'retreat',scene:'sob'},{text:'不打扰啦',mood:'retreat',scene:'comfort'}],
 };
 
 function getStickerSuggestions(advice) {
