@@ -15,6 +15,7 @@ import handler, {
   needsReplyRefinement,
   normalizeDialogue,
   parseAdvice,
+  repairReplyCandidates,
   requestOpenAIAdvice,
 } from '../api/analyze.js';
 
@@ -247,6 +248,25 @@ test('flags long explanatory replies for a shorter human rewrite', () => {
   assert.match(buildReplyRefinementPrompt('Analyze.', advice), /不要编造截图里没有出现的/);
 });
 
+test('repairs stubborn clarification replies with sendable short messages', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue({
+    dialogue: [
+      { side: 'right', speaker: '我', text: '我猜的' },
+      { side: 'left', speaker: '对方', text: '那你怎么就确定了呢' },
+    ],
+    replies: [
+      { text: '可能是因为你之前回复比较慢，我就觉得你可能不太想理我。' },
+      { text: '我只是根据之前的感觉猜的，没有特别确定的理由。' },
+      { text: '说实话我也不是很确定，就是凭感觉觉得你可能不想理我。' },
+    ],
+  })));
+  const repaired = repairReplyCandidates(advice);
+
+  assert.equal(needsReplyRefinement(repaired), false);
+  assert.deepEqual(repaired.replies[0], { text: '我瞎猜的，那我撤回' });
+  assert.equal(repaired.replies.length, 4);
+});
+
 test('parses the first complete JSON object when OpenAI repeats a response', () => {
   const first = adviceValue({ is_chat_screenshot: false, dialogue: [], replies: [] });
   const second = adviceValue({ non_chat_reply: '第二个对象不应影响解析。' });
@@ -343,6 +363,37 @@ test('asks OpenAI for one refinement pass when initial replies feel robotic', as
     assert.equal(response.statusCode, 200);
     assert.equal(requests.length, 2);
     assert.match(requests[1].messages[1].content.at(-1).text, /上一轮候选需要重写/);
+  } finally {
+    global.fetch = originalFetch;
+    restoreEnvironment('OPENAI_API_KEY', originalApiKey);
+  }
+});
+
+test('uses a safe short fallback when OpenAI refinement stays too long', async () => {
+  const originalFetch = global.fetch;
+  const originalApiKey = process.env.OPENAI_API_KEY;
+  process.env.OPENAI_API_KEY = 'test-key';
+  const stubbornAdvice = adviceValue({
+    dialogue: [
+      { side: 'right', speaker: '我', text: '我猜的' },
+      { side: 'left', speaker: '对方', text: '那你怎么就确定了呢' },
+    ],
+    replies: [
+      { text: '可能是因为你之前回复比较慢，我就觉得你可能不太想理我。' },
+      { text: '我只是根据之前的感觉猜的，没有特别确定的理由。' },
+      { text: '说实话我也不是很确定，就是凭感觉觉得你可能不想理我。' },
+    ],
+  });
+  global.fetch = async () => jsonResponse(200, openAIAdviceResponse(stubbornAdvice));
+
+  try {
+    const response = createResponseRecorder();
+    await handler({ method: 'POST', body: requestBody, headers: {} }, response);
+    const advice = JSON.parse(response.body.content[0].text);
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(advice.replies[0], { text: '我瞎猜的，那我撤回' });
+    assert.equal(needsReplyRefinement(advice), false);
   } finally {
     global.fetch = originalFetch;
     restoreEnvironment('OPENAI_API_KEY', originalApiKey);

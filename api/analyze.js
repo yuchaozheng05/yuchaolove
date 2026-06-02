@@ -137,9 +137,12 @@ export default async function handler(req, res) {
               prompt: buildReplyRefinementPrompt(textPart.text, advice),
             });
             const refinedAdvice = parseAdvice(refinedText);
-            if (!needsReplyRefinement(refinedAdvice)) advice = refinedAdvice;
+            advice = needsReplyRefinement(refinedAdvice)
+              ? repairReplyCandidates(refinedAdvice)
+              : refinedAdvice;
           } catch (error) {
             console.warn(`OpenAI reply refinement failed: ${summarizeError(error)}`);
+            advice = repairReplyCandidates(advice);
           }
         }
 
@@ -422,6 +425,38 @@ function buildReplyRefinementPrompt(originalPrompt, advice) {
 - 不要编造截图里没有出现的“回复慢”“不积极”等依据。轻松追问可以短句承认误判，例如“我瞎猜的，那我撤回”。`;
 }
 
+function repairReplyCandidates(advice) {
+  const latestOpponentText = [...(advice.dialogue || [])]
+    .reverse()
+    .find((message) => message.speaker === '对方')
+    ?.text || '';
+
+  if (/为什么|怎么(?:知道|确定|就确定|看出来)|如何|凭什么|哪里猜错|你不是.{0,12}吗/.test(latestOpponentText)) {
+    return {
+      ...advice,
+      replies: [
+        { text: '我瞎猜的，那我撤回' },
+        { text: '那我判断错了，你还是愿意理我的' },
+        { text: '好吧，是我下结论太早了' },
+        { text: '我先收回刚刚那句，是我想多了' },
+      ],
+    };
+  }
+
+  if (/哄/.test(latestOpponentText)) {
+    return {
+      ...advice,
+      replies: [
+        { text: '先夸我两句，我看看诚意' },
+        { text: '先哄两句，我听听水平' },
+        { text: '给你个机会，先表现一下' },
+      ],
+    };
+  }
+
+  return advice;
+}
+
 function normalizeChatEvidence(evidence) {
   return { image_kind: cleanText(evidence?.image_kind, 24), has_message_bubbles: evidence?.has_message_bubbles === true, has_chat_ui: evidence?.has_chat_ui === true, has_two_sided_layout: evidence?.has_two_sided_layout === true };
 }
@@ -486,4 +521,4 @@ async function logUsage({ req, advice, imageParts }) {
   }
 }
 
-export { CHAT_ADVICE_SCHEMA, MODELS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, buildFreeTierFallbackAdvice, buildReplyRefinementPrompt, extractFirstJsonObject, getRequestParts, hasRepeatedColdReplies, isRetryableModelError, isVerifiedChatScreenshot, logUsage, needsReplyRefinement, normalizeDialogue, normalizeChatEvidence, parseAdvice, requestOpenAIAdvice };
+export { CHAT_ADVICE_SCHEMA, MODELS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, buildFreeTierFallbackAdvice, buildReplyRefinementPrompt, extractFirstJsonObject, getRequestParts, hasRepeatedColdReplies, isRetryableModelError, isVerifiedChatScreenshot, logUsage, needsReplyRefinement, normalizeDialogue, normalizeChatEvidence, parseAdvice, repairReplyCandidates, requestOpenAIAdvice };
