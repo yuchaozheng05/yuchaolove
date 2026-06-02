@@ -56,6 +56,8 @@ test('defines a strict schema for richer attraction analysis', () => {
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('flirt_level'));
   assert.equal(CHAT_ADVICE_SCHEMA.properties.chat_guide.additionalProperties, false);
   assert.equal(CHAT_ADVICE_SCHEMA.properties.replies.items.additionalProperties, false);
+  assert.equal(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.minItems, 6);
+  assert.equal(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.maxItems, 6);
   assert.deepEqual(Object.keys(CHAT_ADVICE_SCHEMA.properties.replies.items.properties), ['text']);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /主动回球/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /暧昧必须有依据/);
@@ -392,16 +394,20 @@ test('infers a stage before building the next conversation route', () => {
 });
 
 test('normalizes contextual sticker suggestions and falls back by stage', () => {
+  const stopSuggestions = normalizeStickerSuggestions([{ text: ' 行 你继续 ', mood: 'teasing', scene: 'skeptical' }], '建议停手');
+  assert.equal(stopSuggestions.length, 6);
   assert.deepEqual(
-    normalizeStickerSuggestions([{ text: ' 行 你继续 ', mood: 'teasing', scene: 'skeptical' }], '建议停手')[0],
+    stopSuggestions[0],
     { text: '行 你继续玩', mood: 'retreat', scene: 'retreat' },
   );
-  assert.deepEqual(
-    normalizeStickerSuggestions([
+  const contextualSuggestions = normalizeStickerSuggestions([
       { text: ' 有点会聊 ', mood: 'teasing', scene: 'peek' },
       { text: '真的假的', mood: 'playful', scene: 'shocked' },
       { text: '我再看看', mood: 'curious', scene: 'phone' },
-    ], '暧昧升温')[0],
+    ], '暧昧升温');
+  assert.equal(contextualSuggestions.length, 6);
+  assert.deepEqual(
+    contextualSuggestions[0],
     { text: '有点会聊', mood: 'teasing', scene: 'peek' },
   );
 });

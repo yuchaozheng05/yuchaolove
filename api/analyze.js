@@ -24,7 +24,7 @@ const REPLY_COACH_SYSTEM_PROMPT = `你是中文聊天回复顾问。你的目标
 - 绝对不要替用户编造截图或补充背景里没有出现的个人信息，例如爱好、经历、课程、行程和家乡。需要用户自己填写时，用“___”保留一个明显空位。
 - 除了回复候选，还要给用户一条可以照着走的聊天路线：现在先做什么、后续怎么展开、什么不要做。每一步不是让用户一次发完，而是根据对方回应逐步推进。
 - 先判断 conversation_stage。阶段决定下一步，不要把所有聊天都套成“接一句、聊兴趣、马上邀约”。只有对方持续接球，才逐步增加个人化话题或轻松邀约。
-- 给 3 到 5 条 sticker_suggestions。每条包含适合当前上下文的短配字、情绪和画面场景，用作聊天表情包。配字要像聊天梗图，不要写分析标签。
+- 给固定 6 条 sticker_suggestions。每条包含适合当前上下文的短配字、情绪和画面场景，用作聊天表情包。配字要像聊天梗图，不要写分析标签。
 - 少用“听起来”“感觉你”“那你平时”“有需要告诉我”“调整好状态”“看来”这类模板句。
 - 候选要自然、有变化，但不要给每条回复套风格标签。`;
 
@@ -119,6 +119,8 @@ const CHAT_ADVICE_SCHEMA = {
     },
     sticker_suggestions: {
       type: 'array',
+      minItems: 6,
+      maxItems: 6,
       items: {
         type: 'object',
         additionalProperties: false,
@@ -521,6 +523,7 @@ function buildActiveCuriosityGuide() {
 
 const STICKER_MOODS = new Set(['playful', 'teasing', 'curious', 'caring', 'speechless', 'retreat']);
 const STICKER_SCENES = new Set(['phone', 'skeptical', 'confused', 'caring', 'shocked', 'retreat', 'peek']);
+const STICKER_RECOMMENDATION_COUNT = 6;
 
 function buildDefaultStickerSuggestions(stage) {
   const suggestions = {
@@ -528,31 +531,49 @@ function buildDefaultStickerSuggestions(stage) {
       { text: '哈哈有点意思', mood: 'playful', scene: 'phone' },
       { text: '展开说说', mood: 'curious', scene: 'peek' },
       { text: '我先听着', mood: 'curious', scene: 'caring' },
+      { text: '让我想想', mood: 'curious', scene: 'skeptical' },
+      { text: '收到收到', mood: 'playful', scene: 'caring' },
+      { text: '真的假的', mood: 'playful', scene: 'shocked' },
     ],
     轻松破冰: [
       { text: '行 你继续', mood: 'teasing', scene: 'skeptical' },
       { text: '真的假的', mood: 'playful', scene: 'shocked' },
       { text: '我再看看', mood: 'curious', scene: 'peek' },
+      { text: '有点意思', mood: 'playful', scene: 'phone' },
+      { text: '让我听听', mood: 'caring', scene: 'caring' },
+      { text: '什么情况', mood: 'speechless', scene: 'confused' },
     ],
     稳定了解: [
-      { text: '原来如此', mood: 'curious', scene: 'phone' },
+      { text: '原来如此', mood: 'curious', scene: 'confused' },
       { text: '继续展开', mood: 'curious', scene: 'peek' },
-      { text: '记下了', mood: 'playful', scene: 'caring' },
+      { text: '记下了', mood: 'playful', scene: 'phone' },
+      { text: '我有在听', mood: 'caring', scene: 'caring' },
+      { text: '让我想想', mood: 'curious', scene: 'skeptical' },
+      { text: '这么回事', mood: 'playful', scene: 'shocked' },
     ],
     暧昧升温: [
       { text: '有点会聊', mood: 'teasing', scene: 'peek' },
       { text: '我再观察', mood: 'playful', scene: 'phone' },
       { text: '行吧 加一分', mood: 'teasing', scene: 'skeptical' },
+      { text: '被你拿捏了', mood: 'playful', scene: 'shocked' },
+      { text: '有点可爱', mood: 'caring', scene: 'caring' },
+      { text: '先别得意', mood: 'teasing', scene: 'confused' },
     ],
     情绪陪伴: [
       { text: '先缓一会儿', mood: 'caring', scene: 'caring' },
       { text: '我在听', mood: 'caring', scene: 'peek' },
       { text: '今天辛苦了', mood: 'caring', scene: 'phone' },
+      { text: '嗯嗯 说吧', mood: 'caring', scene: 'caring' },
+      { text: '给你拍拍', mood: 'caring', scene: 'retreat' },
+      { text: '慢慢来', mood: 'caring', scene: 'confused' },
     ],
     建议停手: [
       { text: '行 你继续玩', mood: 'retreat', scene: 'retreat' },
       { text: '那我先撤了', mood: 'retreat', scene: 'phone' },
       { text: '所以我算什么', mood: 'speechless', scene: 'confused' },
+      { text: '好吧好吧', mood: 'retreat', scene: 'skeptical' },
+      { text: '我先消失', mood: 'retreat', scene: 'peek' },
+      { text: '当我没说', mood: 'speechless', scene: 'shocked' },
     ],
   };
   return suggestions[normalizeConversationStage(stage)];
@@ -564,9 +585,13 @@ function normalizeStickerSuggestions(suggestions, stage = '轻松破冰') {
         text: cleanText(suggestion?.text, 16),
         mood: STICKER_MOODS.has(suggestion?.mood) ? suggestion.mood : 'playful',
         scene: STICKER_SCENES.has(suggestion?.scene) ? suggestion.scene : 'phone',
-      })).filter((suggestion) => suggestion.text).slice(0, 5)
+      })).filter((suggestion) => suggestion.text).slice(0, STICKER_RECOMMENDATION_COUNT)
     : [];
-  return normalized.length >= 3 ? normalized : buildDefaultStickerSuggestions(stage);
+  const fallback = buildDefaultStickerSuggestions(stage);
+  if (normalized.length < 3) return fallback;
+  return [...normalized, ...fallback]
+    .filter((suggestion, index, items) => items.findIndex((item) => item.text === suggestion.text && item.scene === suggestion.scene) === index)
+    .slice(0, STICKER_RECOMMENDATION_COUNT);
 }
 
 function getDefaultNonChatReply() {

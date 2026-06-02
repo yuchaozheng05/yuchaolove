@@ -22,13 +22,18 @@ test('keeps the stable multi-screenshot UI while loading stickers', () => {
 
 test('shows contextual stickers only after a usable chat result', () => {
   const app = read('app.js');
+  const html = read('index.html');
   const stickers = read('sticker.js');
+  assert.doesNotThrow(() => new Function(`${stickers}\n${app}`));
   assert.match(app, /showStickerPanel\(data\)/);
   assert.match(app, /data\.is_chat_screenshot && !data\.needs_retry && !data\.degraded/);
   assert.match(stickers, /function showStickerPanel\(advice\)/);
   assert.match(stickers, /STICKER_TEMPLATES/);
+  assert.match(stickers, /drawTemplateSticker/);
+  assert.match(stickers, /STICKER_PANEL_RECOMMENDATION_COUNT=6/);
   assert.match(stickers, /sticker_suggestions/);
   assert.match(stickers, /assets\/stickers\/lazy-phone-duck\.png/);
+  assert.match(html, /每次推荐 6 个/);
   assert.doesNotMatch(app, /selectedStyle|chipGroup/);
 });
 

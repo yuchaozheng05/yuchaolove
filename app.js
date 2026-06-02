@@ -230,7 +230,7 @@ function buildPrompt(imageCount) {
 - 路线必须符合 conversation_stage。只有对方持续接球，才能逐步聊得更个人化或轻松邀约。不要用逼问、施压或套路诱导对方回复。
 
 【任务四：推荐聊天表情包】
-- 用 sticker_suggestions 给 3 到 5 个表情包创意。每条包含 text、mood 和 scene。
+- 用 sticker_suggestions 给固定 6 个表情包创意。每条包含 text、mood 和 scene。
 - text 是会直接写在表情包上的短配字，2 到 12 个字，像聊天梗图，不要写分析标签。
 - mood 只能选择 playful、teasing、curious、caring、speechless、retreat。
 - scene 只能选择 phone、skeptical、confused、caring、shocked、retreat、peek。
@@ -279,7 +279,10 @@ ${context ? `【补充背景】${context}` : ''}
   "sticker_suggestions": [
     {"text": "行 你继续", "mood": "teasing", "scene": "skeptical"},
     {"text": "真的假的", "mood": "playful", "scene": "shocked"},
-    {"text": "我再看看", "mood": "curious", "scene": "peek"}
+    {"text": "我再看看", "mood": "curious", "scene": "peek"},
+    {"text": "有点意思", "mood": "playful", "scene": "phone"},
+    {"text": "让我听听", "mood": "caring", "scene": "caring"},
+    {"text": "什么情况", "mood": "speechless", "scene": "confused"}
   ]
 }`;
 }
@@ -766,6 +769,7 @@ function buildActiveCuriosityGuide() {
 
 const STICKER_MOODS = new Set(['playful', 'teasing', 'curious', 'caring', 'speechless', 'retreat']);
 const STICKER_SCENES = new Set(['phone', 'skeptical', 'confused', 'caring', 'shocked', 'retreat', 'peek']);
+const STICKER_RECOMMENDATION_COUNT = 6;
 
 function normalizeStickerSuggestions(suggestions, stage = '轻松破冰') {
   const normalized = Array.isArray(suggestions)
@@ -773,13 +777,16 @@ function normalizeStickerSuggestions(suggestions, stage = '轻松破冰') {
         text: cleanText(suggestion?.text, 16),
         mood: STICKER_MOODS.has(suggestion?.mood) ? suggestion.mood : 'playful',
         scene: STICKER_SCENES.has(suggestion?.scene) ? suggestion.scene : '',
-      })).filter((suggestion) => suggestion.text).slice(0, 5)
+      })).filter((suggestion) => suggestion.text).slice(0, STICKER_RECOMMENDATION_COUNT)
     : [];
-  if (normalized.length >= 3) return normalized;
-  return {
-    情绪陪伴: [{ text: '先缓一会儿', mood: 'caring', scene: 'caring' }, { text: '我在听', mood: 'caring', scene: 'peek' }, { text: '今天辛苦了', mood: 'caring', scene: 'phone' }],
-    建议停手: [{ text: '行 你继续玩', mood: 'retreat', scene: 'retreat' }, { text: '那我先撤了', mood: 'retreat', scene: 'phone' }, { text: '所以我算什么', mood: 'speechless', scene: 'confused' }],
-  }[stage] || [{ text: '行 你继续', mood: 'teasing', scene: 'skeptical' }, { text: '真的假的', mood: 'playful', scene: 'shocked' }, { text: '我再看看', mood: 'curious', scene: 'peek' }];
+  const fallback = {
+    情绪陪伴: [{ text: '先缓一会儿', mood: 'caring', scene: 'caring' }, { text: '我在听', mood: 'caring', scene: 'peek' }, { text: '今天辛苦了', mood: 'caring', scene: 'phone' }, { text: '嗯嗯 说吧', mood: 'caring', scene: 'caring' }, { text: '给你拍拍', mood: 'caring', scene: 'retreat' }, { text: '慢慢来', mood: 'caring', scene: 'confused' }],
+    建议停手: [{ text: '行 你继续玩', mood: 'retreat', scene: 'retreat' }, { text: '那我先撤了', mood: 'retreat', scene: 'phone' }, { text: '所以我算什么', mood: 'speechless', scene: 'confused' }, { text: '好吧好吧', mood: 'retreat', scene: 'skeptical' }, { text: '我先消失', mood: 'retreat', scene: 'peek' }, { text: '当我没说', mood: 'speechless', scene: 'shocked' }],
+  }[stage] || [{ text: '行 你继续', mood: 'teasing', scene: 'skeptical' }, { text: '真的假的', mood: 'playful', scene: 'shocked' }, { text: '我再看看', mood: 'curious', scene: 'peek' }, { text: '有点意思', mood: 'playful', scene: 'phone' }, { text: '让我听听', mood: 'caring', scene: 'caring' }, { text: '什么情况', mood: 'speechless', scene: 'confused' }];
+  if (normalized.length < 3) return fallback;
+  return [...normalized, ...fallback]
+    .filter((suggestion, index, items) => items.findIndex((item) => item.text === suggestion.text && item.scene === suggestion.scene) === index)
+    .slice(0, STICKER_RECOMMENDATION_COUNT);
 }
 
 function normalizeChatEvidence(evidence) {
