@@ -234,6 +234,19 @@ test('keeps up to five clean reply candidates', () => {
   assert.deepEqual(advice.replies.map((reply) => reply.text), ['回复一', '回复二', '回复三', '回复四', '回复五']);
 });
 
+test('flags long explanatory replies for a shorter human rewrite', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue({
+    replies: [
+      { text: '因为你平时回我也不太积极，我就觉得你可能不想理我。' },
+      { text: '我瞎猜的，那我撤回' },
+      { text: '那我判断错了，你还是愿意理我的' },
+    ],
+  })));
+
+  assert.equal(needsReplyRefinement(advice), true);
+  assert.match(buildReplyRefinementPrompt('Analyze.', advice), /不要编造截图里没有出现的/);
+});
+
 test('parses the first complete JSON object when OpenAI repeats a response', () => {
   const first = adviceValue({ is_chat_screenshot: false, dialogue: [], replies: [] });
   const second = adviceValue({ non_chat_reply: '第二个对象不应影响解析。' });

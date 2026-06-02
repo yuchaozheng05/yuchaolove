@@ -14,6 +14,7 @@ const REPLY_COACH_SYSTEM_PROMPT = `你是中文聊天回复顾问。你的目标
 - 生成 3 到 5 条候选，最多一条使用问号。至少两条是可以直接发送的自然陈述。不要把对方原句重复一遍再反问。
 - flirt_level 是暧昧上限，不是必须完成的任务。对方只是认真提问、澄清或解释时，先正常回答，不要为了暧昧而绕开问题。
 - 如果对方最后一句在问“为什么”“怎么知道”“怎么确定”或类似澄清问题，至少两条候选要真正回应问题，不要全部改成调情、卖关子或反问。
+- 轻松聊天里的追问，不要写成长解释、情感分析或辩解。优先简短承认误判，再自然接住对方。不要编造截图里没有出现的“回复慢”“不积极”等依据。
 - 少用“听起来”“感觉你”“那你平时”“有需要告诉我”“调整好状态”“看来”这类模板句。
 - 候选要自然、有变化，但不要给每条回复套风格标签。`;
 
@@ -392,13 +393,14 @@ function needsReplyRefinement(advice) {
   ));
   const hasReversedComfortPerspective = /哄/.test(latestOpponentText)
     && replies.some((reply) => /^哄你[?？：:]?/.test(reply.text));
+  const hasOverlongReplies = replies.some((reply) => reply.text.length > 24);
   const asksForExplanation = /为什么|怎么(?:知道|确定|就确定|看出来)|如何|凭什么|哪里猜错|你不是.{0,12}吗/.test(latestOpponentText);
   const evasiveReplyCount = replies.filter((reply) => (
     /观察|秘密|吊人胃口|慢慢了解|慢慢发现|你说说|哪里猜错|猜猜|以后再告诉你/.test(reply.text)
   )).length;
   const evadesDirectQuestion = asksForExplanation && evasiveReplyCount >= 2;
 
-  return questionCount > 1 || hasTemplateLanguage || hasReversedComfortPerspective || evadesDirectQuestion;
+  return questionCount > 1 || hasTemplateLanguage || hasReversedComfortPerspective || hasOverlongReplies || evadesDirectQuestion;
 }
 
 function buildReplyRefinementPrompt(originalPrompt, advice) {
@@ -416,7 +418,8 @@ function buildReplyRefinementPrompt(originalPrompt, advice) {
 - 严格确认谁在哄谁、谁在关心谁。不要出现“哄你？”这种把方向说反的话。
 - 输出 3 到 5 条候选，最多一条带问号；至少两条是可以直接发送的短陈述句。
 - 如果对方最后是在认真追问原因或澄清，至少两条直接回应问题。暧昧尺度是上限，不是任务；不要用调情、卖关子或反问躲开问题。
-- 每条尽量控制在 8 到 24 个字，不要重复对方原句，不要像客服，不要解释策略。`;
+- 每条尽量控制在 8 到 24 个字，不要重复对方原句，不要像客服，不要解释策略。
+- 不要编造截图里没有出现的“回复慢”“不积极”等依据。轻松追问可以短句承认误判，例如“我瞎猜的，那我撤回”。`;
 }
 
 function normalizeChatEvidence(evidence) {
