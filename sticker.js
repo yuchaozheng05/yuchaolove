@@ -248,6 +248,228 @@ function drawBg(ctx, size, pal) {
   ctx.globalAlpha = 1;
 }
 
+// ─── Soft reference-style sticker set ─────────────────────────────────────────
+function setKawaiiStroke(ctx, size, color = '#3a2927') {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(3, size * 0.018);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+}
+
+function drawKawaiiBlush(ctx, cx, cy, r, tint = '#ffb9c2') {
+  ctx.fillStyle = tint;
+  ctx.globalAlpha = 0.72;
+  [-r*0.45, r*0.45].forEach((dx)=>{ ctx.beginPath(); ctx.ellipse(cx+dx, cy, r*0.15, r*0.08, 0, 0, Math.PI*2); ctx.fill(); });
+  ctx.globalAlpha = 1;
+}
+
+function drawKawaiiEyes(ctx, cx, cy, r, mood = 'happy') {
+  ctx.fillStyle = '#2f2424';
+  setKawaiiStroke(ctx, r*4);
+  if (mood === 'closed') {
+    [-r*0.28, r*0.28].forEach((dx)=>{ ctx.beginPath(); ctx.arc(cx+dx, cy, r*0.08, 0.1, Math.PI-0.1); ctx.stroke(); });
+  } else if (mood === 'sparkle') {
+    [-r*0.28, r*0.28].forEach((dx)=>{
+      ctx.beginPath(); ctx.arc(cx+dx, cy, r*0.12, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx+dx-r*0.04, cy-r*0.04, r*0.035, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx+dx+r*0.045, cy+r*0.035, r*0.022, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#2f2424';
+    });
+  } else if (mood === 'sad') {
+    [-r*0.28, r*0.28].forEach((dx)=>{
+      ctx.beginPath(); ctx.arc(cx+dx, cy, r*0.105, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx+dx-r*0.035, cy-r*0.035, r*0.03, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#7bb9ff'; ctx.beginPath(); ctx.ellipse(cx+dx, cy+r*0.2, r*0.045, r*0.14, 0, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#2f2424';
+    });
+  } else if (mood === 'doubt') {
+    [-r*0.28, r*0.28].forEach((dx)=>{ ctx.beginPath(); ctx.arc(cx+dx, cy, r*0.075, 0, Math.PI*2); ctx.fill(); });
+    ctx.beginPath(); ctx.moveTo(cx-r*0.39, cy-r*0.22); ctx.lineTo(cx-r*0.15, cy-r*0.18); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx+r*0.15, cy-r*0.18); ctx.lineTo(cx+r*0.39, cy-r*0.22); ctx.stroke();
+  } else {
+    [-r*0.28, r*0.28].forEach((dx)=>{ ctx.beginPath(); ctx.arc(cx+dx, cy, r*0.085, 0, Math.PI*2); ctx.fill(); });
+  }
+}
+
+function drawKawaiiMouth(ctx, cx, cy, r, mood = 'smile') {
+  setKawaiiStroke(ctx, r*4);
+  if (mood === 'open') {
+    ctx.fillStyle = '#ff8c86';
+    ctx.beginPath(); ctx.ellipse(cx, cy, r*0.1, r*0.13, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  } else if (mood === 'sad') {
+    ctx.beginPath(); ctx.arc(cx, cy+r*0.12, r*0.12, Math.PI+0.25, -0.25); ctx.stroke();
+  } else if (mood === 'cat') {
+    ctx.beginPath(); ctx.arc(cx-r*0.055, cy, r*0.07, 0.1, Math.PI-0.1); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx+r*0.055, cy, r*0.07, 0.1, Math.PI-0.1); ctx.stroke();
+  } else {
+    ctx.beginPath(); ctx.arc(cx, cy-r*0.05, r*0.18, 0.18, Math.PI-0.18); ctx.stroke();
+  }
+}
+
+function drawKawaiiHead(ctx, size, options = {}) {
+  const {
+    cx=size*0.5, cy=size*0.54, r=size*0.25, kind='bunny', mood='happy',
+    t=0, tilt=0, body='#fffdf9', accent='#f4a9bd', outline='#3a2927',
+  } = options;
+  const bob = Math.sin(t*Math.PI*2)*size*0.012;
+  ctx.save();
+  ctx.translate(cx, cy+bob);
+  ctx.rotate(tilt);
+  ctx.translate(-cx, -cy);
+  setKawaiiStroke(ctx, size, outline);
+  ctx.fillStyle = body;
+
+  if (kind === 'bunny') {
+    [[-0.32,-0.98,-0.14],[0.32,-0.98,0.14]].forEach(([dx,dy,rot])=>{
+      ctx.save(); ctx.translate(cx+r*dx, cy+r*dy); ctx.rotate(rot+Math.sin(t*Math.PI*2)*0.03);
+      ctx.beginPath(); ctx.ellipse(0, 0, r*0.18, r*0.52, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = accent; ctx.globalAlpha = 0.58;
+      ctx.beginPath(); ctx.ellipse(0, r*0.02, r*0.08, r*0.34, 0, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1; ctx.restore(); ctx.fillStyle = body;
+    });
+  } else if (kind === 'cat') {
+    [[-0.48,-0.65],[0.48,-0.65]].forEach(([dx,dy])=>{
+      ctx.beginPath(); ctx.moveTo(cx+r*dx, cy+r*dy-r*0.28); ctx.lineTo(cx+r*(dx-0.2*Math.sign(dx)), cy+r*dy+r*0.12); ctx.lineTo(cx+r*(dx+0.28*Math.sign(dx)), cy+r*dy+r*0.1); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = accent; ctx.beginPath(); ctx.moveTo(cx+r*dx, cy+r*dy-r*0.13); ctx.lineTo(cx+r*(dx-0.09*Math.sign(dx)), cy+r*dy+r*0.06); ctx.lineTo(cx+r*(dx+0.12*Math.sign(dx)), cy+r*dy+r*0.05); ctx.closePath(); ctx.fill(); ctx.fillStyle = body;
+    });
+  } else if (kind === 'bear') {
+    [[-0.48,-0.64],[0.48,-0.64]].forEach(([dx,dy])=>{
+      ctx.beginPath(); ctx.arc(cx+r*dx, cy+r*dy, r*0.18, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = accent; ctx.globalAlpha = 0.52; ctx.beginPath(); ctx.arc(cx+r*dx, cy+r*dy, r*0.09, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; ctx.fillStyle = body;
+    });
+  } else if (kind === 'puppy') {
+    [[-0.5,-0.58,-0.42],[0.5,-0.58,0.42]].forEach(([dx,dy,rot])=>{
+      ctx.save(); ctx.translate(cx+r*dx, cy+r*dy); ctx.rotate(rot);
+      ctx.fillStyle = '#f7c7c2'; ctx.beginPath(); ctx.ellipse(0, 0, r*0.17, r*0.36, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.restore(); ctx.fillStyle = body;
+    });
+  }
+
+  ctx.beginPath();
+  if (kind === 'ghost') {
+    ctx.moveTo(cx-r*0.9, cy+r*0.18);
+    ctx.bezierCurveTo(cx-r*0.9, cy-r*0.68, cx-r*0.48, cy-r*0.92, cx, cy-r*0.9);
+    ctx.bezierCurveTo(cx+r*0.62, cy-r*0.92, cx+r*0.9, cy-r*0.54, cx+r*0.86, cy+r*0.28);
+    ctx.quadraticCurveTo(cx+r*0.56, cy+r*0.48, cx+r*0.3, cy+r*0.34);
+    ctx.quadraticCurveTo(cx, cy+r*0.52, cx-r*0.3, cy+r*0.34);
+    ctx.quadraticCurveTo(cx-r*0.58, cy+r*0.5, cx-r*0.9, cy+r*0.18);
+  } else {
+    ctx.ellipse(cx, cy, r*0.86, r*0.82, 0, 0, Math.PI*2);
+  }
+  ctx.fill(); ctx.stroke();
+
+  drawKawaiiEyes(ctx, cx, cy-r*0.12, r, mood);
+  drawKawaiiBlush(ctx, cx, cy+r*0.08, r, accent);
+  drawKawaiiMouth(ctx, cx, cy+r*0.2, r, mood === 'sad' ? 'sad' : kind === 'cat' ? 'cat' : mood === 'sparkle' ? 'open' : 'smile');
+  ctx.restore();
+}
+
+function drawKawaiiSparkles(ctx, size, color = '#e1ae3c', t = 0) {
+  ctx.fillStyle = color;
+  const pulse = 1 + Math.sin(t*Math.PI*2)*0.14;
+  [[0.22,0.27,0.055],[0.78,0.28,0.045],[0.26,0.73,0.035]].forEach(([x,y,s])=>{
+    const r = size*s*pulse;
+    ctx.beginPath();
+    ctx.moveTo(size*x, size*y-r);
+    ctx.lineTo(size*x+r*0.28, size*y-r*0.28);
+    ctx.lineTo(size*x+r, size*y);
+    ctx.lineTo(size*x+r*0.28, size*y+r*0.28);
+    ctx.lineTo(size*x, size*y+r);
+    ctx.lineTo(size*x-r*0.28, size*y+r*0.28);
+    ctx.lineTo(size*x-r, size*y);
+    ctx.lineTo(size*x-r*0.28, size*y-r*0.28);
+    ctx.closePath(); ctx.fill();
+  });
+}
+
+function drawKawaiiHeart(ctx, x, y, r, color = '#ef7aa0') {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x, y+r*0.7);
+  ctx.bezierCurveTo(x-r*1.45, y-r*0.2, x-r*1.25, y-r*1.25, x, y-r*0.28);
+  ctx.bezierCurveTo(x+r*1.25, y-r*1.25, x+r*1.45, y-r*0.2, x, y+r*0.7);
+  ctx.fill();
+}
+
+function drawSoftStickerScene(scene, ctx, size, pal, t=0) {
+  const bounce = Math.sin(t*Math.PI*2);
+  drawBg(ctx, size, pal);
+  if (scene === 'happy') {
+    drawKawaiiSparkles(ctx, size, '#dfab39', t);
+    drawKawaiiHead(ctx, size, { kind:'bear', mood:'closed', cx:size*0.5, cy:size*0.55-Math.abs(bounce)*size*0.035, r:size*0.3, accent:'#ffd38a', t });
+    return;
+  }
+  if (scene === 'cheer') {
+    drawKawaiiHead(ctx, size, { kind:'cat', mood:'sparkle', cx:size*0.5, cy:size*0.55-Math.abs(bounce)*size*0.02, r:size*0.29, accent:'#f5c77b', t });
+    setKawaiiStroke(ctx, size); ctx.beginPath(); ctx.moveTo(size*0.27,size*0.54); ctx.lineTo(size*0.18,size*0.39-Math.abs(bounce)*size*0.03); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(size*0.73,size*0.54); ctx.lineTo(size*0.82,size*0.39-Math.abs(bounce)*size*0.03); ctx.stroke();
+    drawKawaiiSparkles(ctx, size, '#e1ae3c', t);
+    return;
+  }
+  if (scene === 'comfort') {
+    drawKawaiiHead(ctx, size, { kind:'bunny', mood:'closed', cx:size*0.5, cy:size*0.52, r:size*0.29, accent:'#ffc5cf', t });
+    drawKawaiiHeart(ctx, size*0.5, size*0.66, size*0.12, '#f08aa7');
+    return;
+  }
+  if (scene === 'rest' || scene === 'sleepy') {
+    drawKawaiiHead(ctx, size, { kind:'bunny', mood:'closed', cx:size*0.5, cy:size*0.48, r:size*0.27, accent:'#ffc5cf', t });
+    ctx.fillStyle = '#ffd7c8'; setKawaiiStroke(ctx, size, '#b87970');
+    ctx.beginPath(); ctx.roundRect(size*0.21, size*0.58, size*0.58, size*0.24, size*0.08); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = size*0.008;
+    for(let i=0;i<3;i+=1){ ctx.beginPath(); ctx.moveTo(size*(0.28+i*0.16),size*0.6); ctx.lineTo(size*(0.42+i*0.16),size*0.8); ctx.stroke(); }
+    return;
+  }
+  if (scene === 'study') {
+    drawKawaiiHead(ctx, size, { kind:'cat', mood:'sparkle', cx:size*0.5, cy:size*0.48-Math.abs(bounce)*size*0.01, r:size*0.27, accent:'#ffd08a', t });
+    ctx.fillStyle = '#fff1b8'; setKawaiiStroke(ctx, size, '#6b4b36');
+    ctx.beginPath(); ctx.roundRect(size*0.32, size*0.66, size*0.36, size*0.14, size*0.025); ctx.fill(); ctx.stroke();
+    drawKawaiiSparkles(ctx, size, '#dfab39', t);
+    return;
+  }
+  if (scene === 'listen' || scene === 'peek') {
+    ctx.fillStyle = '#f5dfcc'; setKawaiiStroke(ctx, size, '#ba8c76');
+    ctx.beginPath(); ctx.roundRect(size*0.08, size*0.18, size*0.12, size*0.62, size*0.04); ctx.fill(); ctx.stroke();
+    drawKawaiiHead(ctx, size, { kind:'bunny', mood:'sparkle', cx:size*0.45+Math.sin(t*Math.PI*2)*size*0.012, cy:size*0.52, r:size*0.27, accent:'#ffc5cf', t, tilt:-0.08 });
+    return;
+  }
+  if (scene === 'pat') {
+    drawKawaiiHead(ctx, size, { kind:'puppy', mood:'closed', cx:size*0.5, cy:size*0.55, r:size*0.28, accent:'#ffc0c8', t });
+    setKawaiiStroke(ctx, size, '#df9aa3');
+    [0.37,0.47,0.57].forEach((x,i)=>{ ctx.beginPath(); ctx.moveTo(size*x, size*(0.25+i*0.015)); ctx.quadraticCurveTo(size*(x+0.03), size*0.18, size*(x+0.08), size*(0.23+i*0.015)); ctx.stroke(); });
+    return;
+  }
+  if (scene === 'sob') {
+    drawKawaiiHead(ctx, size, { kind:'puppy', mood:'sad', cx:size*0.5, cy:size*0.55, r:size*0.3, accent:'#ffc0c8', t });
+    return;
+  }
+  if (scene === 'love' || scene === 'miss') {
+    drawKawaiiHead(ctx, size, { kind:'bunny', mood:'closed', cx:size*0.5, cy:size*0.54, r:size*0.29, accent:'#f39ab7', t });
+    drawKawaiiHeart(ctx, size*0.34, size*0.32+Math.sin(t*Math.PI*2)*size*0.01, size*0.045);
+    drawKawaiiHeart(ctx, size*0.72, size*0.33-Math.sin(t*Math.PI*2)*size*0.01, size*0.04);
+    return;
+  }
+  if (scene === 'night') {
+    drawKawaiiHead(ctx, size, { kind:'cat', mood:'closed', cx:size*0.5, cy:size*0.52, r:size*0.28, accent:'#ffc5cf', t });
+    ctx.fillStyle = '#ffb8cb'; setKawaiiStroke(ctx, size, '#8f5a66');
+    ctx.beginPath(); ctx.moveTo(size*0.28,size*0.34); ctx.quadraticCurveTo(size*0.5,size*0.2,size*0.72,size*0.34); ctx.lineTo(size*0.67,size*0.47); ctx.quadraticCurveTo(size*0.5,size*0.38,size*0.33,size*0.47); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ffcfda'; ctx.beginPath(); ctx.roundRect(size*0.22,size*0.65,size*0.56,size*0.16,size*0.05); ctx.fill(); ctx.stroke();
+    return;
+  }
+  if (scene === 'doubt' || scene === 'confused' || scene === 'think') {
+    drawKawaiiHead(ctx, size, { kind:'cat', mood:'doubt', cx:size*0.5, cy:size*0.55, r:size*0.29, accent:'#ffc0c8', t, tilt:Math.sin(t*Math.PI*2)*0.03 });
+    ctx.fillStyle = '#e0a73b'; ctx.font=`700 ${size*0.16}px "Noto Sans SC",sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('?', size*0.74, size*0.28+Math.sin(t*Math.PI*2)*size*0.02);
+    return;
+  }
+  if (scene === 'hello') {
+    drawKawaiiHead(ctx, size, { kind:'cat', mood:'happy', cx:size*0.5, cy:size*0.55, r:size*0.29, accent:'#ffd08a', t });
+    setKawaiiStroke(ctx, size); ctx.beginPath(); ctx.moveTo(size*0.72,size*0.55); ctx.quadraticCurveTo(size*0.86,size*0.42,size*0.76,size*0.35+Math.sin(t*Math.PI*4)*size*0.025); ctx.stroke();
+    drawKawaiiSparkles(ctx, size, '#dfab39', t);
+    return;
+  }
+  drawKawaiiHead(ctx, size, { kind:'ghost', mood:'happy', cx:size*0.5, cy:size*0.55, r:size*0.31, accent:'#ffc0c8', t });
+}
+
 // ─── 15 Scene draw functions ──────────────────────────────────────────────────
 
 function drawScenePhone(ctx, size, pal, t=0) {
@@ -664,12 +886,30 @@ function drawSceneNight(ctx, size, pal, t=0) {
 
 // ─── Scene registry ───────────────────────────────────────────────────────────
 const SCENE_DRAWERS = {
-  phone: drawScenePhone, skeptical: drawSceneSkeptical, confused: drawSceneConfused,
-  caring: drawSceneCaring, shocked: drawSceneShocked, retreat: drawSceneRetreat,
-  peek: drawScenePeek, happy: drawSceneHappy, blush: drawSceneBlush,
-  sleepy: drawSceneSleepy, cheer: drawSceneCheer, love: drawSceneLove,
-  think: drawSceneThink, sob: drawSceneSob, shrug: drawSceneShrug,
-  miss: drawSceneMiss, doubt: drawSceneDoubt, hello: drawSceneHello, night: drawSceneNight,
+  phone: (ctx,size,pal,t)=>drawSoftStickerScene('listen',ctx,size,pal,t),
+  skeptical: (ctx,size,pal,t)=>drawSoftStickerScene('doubt',ctx,size,pal,t),
+  confused: (ctx,size,pal,t)=>drawSoftStickerScene('confused',ctx,size,pal,t),
+  caring: (ctx,size,pal,t)=>drawSoftStickerScene('comfort',ctx,size,pal,t),
+  shocked: (ctx,size,pal,t)=>drawSoftStickerScene('confused',ctx,size,pal,t),
+  retreat: (ctx,size,pal,t)=>drawSoftStickerScene('rest',ctx,size,pal,t),
+  peek: (ctx,size,pal,t)=>drawSoftStickerScene('peek',ctx,size,pal,t),
+  happy: (ctx,size,pal,t)=>drawSoftStickerScene('happy',ctx,size,pal,t),
+  blush: (ctx,size,pal,t)=>drawSoftStickerScene('love',ctx,size,pal,t),
+  sleepy: (ctx,size,pal,t)=>drawSoftStickerScene('sleepy',ctx,size,pal,t),
+  cheer: (ctx,size,pal,t)=>drawSoftStickerScene('cheer',ctx,size,pal,t),
+  love: (ctx,size,pal,t)=>drawSoftStickerScene('love',ctx,size,pal,t),
+  think: (ctx,size,pal,t)=>drawSoftStickerScene('think',ctx,size,pal,t),
+  sob: (ctx,size,pal,t)=>drawSoftStickerScene('sob',ctx,size,pal,t),
+  shrug: (ctx,size,pal,t)=>drawSoftStickerScene('confused',ctx,size,pal,t),
+  miss: (ctx,size,pal,t)=>drawSoftStickerScene('miss',ctx,size,pal,t),
+  doubt: (ctx,size,pal,t)=>drawSoftStickerScene('doubt',ctx,size,pal,t),
+  hello: (ctx,size,pal,t)=>drawSoftStickerScene('hello',ctx,size,pal,t),
+  night: (ctx,size,pal,t)=>drawSoftStickerScene('night',ctx,size,pal,t),
+  comfort: (ctx,size,pal,t)=>drawSoftStickerScene('comfort',ctx,size,pal,t),
+  rest: (ctx,size,pal,t)=>drawSoftStickerScene('rest',ctx,size,pal,t),
+  study: (ctx,size,pal,t)=>drawSoftStickerScene('study',ctx,size,pal,t),
+  listen: (ctx,size,pal,t)=>drawSoftStickerScene('listen',ctx,size,pal,t),
+  pat: (ctx,size,pal,t)=>drawSoftStickerScene('pat',ctx,size,pal,t),
 };
 
 // Cute hand-drawn meme templates. The canvas characters stay as a graceful
@@ -748,7 +988,7 @@ function drawStickerText(ctx, text, size, pal) {
 }
 
 // ─── Animated canvas ──────────────────────────────────────────────────────────
-function makeAnimatedCanvas(scene, text, size) {
+function makeAnimatedCanvas(scene, text, size, animated = true) {
   const pal=SCENE_PALETTES[scene]||SCENE_PALETTES.caring;
   const drawer=SCENE_DRAWERS[scene]||drawSceneCaring;
   const canvas=document.createElement('canvas');
@@ -764,7 +1004,7 @@ function makeAnimatedCanvas(scene, text, size) {
     frame=(frame+1)%loopFrames;
   }
   render();
-  canvas._animId=setInterval(render,1000/fps);
+  if(animated) canvas._animId=setInterval(render,1000/fps);
   if(USE_TEMPLATE_IMAGES) loadStickerTemplate(scene).then((image)=>{ templateImage=image; render(); }).catch(()=>{});
   return canvas;
 }
@@ -820,6 +1060,7 @@ const MOOD_SCENES = {
   retreat:    ['rest', 'peek', 'doubt', 'sob', 'listen', 'comfort'],
 };
 
+const ANIMATED_STICKER_SCENES=new Set(['happy','cheer','peek','miss','love','night','sob','pat']);
 const VALID_SCENES=new Set([...Object.keys(STICKER_TEMPLATES),'miss','doubt','hello','night','love','think','sleepy','sob']);
 const STICKER_PANEL_RECOMMENDATION_COUNT=6;
 
@@ -832,14 +1073,51 @@ const FALLBACK_SUGGESTIONS = {
   建议停手: [{text:'我先撤啦',mood:'retreat',scene:'rest'},{text:'当我没说',mood:'speechless',scene:'doubt'},{text:'优雅离场',mood:'retreat',scene:'peek'},{text:'好吧好吧',mood:'retreat',scene:'listen'},{text:'先消失',mood:'retreat',scene:'sob'},{text:'不打扰啦',mood:'retreat',scene:'comfort'}],
 };
 
+function getDefaultStickerText(suggestion, stage='轻松破冰') {
+  if(stage==='建议停手') return '先撤啦';
+  return {
+    comfort:'抱抱你', rest:'先缓缓', study:'加油呀', listen:'我在听',
+    happy:'好耶', cheer:'可以可以', peek:'在等你呀', confused:'欸？',
+    pat:'摸摸头', miss:'想你一下', doubt:'真的假的', hello:'Hi',
+    night:'晚安安', love:'心动', think:'让我想想', sleepy:'困困', sob:'别难过',
+  }[suggestion.scene]||'';
+}
+
+function defaultStickerAnimation(scene, index=0) {
+  if(ANIMATED_STICKER_SCENES.has(scene)) return true;
+  return index%3===0;
+}
+
+function balanceStickerPresentation(suggestions, stage='轻松破冰') {
+  const items=suggestions.slice(0,STICKER_PANEL_RECOMMENDATION_COUNT).map((suggestion,index)=>({
+    ...suggestion,
+    animated:typeof suggestion.animated==='boolean'?suggestion.animated:defaultStickerAnimation(suggestion.scene,index),
+  }));
+  let textCount=items.filter((suggestion)=>suggestion.text).length;
+  for(let i=0;textCount>3&&i<items.length;i+=1){
+    if(i%2===1&&items[i].text){ items[i]={...items[i],text:''}; textCount-=1; }
+  }
+  for(let i=0;textCount<2&&i<items.length;i+=1){
+    if(!items[i].text){ const text=getDefaultStickerText(items[i],stage); if(text){ items[i]={...items[i],text}; textCount+=1; } }
+  }
+  let animatedCount=items.filter((suggestion)=>suggestion.animated).length;
+  for(let i=items.length-1;animatedCount>4&&i>=0;i-=1){
+    if(items[i].animated){ items[i]={...items[i],animated:false}; animatedCount-=1; }
+  }
+  for(let i=0;animatedCount<2&&i<items.length;i+=1){
+    if(!items[i].animated){ items[i]={...items[i],animated:true}; animatedCount+=1; }
+  }
+  return items;
+}
+
 function getStickerSuggestions(advice) {
   const s=Array.isArray(advice?.sticker_suggestions)
-    ?advice.sticker_suggestions.map((s)=>({text:typeof s?.text==='string'?s.text.trim().slice(0,16):'',mood:MOOD_SCENES[s?.mood]?s.mood:'playful',scene:VALID_SCENES.has(s?.scene)?s.scene:''})).filter(s=>s.scene).slice(0,STICKER_PANEL_RECOMMENDATION_COUNT):[];
-  const fallback=(FALLBACK_SUGGESTIONS[advice?.conversation_stage]||FALLBACK_SUGGESTIONS['轻松破冰']).map((item)=>({...item,text:''}));
+    ?advice.sticker_suggestions.map((s,i)=>({text:typeof s?.text==='string'?s.text.trim().slice(0,16):'',mood:MOOD_SCENES[s?.mood]?s.mood:'playful',scene:VALID_SCENES.has(s?.scene)?s.scene:'',animated:typeof s?.animated==='boolean'?s.animated:defaultStickerAnimation(s?.scene,i)})).filter(s=>s.scene).slice(0,STICKER_PANEL_RECOMMENDATION_COUNT):[];
+  const fallback=balanceStickerPresentation(FALLBACK_SUGGESTIONS[advice?.conversation_stage]||FALLBACK_SUGGESTIONS['轻松破冰'], advice?.conversation_stage);
   if(s.length<3) return fallback;
-  return [...s,...fallback]
+  return balanceStickerPresentation([...s,...fallback]
     .filter((item,index,items)=>items.findIndex((candidate)=>candidate.scene===item.scene||(item.text&&candidate.text===item.text))===index)
-    .slice(0,STICKER_PANEL_RECOMMENDATION_COUNT);
+    .slice(0,STICKER_PANEL_RECOMMENDATION_COUNT), advice?.conversation_stage);
 }
 
 function chooseStickerScene(suggestion, index) {
@@ -858,14 +1136,21 @@ async function showStickerPanel(advice) {
   grid.querySelectorAll('canvas').forEach(stopAnimation);
   grid.replaceChildren();
   const suggestions=getStickerSuggestions(advice);
-  const thumbs=suggestions.map((s,i)=>{ const scene=chooseStickerScene(s,i); const thumb=makeAnimatedCanvas(scene,s.text,180); thumb.className='sticker-thumb'; thumb.title=s.text||'表情包'; thumb.addEventListener('click',()=>showStickerModal(scene,s.text)); return thumb; });
+  const thumbs=suggestions.map((s,i)=>{
+    const scene=chooseStickerScene(s,i);
+    const thumb=makeAnimatedCanvas(scene,s.text,180,s.animated);
+    thumb.className='sticker-thumb';
+    thumb.title=s.text||'表情包';
+    thumb.addEventListener('click',()=>showStickerModal(scene,s.text,s.animated));
+    return { thumb, animated:s.animated };
+  });
   if(cur!==renderSequence) return;
-  thumbs.forEach((thumb)=>{ const wrap=document.createElement('div'); wrap.className='sticker-wrap'; wrap.appendChild(thumb); grid.appendChild(wrap); });
+  thumbs.forEach(({ thumb, animated })=>{ const wrap=document.createElement('div'); wrap.className='sticker-wrap'; if(animated){ const badge=document.createElement('span'); badge.className='sticker-motion-badge'; badge.textContent='GIF'; wrap.appendChild(badge); } wrap.appendChild(thumb); grid.appendChild(wrap); });
   panel.style.display='block';
   setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'nearest'}),100);
 }
 
-function showStickerModal(scene, text) {
+function showStickerModal(scene, text, animated = true) {
   let modal=document.getElementById('stickerModal');
   if(!modal){
     modal=document.createElement('div'); modal.id='stickerModal'; modal.className='sticker-modal';
@@ -874,7 +1159,7 @@ function showStickerModal(scene, text) {
     modal.addEventListener('click',(e)=>{ if(e.target===modal) closeStickerModal(); });
   }
   modal.querySelectorAll('canvas').forEach(stopAnimation);
-  const large=makeAnimatedCanvas(scene,text,420);
+  const large=makeAnimatedCanvas(scene,text,420,animated);
   large.style.cssText='border-radius:16px;display:block;max-width:100%;height:auto;';
   document.getElementById('stickerModalCanvas').replaceChildren(large);
   document.getElementById('stickerModalName').textContent=text?`配字：${text}`:'无配字';
@@ -888,6 +1173,7 @@ function showStickerModal(scene, text) {
     c.toBlob((blob)=>{ const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='yuchaolove-sticker.png'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000); },'image/png');
   };
   const gifBtn=document.getElementById('stickerDlGif');
+  gifBtn.style.display=animated?'block':'none';
   gifBtn.onclick=async()=>{
     gifBtn.disabled=true; gifBtn.textContent='生成中 0%';
     try { await exportAsGif(scene,text,420,(p)=>{ gifBtn.textContent=`生成中 ${p}%`; }); gifBtn.textContent='⬇ 下载动图 GIF'; }

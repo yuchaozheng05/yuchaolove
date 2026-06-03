@@ -65,6 +65,8 @@ test('defines a strict schema for richer attraction analysis', () => {
   assert.equal(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.minItems, 3);
   assert.equal(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.maxItems, 3);
   assert.deepEqual(Object.keys(CHAT_ADVICE_SCHEMA.properties.replies.items.properties), ['text']);
+  assert.equal(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.items.properties.animated.type, 'boolean');
+  assert.ok(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.items.required.includes('animated'));
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /主动回球/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /暧昧必须有依据/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /永远是用户准备发送给对方的话/);
@@ -90,7 +92,7 @@ test('parses willingness signals, flirt level, and clean untagged replies', () =
   assert.equal(advice.flirt_level, '轻微暧昧');
   assert.deepEqual(advice.interest_signals, ['主动回问', '接住共同梗']);
   assert.deepEqual(advice.replies[0], { text: '感受到了，嘴硬但还挺会关心人' });
-  assert.deepEqual(advice.sticker_suggestions[0], { text: '有点会聊', mood: 'teasing', scene: 'peek' });
+  assert.deepEqual(advice.sticker_suggestions[0], { text: '有点会聊', mood: 'teasing', scene: 'peek', animated: true });
   assert.equal(advice.sticker_suggestions.length, 6);
   assert.equal(advice.conversation_summary, '对方：你感受到我的了吗；我：好像遇到我你才对白由向往');
 });
@@ -433,7 +435,7 @@ test('normalizes sticker suggestions and falls back by stage without phone scene
   assert.equal(stopSuggestions.length, 6);
   assert.deepEqual(
     stopSuggestions[0],
-    { text: '', mood: 'retreat', scene: 'rest' },
+    { text: '我先撤啦', mood: 'retreat', scene: 'rest', animated: true },
   );
   const contextualSuggestions = normalizeStickerSuggestions([
       { text: ' 有点会聊 ', mood: 'teasing', scene: 'peek' },
@@ -445,8 +447,11 @@ test('normalizes sticker suggestions and falls back by stage without phone scene
   assert.equal(contextualSuggestions.some((suggestion) => suggestion.scene === 'phone'), false);
   assert.deepEqual(
     contextualSuggestions[0],
-    { text: '有点会聊', mood: 'teasing', scene: 'peek' },
+    { text: '有点会聊', mood: 'teasing', scene: 'peek', animated: true },
   );
+  assert.ok(contextualSuggestions.some((suggestion) => suggestion.text === ''));
+  assert.ok(contextualSuggestions.some((suggestion) => suggestion.animated));
+  assert.ok(contextualSuggestions.some((suggestion) => !suggestion.animated));
 });
 
 test('matches six unique caring stickers to physical discomfort', () => {
@@ -458,7 +463,10 @@ test('matches six unique caring stickers to physical discomfort', () => {
   const suggestions = normalizeStickerSuggestions([], '情绪陪伴', dialogue);
 
   assert.deepEqual(suggestions.map((suggestion) => suggestion.scene), ['comfort', 'rest', 'listen', 'pat', 'cheer', 'study']);
-  assert.equal(suggestions[0].text, '');
+  assert.equal(suggestions[0].text, '听着就难受');
+  assert.ok(suggestions.some((suggestion) => suggestion.text === ''));
+  assert.ok(suggestions.some((suggestion) => suggestion.animated));
+  assert.ok(suggestions.some((suggestion) => !suggestion.animated));
 });
 
 test('matches study encouragement and happy stickers to chat emotion', () => {
@@ -471,8 +479,8 @@ test('matches study encouragement and happy stickers to chat emotion', () => {
     { side: 'left', text: '好耶 我太开心了' },
   ]));
 
-  assert.deepEqual(studySuggestions[0], { text: '', mood: 'caring', scene: 'study' });
-  assert.deepEqual(happySuggestions[0], { text: '', mood: 'playful', scene: 'happy' });
+  assert.deepEqual(studySuggestions[0], { text: '考试加油', mood: 'caring', scene: 'study', animated: true });
+  assert.deepEqual(happySuggestions[0], { text: '好耶', mood: 'playful', scene: 'happy', animated: true });
 });
 
 test('flags flirt that evades a direct clarification question', () => {
@@ -756,9 +764,9 @@ function adviceValue(overrides = {}) {
       { text: '有一点，但我还在观察' },
     ],
     sticker_suggestions: [
-      { text: '有点会聊', mood: 'teasing', scene: 'peek' },
-      { text: '我再观察', mood: 'playful', scene: 'confused' },
-      { text: '行吧 加一分', mood: 'teasing', scene: 'cheer' },
+      { text: '有点会聊', mood: 'teasing', scene: 'peek', animated: true },
+      { text: '我再观察', mood: 'playful', scene: 'confused', animated: false },
+      { text: '行吧 加一分', mood: 'teasing', scene: 'cheer', animated: true },
     ],
     ...overrides,
   };

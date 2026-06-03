@@ -34,12 +34,16 @@ test('shows contextual stickers only after a usable chat result', () => {
   assert.match(stickers, /drawTemplateSticker/);
   assert.match(stickers, /STICKER_PANEL_RECOMMENDATION_COUNT=6/);
   assert.match(stickers, /sticker_suggestions/);
+  assert.match(stickers, /ANIMATED_STICKER_SCENES/);
+  assert.match(stickers, /sticker-motion-badge/);
+  assert.match(stickers, /animated\?'block':'none'/);
   assert.match(stickers, /filter\(s=>s\.scene\)/);
   assert.match(stickers, /text\?\`配字：\$\{text\}\`:'无配字'/);
   assert.match(stickers, /assets\/stickers\/comfort-bunny\.png/);
   assert.match(stickers, /assets\/stickers\/study-bunny\.png/);
   assert.doesNotMatch(stickers, /assets\/stickers\/lazy-phone-duck\.png/);
-  assert.match(html, /每次推荐 6 个/);
+  assert.match(html, /有字\/无字/);
+  assert.match(html, /动图\/静态按语境/);
   assert.doesNotMatch(app, /selectedStyle|chipGroup/);
 });
 

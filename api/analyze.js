@@ -25,7 +25,7 @@ const REPLY_COACH_SYSTEM_PROMPT = `你是中文聊天回复顾问。你的目标
 - 回复延迟只能作为弱信号，不要因为晚回一次就下结论。
 - 暧昧必须有依据。对方只是礼貌回应时保持轻松；对方愿意接话时可以轻微暧昧；对方主动回球时可以自然升温；对方连续敷衍时停止加码。
 - 回复像真人发微信：短、具体、有一点个性。优先接住对方最后一句，同时借用整段聊天里的共同梗、昵称、细节或情绪。
-- 每条候选回复必须是 1 到 3 句或短气泡；具体写 1、2 还是 3 句，要根据截图里的关系阶段、情绪和最后一句来决定。换行表示用户可以分成几条气泡连续发出去。多行时每行都要短，不要写成作文。
+- 每次输出 3 到 5 条候选回复；每条候选回复可以是 1 到 3 句或短气泡，具体写 1、2 还是 3 句，要根据截图里的关系阶段、情绪和最后一句来决定。换行表示用户可以分成几条气泡连续发出去。多行时每行都要短，不要写成作文。
 - 学习这些样本节奏：先接住对方的话，再补一句自己的情绪或轻轻拉扯。例如“其实我很少晚睡\\n就是刚好，睡前想到你\\n就不知不觉想了一会儿”；“你这句话有点犯规\\n我本来想正常回的\\n现在又想多聊两句了”。不要生硬照抄，要按截图内容改写。
 - 候选回复永远是用户准备发送给对方的话。严格站在“我”的视角，不要把谁关心谁、谁哄谁、谁问谁理解反。
 - 一条回复只放一个重点。避免采访式连环提问、空泛关心、突然邀约、过度承诺、强行自恋和油腻土味情话。
@@ -38,7 +38,7 @@ const REPLY_COACH_SYSTEM_PROMPT = `你是中文聊天回复顾问。你的目标
 - 绝对不要替用户编造截图或补充背景里没有出现的个人信息，例如爱好、经历、课程、行程和家乡。需要用户自己填写时，用“___”保留一个明显空位。
 - 除了回复候选，还要给用户一条可以照着走的聊天路线：现在先做什么、后续怎么展开、什么不要做。每一步不是让用户一次发完，而是根据对方回应逐步推进。
 - 先判断 conversation_stage。阶段决定下一步，不要把所有聊天都套成“接一句、聊兴趣、马上邀约”。只有对方持续接球，才逐步增加个人化话题或轻松邀约。
-- 给 3 条最贴合上下文的 sticker_suggestions。每条包含情绪和画面场景，用作聊天表情包；text 可以是空字符串，不要为了填字而硬写。只有当短配字明显能贴合截图语境、能帮用户直接发送时才写 text。对方身体不舒服时优先安慰、休息、倾听、拍拍；对方为考试或作业焦虑时优先学习加油；对方开心时优先开心庆祝；想你/晚安/试探/刚认识时优先害羞、质疑、打招呼、想念或晚安场景。不要推荐手机画面。配字要像聊天梗图，不要写分析标签。页面会根据聊天情绪补足到 6 条。
+- 给 3 条最贴合上下文的 sticker_suggestions。每条包含情绪、画面场景和 animated 布尔值，用作聊天表情包；text 可以是空字符串，不要为了填字而硬写。只有当短配字明显能贴合截图语境、能帮用户直接发送时才写 text。需要关心时优先安慰、休息、倾听、拍拍；对方为考试或作业焦虑时优先学习加油；对方开心时优先开心庆祝；想你/晚安/试探/刚认识时优先害羞、质疑、打招呼、想念或晚安场景。不要推荐手机画面。配字要像聊天表情包，不要写分析标签。页面会根据聊天情绪补足到 6 条，并让有字/无字、动图/静态自然混合。
 - 少用“听起来”“感觉你”“那你平时”“有需要告诉我”“调整好状态”“看来”这类模板句。
 - 候选要自然、有变化，但不要给每条回复套风格标签。`;
 
@@ -66,7 +66,7 @@ ${IMAGE_READING_RULES}
 ${REPLY_PERSPECTIVE_EXAMPLES}`;
 const REPLY_REFINEMENT_SYSTEM_PROMPT = `你是中文聊天回复编辑。你会收到已经识别好的对话和一组不够自然的候选回复。
 只重写 replies，不要重新分析图片，不要编造对话里没有出现的信息。
-候选必须是“我”准备发给“对方”的话，输出 3 到 5 条自然、简短、可以直接发送的回复。每条回复必须是 1 到 3 句或短气泡，具体句数按截图语境决定；最多一条候选带问号。`;
+候选必须是“我”准备发给“对方”的话，输出 3 到 5 条自然、简短、可以直接发送的回复。每条回复可以是 1 到 3 句或短气泡，具体句数按截图语境决定；最多一条候选带问号。`;
 const CHAT_ADVICE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -159,8 +159,9 @@ const CHAT_ADVICE_SCHEMA = {
           text: { type: 'string' },
           mood: { type: 'string', enum: ['playful', 'teasing', 'curious', 'caring', 'speechless', 'retreat'] },
           scene: { type: 'string', enum: ['comfort', 'rest', 'study', 'listen', 'happy', 'cheer', 'peek', 'confused', 'pat', 'miss', 'doubt', 'hello', 'night', 'love', 'think', 'sleepy', 'sob'] },
+          animated: { type: 'boolean' },
         },
-        required: ['text', 'mood', 'scene'],
+        required: ['text', 'mood', 'scene', 'animated'],
       },
     },
   },
@@ -638,6 +639,7 @@ function buildActiveCuriosityGuide() {
 
 const STICKER_MOODS = new Set(['playful', 'teasing', 'curious', 'caring', 'speechless', 'retreat']);
 const STICKER_SCENES = new Set(['comfort', 'rest', 'study', 'listen', 'happy', 'cheer', 'peek', 'confused', 'pat', 'miss', 'doubt', 'hello', 'night', 'love', 'think', 'sleepy', 'sob']);
+const ANIMATED_STICKER_SCENES = new Set(['happy', 'cheer', 'peek', 'miss', 'love', 'night', 'sob', 'pat']);
 const STICKER_RECOMMENDATION_COUNT = 6;
 
 function buildDefaultStickerSuggestions(stage) {
@@ -683,7 +685,7 @@ function buildDefaultStickerSuggestions(stage) {
       { text: '别硬撑啦', mood: 'caring', scene: 'study' },
     ],
     建议停手: [
-      { text: '行 你继续玩', mood: 'retreat', scene: 'rest' },
+      { text: '我先撤啦', mood: 'retreat', scene: 'rest' },
       { text: '当我没说', mood: 'speechless', scene: 'doubt' },
       { text: '优雅离场', mood: 'retreat', scene: 'peek' },
       { text: '好吧好吧', mood: 'retreat', scene: 'listen' },
@@ -691,7 +693,7 @@ function buildDefaultStickerSuggestions(stage) {
       { text: '不打扰啦', mood: 'retreat', scene: 'comfort' },
     ],
   };
-  return stripFallbackStickerText(suggestions[normalizeConversationStage(stage)]);
+  return balanceStickerPresentation(suggestions[normalizeConversationStage(stage)], stage);
 }
 
 function buildContextualStickerSuggestions(context, stage = '轻松破冰') {
@@ -754,11 +756,78 @@ function buildContextualStickerSuggestions(context, stage = '轻松破冰') {
     ],
     emotional_disclosure: buildDefaultStickerSuggestions('情绪陪伴'),
   };
-  return stripFallbackStickerText(contextualSuggestions[context] || buildDefaultStickerSuggestions(stage));
+  return balanceStickerPresentation(contextualSuggestions[context] || buildDefaultStickerSuggestions(stage), stage);
 }
 
-function stripFallbackStickerText(suggestions) {
-  return suggestions.map((suggestion) => ({ ...suggestion, text: '' }));
+function getDefaultStickerText(suggestion, stage = '轻松破冰') {
+  if (stage === '建议停手') return '先撤啦';
+  const textByScene = {
+    comfort: '抱抱你',
+    rest: '先缓缓',
+    study: '加油呀',
+    listen: '我在听',
+    happy: '好耶',
+    cheer: '可以可以',
+    peek: '在等你呀',
+    confused: '欸？',
+    pat: '摸摸头',
+    miss: '想你一下',
+    doubt: '真的假的',
+    hello: 'Hi',
+    night: '晚安安',
+    love: '心动',
+    think: '让我想想',
+    sleepy: '困困',
+    sob: '别难过',
+  };
+  return textByScene[suggestion.scene] || '';
+}
+
+function getDefaultStickerAnimation(scene, index = 0) {
+  if (ANIMATED_STICKER_SCENES.has(scene)) return true;
+  return index % 3 === 0;
+}
+
+function balanceStickerPresentation(suggestions, stage = '轻松破冰') {
+  const items = suggestions.slice(0, STICKER_RECOMMENDATION_COUNT).map((suggestion, index) => ({
+    ...suggestion,
+    animated: typeof suggestion.animated === 'boolean'
+      ? suggestion.animated
+      : getDefaultStickerAnimation(suggestion.scene, index),
+  }));
+
+  let textCount = items.filter((suggestion) => suggestion.text).length;
+  for (let index = 0; textCount > 3 && index < items.length; index += 1) {
+    if (index % 2 === 1 && items[index].text) {
+      items[index] = { ...items[index], text: '' };
+      textCount -= 1;
+    }
+  }
+  for (let index = 0; textCount < 2 && index < items.length; index += 1) {
+    if (!items[index].text) {
+      const text = getDefaultStickerText(items[index], stage);
+      if (text) {
+        items[index] = { ...items[index], text };
+        textCount += 1;
+      }
+    }
+  }
+
+  let animatedCount = items.filter((suggestion) => suggestion.animated).length;
+  for (let index = items.length - 1; animatedCount > 4 && index >= 0; index -= 1) {
+    if (items[index].animated) {
+      items[index] = { ...items[index], animated: false };
+      animatedCount -= 1;
+    }
+  }
+  for (let index = 0; animatedCount < 2 && index < items.length; index += 1) {
+    if (!items[index].animated) {
+      items[index] = { ...items[index], animated: true };
+      animatedCount += 1;
+    }
+  }
+
+  return items;
 }
 
 function getStickerContext(dialogue) {
@@ -793,11 +862,12 @@ function normalizeStickerSuggestions(suggestions, stage = '轻松破冰', dialog
         text: cleanText(suggestion?.text, 16),
         mood: STICKER_MOODS.has(suggestion?.mood) ? suggestion.mood : 'playful',
         scene: STICKER_SCENES.has(suggestion?.scene) ? suggestion.scene : '',
+        animated: typeof suggestion?.animated === 'boolean' ? suggestion.animated : undefined,
       })).filter((suggestion) => suggestion.scene).slice(0, STICKER_RECOMMENDATION_COUNT)
     : [];
   const fallback = buildDefaultStickerSuggestions(stage);
   if (normalized.length < 3) return fallback;
-  return uniqueStickerSuggestions([...normalized, ...fallback])
+  return balanceStickerPresentation(uniqueStickerSuggestions([...normalized, ...fallback]), stage)
     .slice(0, STICKER_RECOMMENDATION_COUNT);
 }
 
