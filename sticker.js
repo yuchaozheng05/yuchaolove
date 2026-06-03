@@ -1,5 +1,5 @@
 /* yuchaolove - sticker.js
-   15 animated canvas characters. Warm cream/brown palette.
+   15 animated canvas characters on a clean white sticker background.
    GIF export via gif.js CDN.
 */
 
@@ -242,8 +242,8 @@ function drawMouth(ctx, cx, my, r, pal, expr) {
 // ─── Background ───────────────────────────────────────────────────────────────
 
 function drawBg(ctx, size, pal) {
-  ctx.fillStyle = pal.bg; ctx.fillRect(0, 0, size, size);
-  ctx.strokeStyle = pal.fur; ctx.lineWidth = 1.2; ctx.globalAlpha = 0.28;
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, size, size);
+  ctx.strokeStyle = pal.fur; ctx.lineWidth = 1.2; ctx.globalAlpha = 0.18;
   ctx.beginPath(); ctx.roundRect(size*0.04, size*0.04, size*0.92, size*0.92, size*0.14); ctx.stroke();
   ctx.globalAlpha = 1;
 }
@@ -637,7 +637,7 @@ function drawSceneNight(ctx, size, pal, t=0) {
   const breathe=1+Math.sin(t*Math.PI*2)*0.014;
   ctx.fillStyle='rgba(125,145,210,0.18)';
   ctx.beginPath(); ctx.arc(size*0.78,size*0.28,r*0.34,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle=pal.bg;
+  ctx.fillStyle='#fff';
   ctx.beginPath(); ctx.arc(size*0.86,size*0.22,r*0.32,0,Math.PI*2); ctx.fill();
   ctx.fillStyle=pal.accent;
   ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -686,6 +686,7 @@ const STICKER_TEMPLATES = {
   pat:      { src: '/assets/stickers/pat-bunnies.png', motion: 'breathe' },
 };
 
+const USE_TEMPLATE_IMAGES = false;
 const stickerTemplateCache = new Map();
 
 function loadStickerTemplate(scene) {
@@ -732,6 +733,7 @@ function getTextLines(text) {
 }
 
 function drawStickerText(ctx, text, size, pal) {
+  if(!text) return;
   const lines=getTextLines(text), large=size>=300;
   const fontSize=large?(lines.length>1?30:36):(lines.length>1?16:20);
   const lineH=fontSize*1.22, pad=large?14:7;
@@ -756,14 +758,14 @@ function makeAnimatedCanvas(scene, text, size) {
   let frame=0, templateImage=null;
   function render() {
     ctx.clearRect(0,0,size,size);
-    if(templateImage) drawTemplateSticker(ctx,scene,size,frame/loopFrames,templateImage);
+    if(USE_TEMPLATE_IMAGES&&templateImage) drawTemplateSticker(ctx,scene,size,frame/loopFrames,templateImage);
     else { drawBg(ctx,size,pal); drawer(ctx,size,pal,frame/loopFrames); }
     drawStickerText(ctx,text,size,pal);
     frame=(frame+1)%loopFrames;
   }
   render();
   canvas._animId=setInterval(render,1000/fps);
-  loadStickerTemplate(scene).then((image)=>{ templateImage=image; render(); }).catch(()=>{});
+  if(USE_TEMPLATE_IMAGES) loadStickerTemplate(scene).then((image)=>{ templateImage=image; render(); }).catch(()=>{});
   return canvas;
 }
 
@@ -782,7 +784,7 @@ async function exportAsGif(scene, text, size, onProgress) {
   await loadGifJs();
   const pal=SCENE_PALETTES[scene]||SCENE_PALETTES.caring;
   const drawer=SCENE_DRAWERS[scene]||drawSceneCaring;
-  const templateImage=await loadStickerTemplate(scene).catch(()=>null);
+  const templateImage=USE_TEMPLATE_IMAGES?await loadStickerTemplate(scene).catch(()=>null):null;
   const loopFrames=24, frameDelay=Math.round(1000/12);
   let workerUrl;
   try { const res=await fetch('https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js'); workerUrl=URL.createObjectURL(await res.blob()); }
@@ -832,11 +834,11 @@ const FALLBACK_SUGGESTIONS = {
 
 function getStickerSuggestions(advice) {
   const s=Array.isArray(advice?.sticker_suggestions)
-    ?advice.sticker_suggestions.map((s)=>({text:typeof s?.text==='string'?s.text.trim().slice(0,16):'',mood:MOOD_SCENES[s?.mood]?s.mood:'playful',scene:VALID_SCENES.has(s?.scene)?s.scene:''})).filter(s=>s.text&&s.scene).slice(0,STICKER_PANEL_RECOMMENDATION_COUNT):[];
-  const fallback=FALLBACK_SUGGESTIONS[advice?.conversation_stage]||FALLBACK_SUGGESTIONS['轻松破冰'];
+    ?advice.sticker_suggestions.map((s)=>({text:typeof s?.text==='string'?s.text.trim().slice(0,16):'',mood:MOOD_SCENES[s?.mood]?s.mood:'playful',scene:VALID_SCENES.has(s?.scene)?s.scene:''})).filter(s=>s.scene).slice(0,STICKER_PANEL_RECOMMENDATION_COUNT):[];
+  const fallback=(FALLBACK_SUGGESTIONS[advice?.conversation_stage]||FALLBACK_SUGGESTIONS['轻松破冰']).map((item)=>({...item,text:''}));
   if(s.length<3) return fallback;
   return [...s,...fallback]
-    .filter((item,index,items)=>items.findIndex((candidate)=>candidate.text===item.text||candidate.scene===item.scene)===index)
+    .filter((item,index,items)=>items.findIndex((candidate)=>candidate.scene===item.scene||(item.text&&candidate.text===item.text))===index)
     .slice(0,STICKER_PANEL_RECOMMENDATION_COUNT);
 }
 
@@ -856,7 +858,7 @@ async function showStickerPanel(advice) {
   grid.querySelectorAll('canvas').forEach(stopAnimation);
   grid.replaceChildren();
   const suggestions=getStickerSuggestions(advice);
-  const thumbs=suggestions.map((s,i)=>{ const scene=chooseStickerScene(s,i); const thumb=makeAnimatedCanvas(scene,s.text,180); thumb.className='sticker-thumb'; thumb.title=s.text; thumb.addEventListener('click',()=>showStickerModal(scene,s.text)); return thumb; });
+  const thumbs=suggestions.map((s,i)=>{ const scene=chooseStickerScene(s,i); const thumb=makeAnimatedCanvas(scene,s.text,180); thumb.className='sticker-thumb'; thumb.title=s.text||'表情包'; thumb.addEventListener('click',()=>showStickerModal(scene,s.text)); return thumb; });
   if(cur!==renderSequence) return;
   thumbs.forEach((thumb)=>{ const wrap=document.createElement('div'); wrap.className='sticker-wrap'; wrap.appendChild(thumb); grid.appendChild(wrap); });
   panel.style.display='block';
@@ -875,11 +877,11 @@ function showStickerModal(scene, text) {
   const large=makeAnimatedCanvas(scene,text,420);
   large.style.cssText='border-radius:16px;display:block;max-width:100%;height:auto;';
   document.getElementById('stickerModalCanvas').replaceChildren(large);
-  document.getElementById('stickerModalName').textContent=`配字：${text}`;
+  document.getElementById('stickerModalName').textContent=text?`配字：${text}`:'无配字';
   document.getElementById('stickerDlPng').onclick=async()=>{
     const c=document.createElement('canvas'); c.width=420; c.height=420;
     const ctx=c.getContext('2d'), pal=SCENE_PALETTES[scene]||SCENE_PALETTES.caring;
-    const templateImage=await loadStickerTemplate(scene).catch(()=>null);
+    const templateImage=USE_TEMPLATE_IMAGES?await loadStickerTemplate(scene).catch(()=>null):null;
     if(templateImage) drawTemplateSticker(ctx,scene,420,0,templateImage);
     else { drawBg(ctx,420,pal); (SCENE_DRAWERS[scene]||drawSceneCaring)(ctx,420,pal,0); }
     drawStickerText(ctx,text,420,pal);

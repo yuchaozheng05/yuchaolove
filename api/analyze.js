@@ -25,7 +25,7 @@ const REPLY_COACH_SYSTEM_PROMPT = `你是中文聊天回复顾问。你的目标
 - 回复延迟只能作为弱信号，不要因为晚回一次就下结论。
 - 暧昧必须有依据。对方只是礼貌回应时保持轻松；对方愿意接话时可以轻微暧昧；对方主动回球时可以自然升温；对方连续敷衍时停止加码。
 - 回复像真人发微信：短、具体、有一点个性。优先接住对方最后一句，同时借用整段聊天里的共同梗、昵称、细节或情绪。
-- 候选回复可以是一行，也可以是 2 到 3 行；换行表示用户可以分成几条气泡连续发出去。多行时每行都要短，不要写成作文。
+- 每条候选回复必须是 1 到 3 句或短气泡；具体写 1、2 还是 3 句，要根据截图里的关系阶段、情绪和最后一句来决定。换行表示用户可以分成几条气泡连续发出去。多行时每行都要短，不要写成作文。
 - 学习这些样本节奏：先接住对方的话，再补一句自己的情绪或轻轻拉扯。例如“其实我很少晚睡\\n就是刚好，睡前想到你\\n就不知不觉想了一会儿”；“你这句话有点犯规\\n我本来想正常回的\\n现在又想多聊两句了”。不要生硬照抄，要按截图内容改写。
 - 候选回复永远是用户准备发送给对方的话。严格站在“我”的视角，不要把谁关心谁、谁哄谁、谁问谁理解反。
 - 一条回复只放一个重点。避免采访式连环提问、空泛关心、突然邀约、过度承诺、强行自恋和油腻土味情话。
@@ -38,7 +38,7 @@ const REPLY_COACH_SYSTEM_PROMPT = `你是中文聊天回复顾问。你的目标
 - 绝对不要替用户编造截图或补充背景里没有出现的个人信息，例如爱好、经历、课程、行程和家乡。需要用户自己填写时，用“___”保留一个明显空位。
 - 除了回复候选，还要给用户一条可以照着走的聊天路线：现在先做什么、后续怎么展开、什么不要做。每一步不是让用户一次发完，而是根据对方回应逐步推进。
 - 先判断 conversation_stage。阶段决定下一步，不要把所有聊天都套成“接一句、聊兴趣、马上邀约”。只有对方持续接球，才逐步增加个人化话题或轻松邀约。
-- 给 3 条最贴合上下文的 sticker_suggestions。每条包含适合当前上下文的短配字、情绪和画面场景，用作聊天表情包。对方身体不舒服时优先安慰、休息、倾听、拍拍；对方为考试或作业焦虑时优先学习加油；对方开心时优先开心庆祝；想你/晚安/试探/刚认识时优先害羞、质疑、打招呼、想念或晚安场景。不要推荐手机画面。配字要像聊天梗图，不要写分析标签。页面会根据聊天情绪补足到 6 条。
+- 给 3 条最贴合上下文的 sticker_suggestions。每条包含情绪和画面场景，用作聊天表情包；text 可以是空字符串，不要为了填字而硬写。只有当短配字明显能贴合截图语境、能帮用户直接发送时才写 text。对方身体不舒服时优先安慰、休息、倾听、拍拍；对方为考试或作业焦虑时优先学习加油；对方开心时优先开心庆祝；想你/晚安/试探/刚认识时优先害羞、质疑、打招呼、想念或晚安场景。不要推荐手机画面。配字要像聊天梗图，不要写分析标签。页面会根据聊天情绪补足到 6 条。
 - 少用“听起来”“感觉你”“那你平时”“有需要告诉我”“调整好状态”“看来”这类模板句。
 - 候选要自然、有变化，但不要给每条回复套风格标签。`;
 
@@ -66,7 +66,7 @@ ${IMAGE_READING_RULES}
 ${REPLY_PERSPECTIVE_EXAMPLES}`;
 const REPLY_REFINEMENT_SYSTEM_PROMPT = `你是中文聊天回复编辑。你会收到已经识别好的对话和一组不够自然的候选回复。
 只重写 replies，不要重新分析图片，不要编造对话里没有出现的信息。
-候选必须是“我”准备发给“对方”的话，输出 3 到 5 条自然、简短、可以直接发送的回复。可以用换行表示 2 到 3 条连续气泡；最多一条候选带问号。`;
+候选必须是“我”准备发给“对方”的话，输出 3 到 5 条自然、简短、可以直接发送的回复。每条回复必须是 1 到 3 句或短气泡，具体句数按截图语境决定；最多一条候选带问号。`;
 const CHAT_ADVICE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -691,7 +691,7 @@ function buildDefaultStickerSuggestions(stage) {
       { text: '不打扰啦', mood: 'retreat', scene: 'comfort' },
     ],
   };
-  return suggestions[normalizeConversationStage(stage)];
+  return stripFallbackStickerText(suggestions[normalizeConversationStage(stage)]);
 }
 
 function buildContextualStickerSuggestions(context, stage = '轻松破冰') {
@@ -754,7 +754,11 @@ function buildContextualStickerSuggestions(context, stage = '轻松破冰') {
     ],
     emotional_disclosure: buildDefaultStickerSuggestions('情绪陪伴'),
   };
-  return contextualSuggestions[context] || buildDefaultStickerSuggestions(stage);
+  return stripFallbackStickerText(contextualSuggestions[context] || buildDefaultStickerSuggestions(stage));
+}
+
+function stripFallbackStickerText(suggestions) {
+  return suggestions.map((suggestion) => ({ ...suggestion, text: '' }));
 }
 
 function getStickerContext(dialogue) {
@@ -773,9 +777,10 @@ function uniqueStickerSuggestions(suggestions) {
   const seenScenes = new Set();
   const seenTexts = new Set();
   return suggestions.filter((suggestion) => {
-    if (!suggestion.text || !suggestion.scene || seenScenes.has(suggestion.scene) || seenTexts.has(suggestion.text)) return false;
+    if (!suggestion.scene || seenScenes.has(suggestion.scene)) return false;
+    if (suggestion.text && seenTexts.has(suggestion.text)) return false;
     seenScenes.add(suggestion.scene);
-    seenTexts.add(suggestion.text);
+    if (suggestion.text) seenTexts.add(suggestion.text);
     return true;
   });
 }
@@ -788,7 +793,7 @@ function normalizeStickerSuggestions(suggestions, stage = '轻松破冰', dialog
         text: cleanText(suggestion?.text, 16),
         mood: STICKER_MOODS.has(suggestion?.mood) ? suggestion.mood : 'playful',
         scene: STICKER_SCENES.has(suggestion?.scene) ? suggestion.scene : '',
-      })).filter((suggestion) => suggestion.text && suggestion.scene).slice(0, STICKER_RECOMMENDATION_COUNT)
+      })).filter((suggestion) => suggestion.scene).slice(0, STICKER_RECOMMENDATION_COUNT)
     : [];
   const fallback = buildDefaultStickerSuggestions(stage);
   if (normalized.length < 3) return fallback;

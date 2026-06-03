@@ -433,7 +433,7 @@ test('normalizes sticker suggestions and falls back by stage without phone scene
   assert.equal(stopSuggestions.length, 6);
   assert.deepEqual(
     stopSuggestions[0],
-    { text: '行 你继续玩', mood: 'retreat', scene: 'rest' },
+    { text: '', mood: 'retreat', scene: 'rest' },
   );
   const contextualSuggestions = normalizeStickerSuggestions([
       { text: ' 有点会聊 ', mood: 'teasing', scene: 'peek' },
@@ -458,7 +458,7 @@ test('matches six unique caring stickers to physical discomfort', () => {
   const suggestions = normalizeStickerSuggestions([], '情绪陪伴', dialogue);
 
   assert.deepEqual(suggestions.map((suggestion) => suggestion.scene), ['comfort', 'rest', 'listen', 'pat', 'cheer', 'study']);
-  assert.equal(suggestions[0].text, '听着就难受');
+  assert.equal(suggestions[0].text, '');
 });
 
 test('matches study encouragement and happy stickers to chat emotion', () => {
@@ -471,8 +471,8 @@ test('matches study encouragement and happy stickers to chat emotion', () => {
     { side: 'left', text: '好耶 我太开心了' },
   ]));
 
-  assert.deepEqual(studySuggestions[0], { text: '考试加油', mood: 'caring', scene: 'study' });
-  assert.deepEqual(happySuggestions[0], { text: '好耶', mood: 'playful', scene: 'happy' });
+  assert.deepEqual(studySuggestions[0], { text: '', mood: 'caring', scene: 'study' });
+  assert.deepEqual(happySuggestions[0], { text: '', mood: 'playful', scene: 'happy' });
 });
 
 test('flags flirt that evades a direct clarification question', () => {

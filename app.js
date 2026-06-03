@@ -154,8 +154,8 @@ function buildPrompt(imageCount) {
   const context = document.getElementById('contextInput').value.trim();
   return `请分析上传的 ${imageCount} 张图片。截图已经按聊天时间从早到晚排列。
 按系统规则识别有效聊天截图、还原 dialogue、判断态度，并生成自然可发送的回复。
-回复可以是一行，也可以用换行分成 2 到 3 条短气泡。
-表情包只给 3 个最贴合当前聊天的创意，页面会自动补足到 6 个。
+每条推荐回复必须是 1 到 3 句或短气泡；具体写 1、2 还是 3 句，要根据截图里的关系阶段、情绪和最后一句来决定。
+表情包只给 3 个最贴合当前聊天的创意；文字不是必需的，只在确实能帮用户发出去时才给短配字，不需要文字时 text 返回空字符串。页面会自动补足到 6 个。
 ${context ? `补充背景：${context}` : ''}
 只返回符合 schema 的 JSON。`;
 }
@@ -725,7 +725,7 @@ function buildDefaultStickerSuggestions(stage) {
     情绪陪伴: [{ text: '先缓一会儿', mood: 'caring', scene: 'rest' }, { text: '我在听', mood: 'caring', scene: 'listen' }, { text: '给你抱抱', mood: 'caring', scene: 'comfort' }, { text: '给你拍拍', mood: 'caring', scene: 'pat' }, { text: '很辛苦呀', mood: 'caring', scene: 'sob' }, { text: '慢慢来', mood: 'caring', scene: 'cheer' }],
     建议停手: [{ text: '我先撤啦', mood: 'retreat', scene: 'rest' }, { text: '当我没说', mood: 'speechless', scene: 'doubt' }, { text: '优雅离场', mood: 'retreat', scene: 'peek' }, { text: '好吧好吧', mood: 'retreat', scene: 'listen' }, { text: '先消失', mood: 'retreat', scene: 'sob' }, { text: '不打扰啦', mood: 'retreat', scene: 'comfort' }],
   };
-  return suggestions[normalizeConversationStage(stage)];
+  return stripFallbackStickerText(suggestions[normalizeConversationStage(stage)]);
 }
 
 function buildContextualStickerSuggestions(context, stage = '轻松破冰') {
@@ -739,7 +739,11 @@ function buildContextualStickerSuggestions(context, stage = '轻松破冰') {
     happy: [{ text: '好耶', mood: 'playful', scene: 'happy' }, { text: '替你开心', mood: 'playful', scene: 'cheer' }, { text: '可以可以', mood: 'playful', scene: 'hello' }, { text: '收到快乐', mood: 'playful', scene: 'love' }, { text: '有点可爱', mood: 'teasing', scene: 'pat' }, { text: '继续保持', mood: 'playful', scene: 'miss' }],
     emotional_disclosure: buildDefaultStickerSuggestions('情绪陪伴'),
   };
-  return contextualSuggestions[context] || buildDefaultStickerSuggestions(stage);
+  return stripFallbackStickerText(contextualSuggestions[context] || buildDefaultStickerSuggestions(stage));
+}
+
+function stripFallbackStickerText(suggestions) {
+  return suggestions.map((suggestion) => ({ ...suggestion, text: '' }));
 }
 
 function getStickerContext(dialogue) {
@@ -758,9 +762,10 @@ function uniqueStickerSuggestions(suggestions) {
   const seenScenes = new Set();
   const seenTexts = new Set();
   return suggestions.filter((suggestion) => {
-    if (!suggestion.text || !suggestion.scene || seenScenes.has(suggestion.scene) || seenTexts.has(suggestion.text)) return false;
+    if (!suggestion.scene || seenScenes.has(suggestion.scene)) return false;
+    if (suggestion.text && seenTexts.has(suggestion.text)) return false;
     seenScenes.add(suggestion.scene);
-    seenTexts.add(suggestion.text);
+    if (suggestion.text) seenTexts.add(suggestion.text);
     return true;
   });
 }
@@ -773,7 +778,7 @@ function normalizeStickerSuggestions(suggestions, stage = '轻松破冰', dialog
         text: cleanText(suggestion?.text, 16),
         mood: STICKER_MOODS.has(suggestion?.mood) ? suggestion.mood : 'playful',
         scene: STICKER_SCENES.has(suggestion?.scene) ? suggestion.scene : '',
-      })).filter((suggestion) => suggestion.text && suggestion.scene).slice(0, STICKER_RECOMMENDATION_COUNT)
+      })).filter((suggestion) => suggestion.scene).slice(0, STICKER_RECOMMENDATION_COUNT)
     : [];
   const fallback = buildDefaultStickerSuggestions(stage);
   if (normalized.length < 3) return fallback;

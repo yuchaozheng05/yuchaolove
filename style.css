@@ -375,13 +375,6 @@ textarea:focus { outline: none; border-color: var(--rose-light); box-shadow: 0 0
   box-shadow: 0 8px 32px var(--shadow);
 }
 .submit-btn:disabled { background: var(--cream3); color: var(--text-soft); cursor: not-allowed; box-shadow: none; transform: none; }
-.privacy-note {
-  margin: 0.75rem 0 0;
-  color: var(--text-soft);
-  font-size: 12px;
-  line-height: 1.6;
-  text-align: center;
-}
 
 /* Loading */
 .loading-state {

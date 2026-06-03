@@ -17,6 +17,7 @@ test('keeps the stable multi-screenshot UI while loading stickers', () => {
   assert.match(html, /id="conversationStage"/);
   assert.match(html, /id="stickerPanel"/);
   assert.match(html, /id="stickerGrid"/);
+  assert.doesNotMatch(html, /点击分析后，本次截图、分析结果和基础访问记录会被保存/);
   assert.ok(html.indexOf('<script src="sticker.js"></script>') < html.indexOf('<script src="app.js"></script>'));
 });
 
@@ -29,9 +30,12 @@ test('shows contextual stickers only after a usable chat result', () => {
   assert.match(app, /data\.is_chat_screenshot && !data\.needs_retry && !data\.degraded/);
   assert.match(stickers, /function showStickerPanel\(advice\)/);
   assert.match(stickers, /STICKER_TEMPLATES/);
+  assert.match(stickers, /USE_TEMPLATE_IMAGES = false/);
   assert.match(stickers, /drawTemplateSticker/);
   assert.match(stickers, /STICKER_PANEL_RECOMMENDATION_COUNT=6/);
   assert.match(stickers, /sticker_suggestions/);
+  assert.match(stickers, /filter\(s=>s\.scene\)/);
+  assert.match(stickers, /text\?\`配字：\$\{text\}\`:'无配字'/);
   assert.match(stickers, /assets\/stickers\/comfort-bunny\.png/);
   assert.match(stickers, /assets\/stickers\/study-bunny\.png/);
   assert.doesNotMatch(stickers, /assets\/stickers\/lazy-phone-duck\.png/);
