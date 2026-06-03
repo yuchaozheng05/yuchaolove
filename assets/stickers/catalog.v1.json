@@ -1,0 +1,1302 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-03T19:42:50.164Z",
+  "pack": "style-bible-v1",
+  "source_prompts": [
+    "/assets/stickers/prompts/sticker-prompts.json",
+    "/assets/stickers/prompts/mvp-9-prompts.json",
+    "/assets/stickers/prompts/phase-1-54-prompts.json"
+  ],
+  "image_dir": "/assets/stickers",
+  "generated_image_dir": "/assets/stickers/packs/style-bible-v1/images",
+  "count": 73,
+  "items": [
+    {
+      "id": "caring_cat",
+      "file": "/assets/stickers/packs/style-bible-v1/images/caring-cat.png",
+      "character": "cat",
+      "emotion": "comfort",
+      "scenario": "comfort",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "cat",
+        "comfort",
+        "caring"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "cat_angry_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/cat_angry_01.png",
+      "character": "cat",
+      "emotion": "angry",
+      "scenario": "angry_complaint",
+      "relationship_stage": "post_conflict",
+      "text": "",
+      "tags": [
+        "cat",
+        "angry",
+        "angry_complaint",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "cat_apology_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/cat_apology_01.png",
+      "character": "cat",
+      "emotion": "apology",
+      "scenario": "apology",
+      "relationship_stage": "post_conflict",
+      "text": "",
+      "tags": [
+        "cat",
+        "apology",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "cat_awkward_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/cat_awkward_01.png",
+      "character": "cat",
+      "emotion": "awkward",
+      "scenario": "speechless",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "cat",
+        "awkward",
+        "speechless",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "cat_comfort_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/cat_comfort_01.png",
+      "character": "cat",
+      "emotion": "comfort",
+      "scenario": "comfort",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "cat",
+        "comfort",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "cat_cry_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/cat_cry_01.png",
+      "character": "cat",
+      "emotion": "cry",
+      "scenario": "teasing",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "cat",
+        "cry",
+        "teasing",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "cat_encourage_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/cat_encourage_01.png",
+      "character": "cat",
+      "emotion": "encourage",
+      "scenario": "teasing",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "cat",
+        "encourage",
+        "teasing",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "cat_goodnight_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/cat_goodnight_01.png",
+      "character": "cat",
+      "emotion": "goodnight",
+      "scenario": "good_night",
+      "relationship_stage": "acquaintance",
+      "text": "",
+      "tags": [
+        "cat",
+        "goodnight",
+        "good_night",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "cat_greeting_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/cat_greeting_01.png",
+      "character": "cat",
+      "emotion": "greeting",
+      "scenario": "teasing",
+      "relationship_stage": "acquaintance",
+      "text": "",
+      "tags": [
+        "cat",
+        "greeting",
+        "teasing",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "cat_happy_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/cat_happy_01.png",
+      "character": "cat",
+      "emotion": "happy",
+      "scenario": "celebration",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "cat",
+        "happy",
+        "celebration",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "cat_laugh_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/cat_laugh_01.png",
+      "character": "cat",
+      "emotion": "laugh",
+      "scenario": "celebration",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "cat",
+        "laugh",
+        "celebration",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "cat_love_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/cat_love_01.png",
+      "character": "cat",
+      "emotion": "love",
+      "scenario": "missing_you",
+      "relationship_stage": "relationship",
+      "text": "",
+      "tags": [
+        "cat",
+        "love",
+        "missing_you",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "cat_miss_you_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/cat_miss_you_01.png",
+      "character": "cat",
+      "emotion": "miss_you",
+      "scenario": "missing_you",
+      "relationship_stage": "flirting",
+      "text": "",
+      "tags": [
+        "cat",
+        "miss_you",
+        "missing_you",
+        "miss",
+        "you",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "cat_sad_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/cat_sad_01.png",
+      "character": "cat",
+      "emotion": "sad",
+      "scenario": "teasing",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "cat",
+        "sad",
+        "teasing",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "cat_shy_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/cat_shy_01.png",
+      "character": "cat",
+      "emotion": "shy",
+      "scenario": "flirting",
+      "relationship_stage": "flirting",
+      "text": "",
+      "tags": [
+        "cat",
+        "shy",
+        "flirting",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "cat_sleepy_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/cat_sleepy_01.png",
+      "character": "cat",
+      "emotion": "sleepy",
+      "scenario": "good_night",
+      "relationship_stage": "acquaintance",
+      "text": "",
+      "tags": [
+        "cat",
+        "sleepy",
+        "good_night",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "cat_surprised_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/cat_surprised_01.png",
+      "character": "cat",
+      "emotion": "surprised",
+      "scenario": "teasing",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "cat",
+        "surprised",
+        "teasing",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "cat_thanks_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/cat_thanks_01.png",
+      "character": "cat",
+      "emotion": "thanks",
+      "scenario": "teasing",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "cat",
+        "thanks",
+        "teasing",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "cat_thinking_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/cat_thinking_01.png",
+      "character": "cat",
+      "emotion": "thinking",
+      "scenario": "teasing",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "cat",
+        "thinking",
+        "teasing",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "cheer_bunny",
+      "file": "/assets/stickers/packs/style-bible-v1/images/cheer-bunny.png",
+      "character": "bunny",
+      "emotion": "excited",
+      "scenario": "encouragement",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "bunny",
+        "excited",
+        "encouragement",
+        "cheer"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "comfort_bunny",
+      "file": "/assets/stickers/packs/style-bible-v1/images/comfort-bunny.png",
+      "character": "bunny",
+      "emotion": "comfort",
+      "scenario": "comfort",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "bunny",
+        "comfort"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "confused_bunny",
+      "file": "/assets/stickers/packs/style-bible-v1/images/confused-bunny.png",
+      "character": "bunny",
+      "emotion": "awkward",
+      "scenario": "speechless",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "bunny",
+        "awkward",
+        "speechless",
+        "confused"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "confused_figure",
+      "file": "/assets/stickers/packs/style-bible-v1/images/confused-figure.png",
+      "character": "sticker",
+      "emotion": "awkward",
+      "scenario": "speechless",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "sticker",
+        "awkward",
+        "speechless",
+        "confused",
+        "figure"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "contact_sheet_mvp_9",
+      "file": "/assets/stickers/packs/style-bible-v1/contact-sheet-mvp-9.png",
+      "character": "sticker",
+      "emotion": "happy",
+      "scenario": "teasing",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "sticker",
+        "happy",
+        "teasing",
+        "contact",
+        "sheet",
+        "mvp"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "contact_sheet_phase_1_54",
+      "file": "/assets/stickers/packs/style-bible-v1/contact-sheet-phase-1-54.png",
+      "character": "sticker",
+      "emotion": "happy",
+      "scenario": "teasing",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "sticker",
+        "happy",
+        "teasing",
+        "contact",
+        "sheet",
+        "phase",
+        "54"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "hamster_angry_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/hamster_angry_01.png",
+      "character": "hamster",
+      "emotion": "angry",
+      "scenario": "angry_complaint",
+      "relationship_stage": "post_conflict",
+      "text": "",
+      "tags": [
+        "hamster",
+        "angry",
+        "angry_complaint",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "hamster_apology_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/hamster_apology_01.png",
+      "character": "hamster",
+      "emotion": "apology",
+      "scenario": "apology",
+      "relationship_stage": "post_conflict",
+      "text": "",
+      "tags": [
+        "hamster",
+        "apology",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "hamster_awkward_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/hamster_awkward_01.png",
+      "character": "hamster",
+      "emotion": "awkward",
+      "scenario": "speechless",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "hamster",
+        "awkward",
+        "speechless",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "hamster_comfort_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/hamster_comfort_01.png",
+      "character": "hamster",
+      "emotion": "comfort",
+      "scenario": "comfort",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "hamster",
+        "comfort",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "hamster_cry_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/hamster_cry_01.png",
+      "character": "hamster",
+      "emotion": "cry",
+      "scenario": "teasing",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "hamster",
+        "cry",
+        "teasing",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "hamster_encourage_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/hamster_encourage_01.png",
+      "character": "hamster",
+      "emotion": "encourage",
+      "scenario": "teasing",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "hamster",
+        "encourage",
+        "teasing",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "hamster_goodnight_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/hamster_goodnight_01.png",
+      "character": "hamster",
+      "emotion": "goodnight",
+      "scenario": "good_night",
+      "relationship_stage": "acquaintance",
+      "text": "",
+      "tags": [
+        "hamster",
+        "goodnight",
+        "good_night",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "hamster_greeting_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/hamster_greeting_01.png",
+      "character": "hamster",
+      "emotion": "greeting",
+      "scenario": "teasing",
+      "relationship_stage": "acquaintance",
+      "text": "",
+      "tags": [
+        "hamster",
+        "greeting",
+        "teasing",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "hamster_happy_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/hamster_happy_01.png",
+      "character": "hamster",
+      "emotion": "happy",
+      "scenario": "celebration",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "hamster",
+        "happy",
+        "celebration",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "hamster_laugh_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/hamster_laugh_01.png",
+      "character": "hamster",
+      "emotion": "laugh",
+      "scenario": "celebration",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "hamster",
+        "laugh",
+        "celebration",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "hamster_love_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/hamster_love_01.png",
+      "character": "hamster",
+      "emotion": "love",
+      "scenario": "missing_you",
+      "relationship_stage": "relationship",
+      "text": "",
+      "tags": [
+        "hamster",
+        "love",
+        "missing_you",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "hamster_miss_you_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/hamster_miss_you_01.png",
+      "character": "hamster",
+      "emotion": "miss_you",
+      "scenario": "missing_you",
+      "relationship_stage": "flirting",
+      "text": "",
+      "tags": [
+        "hamster",
+        "miss_you",
+        "missing_you",
+        "miss",
+        "you",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "hamster_sad_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/hamster_sad_01.png",
+      "character": "hamster",
+      "emotion": "sad",
+      "scenario": "teasing",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "hamster",
+        "sad",
+        "teasing",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "hamster_shy_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/hamster_shy_01.png",
+      "character": "hamster",
+      "emotion": "shy",
+      "scenario": "flirting",
+      "relationship_stage": "flirting",
+      "text": "",
+      "tags": [
+        "hamster",
+        "shy",
+        "flirting",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "hamster_sleepy_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/hamster_sleepy_01.png",
+      "character": "hamster",
+      "emotion": "sleepy",
+      "scenario": "good_night",
+      "relationship_stage": "acquaintance",
+      "text": "",
+      "tags": [
+        "hamster",
+        "sleepy",
+        "good_night",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "hamster_surprised_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/hamster_surprised_01.png",
+      "character": "hamster",
+      "emotion": "surprised",
+      "scenario": "teasing",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "hamster",
+        "surprised",
+        "teasing",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "hamster_thanks_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/hamster_thanks_01.png",
+      "character": "hamster",
+      "emotion": "thanks",
+      "scenario": "teasing",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "hamster",
+        "thanks",
+        "teasing",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "hamster_thinking_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/hamster_thinking_01.png",
+      "character": "hamster",
+      "emotion": "thinking",
+      "scenario": "teasing",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "hamster",
+        "thinking",
+        "teasing",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "happy_bunny",
+      "file": "/assets/stickers/packs/style-bible-v1/images/happy-bunny.png",
+      "character": "bunny",
+      "emotion": "happy",
+      "scenario": "celebration",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "bunny",
+        "happy",
+        "celebration"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "lazy_phone_duck",
+      "file": "/assets/stickers/packs/style-bible-v1/images/lazy-phone-duck.png",
+      "character": "duck",
+      "emotion": "speechless",
+      "scenario": "speechless",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "duck",
+        "speechless",
+        "lazy",
+        "phone"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "listen_hamster",
+      "file": "/assets/stickers/packs/style-bible-v1/images/listen-hamster.png",
+      "character": "hamster",
+      "emotion": "comfort",
+      "scenario": "comfort",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "hamster",
+        "comfort",
+        "listen"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "pat_bunnies",
+      "file": "/assets/stickers/packs/style-bible-v1/images/pat-bunnies.png",
+      "character": "bunny",
+      "emotion": "comfort",
+      "scenario": "comfort",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "bunny",
+        "comfort",
+        "pat",
+        "bunnies"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "peek_bunny_v2",
+      "file": "/assets/stickers/packs/style-bible-v1/images/peek-bunny-v2.png",
+      "character": "bunny",
+      "emotion": "shy",
+      "scenario": "flirting",
+      "relationship_stage": "flirting",
+      "text": "",
+      "tags": [
+        "bunny",
+        "shy",
+        "flirting",
+        "peek",
+        "v2"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "peek_rabbit",
+      "file": "/assets/stickers/packs/style-bible-v1/images/peek-rabbit.png",
+      "character": "bunny",
+      "emotion": "shy",
+      "scenario": "flirting",
+      "relationship_stage": "flirting",
+      "text": "",
+      "tags": [
+        "bunny",
+        "shy",
+        "flirting",
+        "peek",
+        "rabbit"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "rest_bunny",
+      "file": "/assets/stickers/packs/style-bible-v1/images/rest-bunny.png",
+      "character": "bunny",
+      "emotion": "sleepy",
+      "scenario": "good_night",
+      "relationship_stage": "acquaintance",
+      "text": "",
+      "tags": [
+        "bunny",
+        "sleepy",
+        "good_night",
+        "rest"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "retreat_hamster",
+      "file": "/assets/stickers/packs/style-bible-v1/images/retreat-hamster.png",
+      "character": "hamster",
+      "emotion": "awkward",
+      "scenario": "safe_exit",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "hamster",
+        "awkward",
+        "safe_exit",
+        "retreat"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "shiba_comfort_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/shiba_comfort_01.png",
+      "character": "shiba",
+      "emotion": "comfort",
+      "scenario": "comfort",
+      "relationship_stage": "talking_stage",
+      "text": "我罩着你！",
+      "tags": [
+        "shiba",
+        "comfort",
+        "我罩着你！",
+        "01",
+        "holding",
+        "small",
+        "umbrella",
+        "overhead",
+        "protectively",
+        "caring",
+        "watchful"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "shocked_duck",
+      "file": "/assets/stickers/packs/style-bible-v1/images/shocked-duck.png",
+      "character": "duck",
+      "emotion": "awkward",
+      "scenario": "speechless",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "duck",
+        "awkward",
+        "speechless",
+        "shocked"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "skeptical_pig",
+      "file": "/assets/stickers/packs/style-bible-v1/images/skeptical-pig.png",
+      "character": "pig",
+      "emotion": "awkward",
+      "scenario": "speechless",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "pig",
+        "awkward",
+        "speechless",
+        "skeptical"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "study_bunny",
+      "file": "/assets/stickers/packs/style-bible-v1/images/study-bunny.png",
+      "character": "bunny",
+      "emotion": "work",
+      "scenario": "studying",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "bunny",
+        "work",
+        "studying",
+        "study"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "white_mochi_angry_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/white_mochi_angry_01.png",
+      "character": "white_mochi",
+      "emotion": "angry",
+      "scenario": "angry_complaint",
+      "relationship_stage": "post_conflict",
+      "text": "",
+      "tags": [
+        "white_mochi",
+        "angry",
+        "angry_complaint",
+        "white",
+        "mochi",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "white_mochi_apology_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/white_mochi_apology_01.png",
+      "character": "white_mochi",
+      "emotion": "apology",
+      "scenario": "apology",
+      "relationship_stage": "post_conflict",
+      "text": "",
+      "tags": [
+        "white_mochi",
+        "apology",
+        "white",
+        "mochi",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "white_mochi_awkward_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/white_mochi_awkward_01.png",
+      "character": "white_mochi",
+      "emotion": "awkward",
+      "scenario": "speechless",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "white_mochi",
+        "awkward",
+        "speechless",
+        "white",
+        "mochi",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "white_mochi_comfort_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/white_mochi_comfort_01.png",
+      "character": "white_mochi",
+      "emotion": "comfort",
+      "scenario": "comfort",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "white_mochi",
+        "comfort",
+        "white",
+        "mochi",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "white_mochi_cry_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/white_mochi_cry_01.png",
+      "character": "white_mochi",
+      "emotion": "cry",
+      "scenario": "teasing",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "white_mochi",
+        "cry",
+        "teasing",
+        "white",
+        "mochi",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "white_mochi_encourage_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/white_mochi_encourage_01.png",
+      "character": "white_mochi",
+      "emotion": "encourage",
+      "scenario": "teasing",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "white_mochi",
+        "encourage",
+        "teasing",
+        "white",
+        "mochi",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "white_mochi_goodnight_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/white_mochi_goodnight_01.png",
+      "character": "white_mochi",
+      "emotion": "goodnight",
+      "scenario": "good_night",
+      "relationship_stage": "acquaintance",
+      "text": "",
+      "tags": [
+        "white_mochi",
+        "goodnight",
+        "good_night",
+        "white",
+        "mochi",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "white_mochi_greeting_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/white_mochi_greeting_01.png",
+      "character": "white_mochi",
+      "emotion": "greeting",
+      "scenario": "teasing",
+      "relationship_stage": "acquaintance",
+      "text": "",
+      "tags": [
+        "white_mochi",
+        "greeting",
+        "teasing",
+        "white",
+        "mochi",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "white_mochi_happy_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/white_mochi_happy_01.png",
+      "character": "white_mochi",
+      "emotion": "happy",
+      "scenario": "celebration",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "white_mochi",
+        "happy",
+        "celebration",
+        "white",
+        "mochi",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "white_mochi_laugh_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/white_mochi_laugh_01.png",
+      "character": "white_mochi",
+      "emotion": "laugh",
+      "scenario": "celebration",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "white_mochi",
+        "laugh",
+        "celebration",
+        "white",
+        "mochi",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "white_mochi_love_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/white_mochi_love_01.png",
+      "character": "white_mochi",
+      "emotion": "love",
+      "scenario": "missing_you",
+      "relationship_stage": "relationship",
+      "text": "",
+      "tags": [
+        "white_mochi",
+        "love",
+        "missing_you",
+        "white",
+        "mochi",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "white_mochi_miss_you_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/white_mochi_miss_you_01.png",
+      "character": "white_mochi",
+      "emotion": "miss_you",
+      "scenario": "missing_you",
+      "relationship_stage": "flirting",
+      "text": "",
+      "tags": [
+        "white_mochi",
+        "miss_you",
+        "missing_you",
+        "white",
+        "mochi",
+        "miss",
+        "you",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "white_mochi_sad_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/white_mochi_sad_01.png",
+      "character": "white_mochi",
+      "emotion": "sad",
+      "scenario": "teasing",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "white_mochi",
+        "sad",
+        "teasing",
+        "white",
+        "mochi",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "white_mochi_shy_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/white_mochi_shy_01.png",
+      "character": "white_mochi",
+      "emotion": "shy",
+      "scenario": "flirting",
+      "relationship_stage": "flirting",
+      "text": "",
+      "tags": [
+        "white_mochi",
+        "shy",
+        "flirting",
+        "white",
+        "mochi",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "white_mochi_sleepy_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/white_mochi_sleepy_01.png",
+      "character": "white_mochi",
+      "emotion": "sleepy",
+      "scenario": "good_night",
+      "relationship_stage": "acquaintance",
+      "text": "",
+      "tags": [
+        "white_mochi",
+        "sleepy",
+        "good_night",
+        "white",
+        "mochi",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "white_mochi_surprised_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/white_mochi_surprised_01.png",
+      "character": "white_mochi",
+      "emotion": "surprised",
+      "scenario": "teasing",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "white_mochi",
+        "surprised",
+        "teasing",
+        "white",
+        "mochi",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "white_mochi_thanks_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/white_mochi_thanks_01.png",
+      "character": "white_mochi",
+      "emotion": "thanks",
+      "scenario": "teasing",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "white_mochi",
+        "thanks",
+        "teasing",
+        "white",
+        "mochi",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    },
+    {
+      "id": "white_mochi_thinking_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/white_mochi_thinking_01.png",
+      "character": "white_mochi",
+      "emotion": "thinking",
+      "scenario": "teasing",
+      "relationship_stage": "talking_stage",
+      "text": "",
+      "tags": [
+        "white_mochi",
+        "thinking",
+        "teasing",
+        "white",
+        "mochi",
+        "01"
+      ],
+      "quality_score": 0.82,
+      "usage_priority": 60
+    }
+  ]
+}

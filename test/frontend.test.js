@@ -29,36 +29,36 @@ test('shows contextual stickers only after a usable chat result', () => {
   assert.match(app, /showStickerPanel\(data\)/);
   assert.match(app, /data\.is_chat_screenshot && !data\.needs_retry && !data\.degraded/);
   assert.match(stickers, /function showStickerPanel\(advice\)/);
-  assert.match(stickers, /STICKER_TEMPLATES/);
-  assert.match(stickers, /USE_TEMPLATE_IMAGES = false/);
-  assert.match(stickers, /drawTemplateSticker/);
-  assert.match(stickers, /STICKER_PANEL_RECOMMENDATION_COUNT=6/);
+  assert.match(stickers, /STICKER_CATALOG_URL/);
+  assert.match(stickers, /catalog\.v1\.json/);
+  assert.match(stickers, /function loadStickerCatalog/);
+  assert.match(stickers, /function recommendFromCatalog/);
+  assert.match(stickers, /function scoreSticker/);
+  assert.match(stickers, /FALLBACK_STICKERS/);
+  assert.match(stickers, /makeFallbackCanvas/);
+  assert.match(stickers, /STICKER_PANEL_RECOMMENDATION_COUNT = 6/);
   assert.match(stickers, /sticker_suggestions/);
-  assert.match(stickers, /ANIMATED_STICKER_SCENES/);
-  assert.match(stickers, /sticker-motion-badge/);
-  assert.match(stickers, /animated\?'block':'none'/);
-  assert.match(stickers, /filter\(s=>s\.scene\)/);
-  assert.match(stickers, /text\?\`配字：\$\{text\}\`:'无配字'/);
-  assert.match(stickers, /assets\/stickers\/comfort-bunny\.png/);
-  assert.match(stickers, /assets\/stickers\/study-bunny\.png/);
-  assert.doesNotMatch(stickers, /assets\/stickers\/lazy-phone-duck\.png/);
-  assert.match(html, /有字\/无字/);
-  assert.match(html, /动图\/静态按语境/);
+  assert.match(stickers, /sticker_match_intent/);
+  assert.doesNotMatch(stickers, /STICKER_TEMPLATES/);
+  assert.doesNotMatch(stickers, /ANIMATED_STICKER_SCENES/);
+  assert.doesNotMatch(stickers, /sticker-motion-badge/);
+  assert.match(html, /本地库存/);
+  assert.match(html, /按语境匹配/);
+  assert.doesNotMatch(html, /动图\/静态按语境/);
   assert.doesNotMatch(app, /selectedStyle|chipGroup/);
 });
 
-test('ships the generated meme sticker templates', () => {
-  [
-    'comfort-bunny.png',
-    'rest-bunny.png',
-    'study-bunny.png',
-    'listen-hamster.png',
-    'happy-bunny.png',
-    'cheer-bunny.png',
-    'peek-bunny-v2.png',
-    'confused-bunny.png',
-    'pat-bunnies.png',
-  ].forEach((file) => assert.equal(existsSync(join(root, 'assets', 'stickers', file)), true));
+test('ships the stock sticker inventory files and scripts', () => {
+  const packageJson = JSON.parse(read('package.json'));
+  assert.equal(existsSync(join(root, 'assets', 'stickers', 'prompts', 'sticker-prompts.json')), true);
+  assert.equal(existsSync(join(root, 'assets', 'stickers', 'packs', 'style-bible-v1', 'images')), true);
+  assert.equal(existsSync(join(root, 'assets', 'stickers', 'packs', 'style-bible-v1', 'thumbs')), true);
+  assert.equal(existsSync(join(root, 'assets', 'stickers', 'catalog.v1.json')), true);
+  assert.equal(existsSync(join(root, 'scripts', 'generate-stickers.js')), true);
+  assert.equal(existsSync(join(root, 'scripts', 'build-sticker-catalog.js')), true);
+  assert.equal(packageJson.scripts['stickers:dry'], 'node scripts/generate-stickers.js --dry-run');
+  assert.equal(packageJson.scripts['stickers:generate'], 'node scripts/generate-stickers.js');
+  assert.equal(packageJson.scripts['stickers:build'], 'node scripts/build-sticker-catalog.js');
 });
 
 test('removes temporary sticker patch files after integration', () => {

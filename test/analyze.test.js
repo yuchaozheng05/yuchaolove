@@ -14,6 +14,7 @@ import handler, {
   buildStageChatGuide,
   buildFreeTierFallbackAdvice,
   buildReplyRefinementPrompt,
+  buildStickerMatchIntent,
   extractFirstJsonObject,
   getRequestParts,
   hasActiveCuriosity,
@@ -28,6 +29,7 @@ import handler, {
   parseAdvice,
   repairReplyCandidates,
   requestOpenAIAdvice,
+  scoreStockSticker,
 } from '../api/analyze.js';
 
 const requestBody = {
@@ -65,8 +67,13 @@ test('defines a strict schema for richer attraction analysis', () => {
   assert.equal(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.minItems, 3);
   assert.equal(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.maxItems, 3);
   assert.deepEqual(Object.keys(CHAT_ADVICE_SCHEMA.properties.replies.items.properties), ['text']);
-  assert.equal(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.items.properties.animated.type, 'boolean');
-  assert.ok(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.items.required.includes('animated'));
+  const stickerIntentSchema = CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.items;
+  assert.deepEqual(Object.keys(stickerIntentSchema.properties), ['text', 'emotion', 'scenario', 'relationship_stage', 'keywords']);
+  assert.ok(stickerIntentSchema.required.includes('emotion'));
+  assert.ok(stickerIntentSchema.required.includes('scenario'));
+  assert.ok(stickerIntentSchema.required.includes('relationship_stage'));
+  assert.ok(stickerIntentSchema.required.includes('keywords'));
+  assert.equal('animated' in stickerIntentSchema.properties, false);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /主动回球/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /暧昧必须有依据/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /永远是用户准备发送给对方的话/);
@@ -75,8 +82,10 @@ test('defines a strict schema for richer attraction analysis', () => {
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /主动了解/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /绝对不要替用户编造/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /换行表示用户可以分成几条气泡/);
-  assert.ok(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.items.properties.scene.enum.includes('miss'));
-  assert.ok(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.items.properties.scene.enum.includes('doubt'));
+  assert.match(REPLY_COACH_SYSTEM_PROMPT, /库存检索意图/);
+  assert.ok(stickerIntentSchema.properties.emotion.enum.includes('flirt'));
+  assert.ok(stickerIntentSchema.properties.scenario.enum.includes('missing_you'));
+  assert.ok(stickerIntentSchema.properties.scenario.enum.includes('speechless'));
   assert.match(IMAGE_READING_RULES, /左侧 = 对方，右侧 = 我/);
   assert.match(REPLY_PERSPECTIVE_EXAMPLES, /先夸我两句/);
 });
@@ -92,8 +101,14 @@ test('parses willingness signals, flirt level, and clean untagged replies', () =
   assert.equal(advice.flirt_level, '轻微暧昧');
   assert.deepEqual(advice.interest_signals, ['主动回问', '接住共同梗']);
   assert.deepEqual(advice.replies[0], { text: '感受到了，嘴硬但还挺会关心人' });
-  assert.deepEqual(advice.sticker_suggestions[0], { text: '有点会聊', mood: 'teasing', scene: 'peek', animated: true });
+  assert.equal(advice.sticker_match_intent.reply_intent, 'flirty_continue');
+  assert.equal(advice.sticker_match_intent.emotion, 'shy');
+  assert.ok(advice.sticker_match_intent.secondary_emotions.includes('love'));
+  assert.ok(advice.sticker_match_intent.scenario.includes('flirting'));
+  assert.ok(advice.sticker_match_intent.relationship_stage.includes('flirting'));
+  assert.ok(advice.sticker_match_intent.keywords.includes('偷看'));
   assert.equal(advice.sticker_suggestions.length, 6);
+  assert.equal(advice.sticker_suggestions[0].match.reply_intent, 'flirty_continue');
   assert.equal(advice.conversation_summary, '对方：你感受到我的了吗；我：好像遇到我你才对白由向往');
 });
 
@@ -430,57 +445,138 @@ test('infers a stage before building the next conversation route', () => {
   assert.match(buildStageChatGuide('稳定了解').current_move, /互相了解/);
 });
 
-test('normalizes sticker suggestions and falls back by stage without phone scenes', () => {
-  const stopSuggestions = normalizeStickerSuggestions([{ text: ' 行 你继续 ', mood: 'teasing', scene: 'skeptical' }], '建议停手');
+test('builds stock sticker retrieval intent instead of legacy random templates', () => {
+  const stopIntent = buildStickerMatchIntent({
+    rawSuggestions: [
+      { text: ' 行 你继续 ', emotion: 'awkward', scenario: 'speechless', relationship_stage: 'post_conflict', keywords: ['先撤'] },
+    ],
+    conversationStage: '建议停手',
+    suggestStop: true,
+  });
+  assert.equal(stopIntent.emotion, 'awkward');
+  assert.equal(stopIntent.reply_intent, 'deescalate_gracefully');
+  assert.ok(stopIntent.secondary_emotions.includes('apology'));
+  assert.ok(stopIntent.scenario.includes('safe_exit'));
+  assert.ok(stopIntent.relationship_stage.includes('post_conflict'));
+  assert.ok(stopIntent.keywords.includes('先撤'));
+  const stopSuggestions = normalizeStickerSuggestions([{ text: ' 行 你继续 ', emotion: 'awkward', scenario: 'speechless', relationship_stage: 'post_conflict', keywords: ['先撤'] }], '建议停手', [], { suggest_stop: true });
   assert.equal(stopSuggestions.length, 6);
-  assert.deepEqual(
-    stopSuggestions[0],
-    { text: '我先撤啦', mood: 'retreat', scene: 'rest', animated: true },
-  );
-  const contextualSuggestions = normalizeStickerSuggestions([
-      { text: ' 有点会聊 ', mood: 'teasing', scene: 'peek' },
-      { text: '真的假的', mood: 'playful', scene: 'happy' },
-      { text: '我再看看', mood: 'curious', scene: 'confused' },
-    ], '暧昧升温');
-  assert.equal(contextualSuggestions.length, 6);
-  assert.equal(new Set(contextualSuggestions.map((suggestion) => suggestion.scene)).size, 6);
-  assert.equal(contextualSuggestions.some((suggestion) => suggestion.scene === 'phone'), false);
-  assert.deepEqual(
-    contextualSuggestions[0],
-    { text: '有点会聊', mood: 'teasing', scene: 'peek', animated: true },
-  );
-  assert.ok(contextualSuggestions.some((suggestion) => suggestion.text === ''));
-  assert.ok(contextualSuggestions.some((suggestion) => suggestion.animated));
-  assert.ok(contextualSuggestions.some((suggestion) => !suggestion.animated));
+  assert.equal(stopSuggestions[0].match.reply_intent, 'deescalate_gracefully');
+
+  const contextualIntent = buildStickerMatchIntent({
+    rawSuggestions: [
+      { text: ' 有点会聊 ', emotion: 'flirt', scenario: 'flirting', relationship_stage: 'flirting', keywords: ['偷看'] },
+      { text: '真的假的', emotion: 'speechless', scenario: 'teasing', relationship_stage: 'talking_stage', keywords: ['真的假的'] },
+    ],
+    conversationStage: '暧昧升温',
+  });
+  assert.equal(contextualIntent.reply_intent, 'flirty_continue');
+  assert.equal(contextualIntent.emotion, 'shy');
+  assert.ok(contextualIntent.secondary_emotions.includes('awkward'));
+  assert.ok(contextualIntent.scenario.includes('flirting'));
+  assert.ok(contextualIntent.relationship_stage.includes('flirting'));
 });
 
-test('matches six unique caring stickers to physical discomfort', () => {
+test('maps opponent message to reply intent before sticker emotion', () => {
+  const intentFor = (text, options = {}) => buildStickerMatchIntent({
+    conversationStage: options.stage || '暧昧升温',
+    conversationMode: options.mode || '轻松暧昧',
+    flirtLevel: options.flirtLevel || '轻微暧昧',
+    dialogue: normalizeDialogue([{ side: 'left', text }]),
+    ...options,
+  });
+
+  const flirtyConflict = intentFor('我讨厌你');
+  assert.equal(flirtyConflict.reply_intent, 'soften_flirty_conflict');
+  assert.equal(flirtyConflict.emotion, 'shy');
+  assert.deepEqual(flirtyConflict.secondary_emotions.slice(0, 3), ['apology', 'comfort', 'love']);
+  assert.equal(flirtyConflict.secondary_emotions.includes('angry'), false);
+
+  const goodnight = intentFor('晚安');
+  assert.equal(goodnight.reply_intent, 'say_goodnight_back');
+  assert.equal(goodnight.emotion, 'goodnight');
+  assert.ok(goodnight.secondary_emotions.includes('love'));
+
+  const laugh = intentFor('哈哈哈');
+  assert.equal(laugh.reply_intent, 'playful_continue');
+  assert.equal(laugh.emotion, 'laugh');
+  assert.ok(laugh.secondary_emotions.includes('awkward'));
+
+  const thanks = intentFor('谢谢');
+  assert.equal(thanks.reply_intent, 'accept_thanks');
+  assert.equal(thanks.emotion, 'thanks');
+  assert.ok(thanks.secondary_emotions.includes('shy'));
+
+  const tired = intentFor('我好累', { emotionalDisclosure: true });
+  assert.equal(tired.reply_intent, 'comfort_support');
+  assert.equal(tired.emotion, 'comfort');
+  assert.ok(tired.secondary_emotions.includes('encourage'));
+
+  const missing = intentFor('想你了');
+  assert.equal(missing.reply_intent, 'affectionate_reply');
+  assert.equal(missing.emotion, 'miss_you');
+  assert.ok(missing.secondary_emotions.includes('love'));
+});
+
+test('scores caring stock stickers higher for physical discomfort', () => {
   const dialogue = normalizeDialogue([
     { side: 'right', text: '先去睡觉吧' },
     { side: 'left', text: '肚子疼头也疼' },
     { side: 'left', text: '我也不想 还没写完' },
   ]);
-  const suggestions = normalizeStickerSuggestions([], '情绪陪伴', dialogue);
+  const intent = buildStickerMatchIntent({ conversationStage: '情绪陪伴', dialogue, emotionalDisclosure: true });
+  const caringSticker = {
+    id: 'hamster-comfort',
+    file: '/assets/stickers/packs/style-bible-v1/images/hamster-comfort.png',
+    emotion: 'comforting',
+    scenario: 'comfort',
+    relationship_stage: 'talking_stage',
+    text: '抱抱你',
+    tags: ['肚子疼', '难受', '抱抱', '加油'],
+    quality_score: 0.9,
+    usage_priority: 80,
+  };
+  const unrelatedSticker = {
+    id: 'shiba-angry',
+    file: '/assets/stickers/packs/style-bible-v1/images/shiba-angry.png',
+    emotion: 'angry',
+    scenario: 'angry_complaint',
+    relationship_stage: 'post_conflict',
+    text: '气死我了',
+    tags: ['生气'],
+    quality_score: 0.9,
+    usage_priority: 80,
+  };
 
-  assert.deepEqual(suggestions.map((suggestion) => suggestion.scene), ['comfort', 'rest', 'listen', 'pat', 'cheer', 'study']);
-  assert.equal(suggestions[0].text, '听着就难受');
-  assert.ok(suggestions.some((suggestion) => suggestion.text === ''));
-  assert.ok(suggestions.some((suggestion) => suggestion.animated));
-  assert.ok(suggestions.some((suggestion) => !suggestion.animated));
+  assert.equal(intent.context, 'physical_discomfort');
+  assert.equal(intent.reply_intent, 'comfort_support');
+  assert.equal(intent.emotion, 'comfort');
+  assert.ok(intent.scenario.includes('comfort'));
+  assert.ok(scoreStockSticker(caringSticker, intent) > scoreStockSticker(unrelatedSticker, intent));
+  const supportSuggestions = normalizeStickerSuggestions([], '情绪陪伴', dialogue, { emotional_disclosure: true });
+  assert.equal(supportSuggestions.length, 6);
+  assert.equal(supportSuggestions[0].match.reply_intent, 'comfort_support');
 });
 
-test('matches study encouragement and happy stickers to chat emotion', () => {
-  const studySuggestions = normalizeStickerSuggestions([], '轻松破冰', normalizeDialogue([
+test('maps study encouragement and happy chats to stock sticker intent', () => {
+  const studyIntent = buildStickerMatchIntent({ conversationStage: '轻松破冰', dialogue: normalizeDialogue([
     { side: 'right', text: '明天考完就好了' },
     { side: 'left', text: '考试好难 我还没复习完' },
-  ]));
-  const happySuggestions = normalizeStickerSuggestions([], '轻松破冰', normalizeDialogue([
+  ]) });
+  const happyIntent = buildStickerMatchIntent({ conversationStage: '轻松破冰', dialogue: normalizeDialogue([
     { side: 'right', text: '你过啦' },
     { side: 'left', text: '好耶 我太开心了' },
-  ]));
+  ]) });
 
-  assert.deepEqual(studySuggestions[0], { text: '考试加油', mood: 'caring', scene: 'study', animated: true });
-  assert.deepEqual(happySuggestions[0], { text: '好耶', mood: 'playful', scene: 'happy', animated: true });
+  assert.equal(studyIntent.reply_intent, 'encourage_support');
+  assert.equal(studyIntent.emotion, 'encourage');
+  assert.ok(studyIntent.secondary_emotions.includes('comfort'));
+  assert.ok(studyIntent.scenario.includes('studying'));
+  assert.ok(studyIntent.scenario.includes('encouragement'));
+  assert.equal(happyIntent.reply_intent, 'celebrate_together');
+  assert.equal(happyIntent.emotion, 'happy');
+  assert.ok(happyIntent.secondary_emotions.includes('laugh'));
+  assert.ok(happyIntent.scenario.includes('celebration'));
 });
 
 test('flags flirt that evades a direct clarification question', () => {
@@ -764,9 +860,9 @@ function adviceValue(overrides = {}) {
       { text: '有一点，但我还在观察' },
     ],
     sticker_suggestions: [
-      { text: '有点会聊', mood: 'teasing', scene: 'peek', animated: true },
-      { text: '我再观察', mood: 'playful', scene: 'confused', animated: false },
-      { text: '行吧 加一分', mood: 'teasing', scene: 'cheer', animated: true },
+      { text: '有点会聊', emotion: 'flirt', scenario: 'flirting', relationship_stage: 'flirting', keywords: ['偷看', '嘴硬'] },
+      { text: '我再观察', emotion: 'speechless', scenario: 'teasing', relationship_stage: 'talking_stage', keywords: ['观察', '真的假的'] },
+      { text: '行吧 加一分', emotion: 'happy', scenario: 'teasing', relationship_stage: 'flirting', keywords: ['开心', '加一分'] },
     ],
     ...overrides,
   };

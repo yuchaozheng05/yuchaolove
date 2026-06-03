@@ -1,3 +1,7 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 const MODELS = ['gpt-4.1-mini'];
 const ALLOWED_MEDIA_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_IMAGE_COUNT = 6;
@@ -38,7 +42,7 @@ const REPLY_COACH_SYSTEM_PROMPT = `你是中文聊天回复顾问。你的目标
 - 绝对不要替用户编造截图或补充背景里没有出现的个人信息，例如爱好、经历、课程、行程和家乡。需要用户自己填写时，用“___”保留一个明显空位。
 - 除了回复候选，还要给用户一条可以照着走的聊天路线：现在先做什么、后续怎么展开、什么不要做。每一步不是让用户一次发完，而是根据对方回应逐步推进。
 - 先判断 conversation_stage。阶段决定下一步，不要把所有聊天都套成“接一句、聊兴趣、马上邀约”。只有对方持续接球，才逐步增加个人化话题或轻松邀约。
-- 给 3 条最贴合上下文的 sticker_suggestions。每条包含情绪、画面场景和 animated 布尔值，用作聊天表情包；text 可以是空字符串，不要为了填字而硬写。只有当短配字明显能贴合截图语境、能帮用户直接发送时才写 text。需要关心时优先安慰、休息、倾听、拍拍；对方为考试或作业焦虑时优先学习加油；对方开心时优先开心庆祝；想你/晚安/试探/刚认识时优先害羞、质疑、打招呼、想念或晚安场景。不要推荐手机画面。配字要像聊天表情包，不要写分析标签。页面会根据聊天情绪补足到 6 条，并让有字/无字、动图/静态自然混合。
+- 给 3 条最贴合“我方应该怎么回复”的 sticker_suggestions 作为库存检索意图，不要复读对方表面情绪，也不要编造具体文件名。表情包意图先判断 reply_intent，再选择适合我方发出的 emotion、scenario、relationship_stage、keywords 和可发送短配字 text。比如对方说“我讨厌你”这种暧昧撒娇冲突，不要给 angry，要给 shy / apology / comfort / love 方向来缓和、撒娇、哄对方。后端会从库存 catalog 中按相关性打分选出 6 个真实表情包。
 - 少用“听起来”“感觉你”“那你平时”“有需要告诉我”“调整好状态”“看来”这类模板句。
 - 候选要自然、有变化，但不要给每条回复套风格标签。`;
 
@@ -157,11 +161,15 @@ const CHAT_ADVICE_SCHEMA = {
         additionalProperties: false,
         properties: {
           text: { type: 'string' },
-          mood: { type: 'string', enum: ['playful', 'teasing', 'curious', 'caring', 'speechless', 'retreat'] },
-          scene: { type: 'string', enum: ['comfort', 'rest', 'study', 'listen', 'happy', 'cheer', 'peek', 'confused', 'pat', 'miss', 'doubt', 'hello', 'night', 'love', 'think', 'sleepy', 'sob'] },
-          animated: { type: 'boolean' },
+          emotion: { type: 'string', enum: ['greeting', 'happy', 'laugh', 'shy', 'flirt', 'love', 'missing', 'miss_you', 'sad', 'cry', 'wronged', 'comfort', 'comforting', 'encourage', 'thanks', 'goodnight', 'angry', 'awkward', 'speechless', 'excited', 'proud', 'jealous', 'surprised', 'thinking', 'sleepy', 'apology'] },
+          scenario: { type: 'string', enum: ['greeting', 'studying', 'working', 'tired', 'good_morning', 'good_night', 'missing_you', 'apology', 'encouragement', 'celebration', 'teasing', 'flirting', 'confession', 'thanks', 'waiting', 'reply_late', 'asking_attention', 'agree', 'refuse', 'speechless', 'angry_complaint', 'jealousy', 'hug', 'comfort', 'cute_acting', 'bye', 'safe_exit'] },
+          relationship_stage: { type: 'string', enum: ['stranger', 'acquaintance', 'talking_stage', 'flirting', 'relationship', 'post_conflict'] },
+          keywords: {
+            type: 'array',
+            items: { type: 'string' },
+          },
         },
-        required: ['text', 'mood', 'scene', 'animated'],
+        required: ['text', 'emotion', 'scenario', 'relationship_stage', 'keywords'],
       },
     },
   },
@@ -434,6 +442,18 @@ function parseAdvice(rawText) {
   const activeCuriosity = isChatScreenshot && !emotionalDisclosure && hasActiveCuriosity(verifiedDialogue);
   const suggestStop = isChatScreenshot && !emotionalDisclosure && (Boolean(value.suggest_stop) || hasRepeatedColdReplies(verifiedDialogue));
   const conversationStage = inferConversationStage(value.conversation_stage, { emotionalDisclosure, activeCuriosity, suggestStop });
+  const conversationMode = isChatScreenshot ? (emotionalDisclosure ? '情绪倾诉' : activeCuriosity ? '主动了解' : normalizeConversationMode(value.conversation_mode)) : '礼貌回应';
+  const flirtLevel = isChatScreenshot ? (emotionalDisclosure ? '先别暧昧' : normalizeFlirtLevel(value.flirt_level)) : '先别暧昧';
+  const stickerMatchIntent = isChatScreenshot ? buildStickerMatchIntent({
+    rawSuggestions: value.sticker_suggestions,
+    conversationStage,
+    conversationMode,
+    flirtLevel,
+    dialogue: verifiedDialogue,
+    suggestStop,
+    emotionalDisclosure,
+    activeCuriosity,
+  }) : null;
 
   if (isChatScreenshot && !needsRetry && replies.length < 3 && !emotionalDisclosure) {
     const incompleteError = new Error('OpenAI returned fewer than three replies');
@@ -451,10 +471,10 @@ function parseAdvice(rawText) {
     interest_score: isChatScreenshot ? (emotionalDisclosure ? Math.min(45, clampScore(value.interest_score)) : activeCuriosity ? Math.max(62, clampScore(value.interest_score)) : clampScore(value.interest_score)) : 0,
     interest_level: isChatScreenshot ? (emotionalDisclosure ? '愿意倾诉' : activeCuriosity ? '愿意接话' : normalizeInterestLevel(value.interest_level)) : '低意愿',
     interest_signals: isChatScreenshot ? (emotionalDisclosure ? buildEmotionalDisclosureSignals(verifiedDialogue) : activeCuriosity ? buildActiveCuriositySignals() : normalizeSignals(value.interest_signals)) : [],
-    conversation_mode: isChatScreenshot ? (emotionalDisclosure ? '情绪倾诉' : activeCuriosity ? '主动了解' : normalizeConversationMode(value.conversation_mode)) : '礼貌回应',
+    conversation_mode: conversationMode,
     conversation_stage: isChatScreenshot ? conversationStage : '初次认识',
     reply_strategy: isChatScreenshot ? (emotionalDisclosure ? '先回应她现在的不舒服，给她一点喘息空间，等她愿意继续说再慢慢接话。' : activeCuriosity ? '先认真回答她最后的问题，给一个真实细节，再顺着她的反应慢慢展开。' : cleanText(value.reply_strategy, 100)) : '',
-    flirt_level: isChatScreenshot ? (emotionalDisclosure ? '先别暧昧' : normalizeFlirtLevel(value.flirt_level)) : '先别暧昧',
+    flirt_level: flirtLevel,
     is_chat_screenshot: isChatScreenshot,
     non_chat_reply: cleanText(value.non_chat_reply, 120) || (!isChatScreenshot ? getDefaultNonChatReply() : ''),
     chat_evidence: chatEvidence,
@@ -464,7 +484,8 @@ function parseAdvice(rawText) {
     suggest_stop: suggestStop,
     needs_retry: isChatScreenshot && needsRetry,
     replies: isChatScreenshot ? replies : [],
-    sticker_suggestions: isChatScreenshot ? normalizeStickerSuggestions(value.sticker_suggestions, conversationStage, verifiedDialogue) : [],
+    sticker_match_intent: stickerMatchIntent,
+    sticker_suggestions: stickerMatchIntent ? recommendStockStickers(stickerMatchIntent) : [],
   };
 }
 
@@ -637,197 +658,244 @@ function buildActiveCuriosityGuide() {
   return buildStageChatGuide('稳定了解');
 }
 
-const STICKER_MOODS = new Set(['playful', 'teasing', 'curious', 'caring', 'speechless', 'retreat']);
-const STICKER_SCENES = new Set(['comfort', 'rest', 'study', 'listen', 'happy', 'cheer', 'peek', 'confused', 'pat', 'miss', 'doubt', 'hello', 'night', 'love', 'think', 'sleepy', 'sob']);
-const ANIMATED_STICKER_SCENES = new Set(['happy', 'cheer', 'peek', 'miss', 'love', 'night', 'sob', 'pat']);
+const STICKER_CATALOG_PATH = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'stickers', 'catalog.v1.json');
+const STOCK_STICKER_CATALOG = loadStickerCatalog();
 const STICKER_RECOMMENDATION_COUNT = 6;
+const STICKER_EMOTIONS = new Set(['greeting', 'happy', 'laugh', 'shy', 'flirt', 'love', 'missing', 'miss_you', 'sad', 'cry', 'wronged', 'comfort', 'comforting', 'encourage', 'thanks', 'goodnight', 'angry', 'awkward', 'speechless', 'excited', 'proud', 'jealous', 'surprised', 'thinking', 'sleepy', 'apology']);
+const STICKER_SCENARIOS = new Set(['greeting', 'studying', 'working', 'tired', 'good_morning', 'good_night', 'missing_you', 'apology', 'encouragement', 'celebration', 'teasing', 'flirting', 'confession', 'thanks', 'waiting', 'reply_late', 'asking_attention', 'agree', 'refuse', 'speechless', 'angry_complaint', 'jealousy', 'hug', 'comfort', 'cute_acting', 'bye', 'safe_exit']);
+const STICKER_RELATIONSHIP_STAGES = new Set(['stranger', 'acquaintance', 'talking_stage', 'flirting', 'relationship', 'post_conflict']);
+const STICKER_SCORE_WEIGHTS = {
+  primaryEmotion: 40,
+  secondaryEmotion: 18,
+  relatedEmotion: 22,
+  scenario: 28,
+  relatedScenario: 14,
+  relationshipStage: 16,
+  keyword: 8,
+  tag: 4,
+  intensity: 5,
+  qualityScore: 10,
+  usagePriority: 0.1,
+  avoidTagPenalty: -45,
+};
+const STICKER_CHARACTER_ORDER = ['white_mochi', 'hamster', 'cat', 'shiba'];
+const STICKER_MAX_PER_CHARACTER_SOFT = 2;
+const STICKER_CANONICAL_EMOTIONS = {
+  comforting: 'comfort',
+  missing: 'miss_you',
+  flirt: 'shy',
+  excited: 'happy',
+  proud: 'encourage',
+  speechless: 'awkward',
+  wronged: 'sad',
+  tired: 'sleepy',
+};
+const STICKER_EMOTION_ALIASES = {
+  greeting: ['greeting', 'happy', 'shy'],
+  goodnight: ['goodnight', 'sleepy', 'comfort', 'love'],
+  sleepy: ['sleepy', 'goodnight', 'comfort'],
+  comfort: ['comfort', 'encourage', 'sad', 'cry', 'goodnight'],
+  sad: ['sad', 'comfort', 'cry'],
+  cry: ['cry', 'sad', 'comfort'],
+  awkward: ['awkward', 'shy', 'surprised', 'happy'],
+  surprised: ['surprised', 'awkward', 'happy'],
+  miss_you: ['miss_you', 'love', 'shy'],
+  love: ['love', 'miss_you', 'shy', 'comfort'],
+  shy: ['shy', 'love', 'happy', 'apology'],
+  apology: ['apology', 'shy', 'comfort', 'love'],
+  happy: ['happy', 'laugh', 'encourage'],
+  laugh: ['laugh', 'happy', 'awkward'],
+  encourage: ['encourage', 'comfort', 'happy'],
+  thanks: ['thanks', 'happy', 'shy'],
+  thinking: ['thinking', 'awkward', 'surprised'],
+  angry: ['angry', 'awkward'],
+};
+const STICKER_SCENARIO_ALIASES = {
+  good_night: ['good_night', 'goodnight', 'tired', 'comfort'],
+  goodnight: ['goodnight', 'good_night', 'tired', 'comfort'],
+  tired: ['tired', 'good_night', 'comfort', 'encouragement'],
+  comfort: ['comfort', 'hug', 'encouragement', 'good_night'],
+  encouragement: ['encouragement', 'studying', 'comfort', 'celebration'],
+  studying: ['studying', 'encouragement', 'working', 'tired'],
+  celebration: ['celebration', 'happy', 'agree', 'encouragement'],
+  flirting: ['flirting', 'teasing', 'missing_you', 'hug'],
+  missing_you: ['missing_you', 'flirting', 'hug', 'waiting'],
+  speechless: ['speechless', 'teasing', 'awkward'],
+  apology: ['apology', 'comfort', 'flirting'],
+  thanks: ['thanks', 'agree', 'teasing'],
+};
+const STICKER_REPLY_INTENT_PLANS = {
+  soften_flirty_conflict: {
+    emotion: 'shy',
+    secondary_emotions: ['apology', 'comfort', 'love'],
+    scenario: ['flirting', 'apology', 'comfort', 'cute_acting'],
+    keywords: ['撒娇', '别生气', '哄你', '可爱'],
+    intensity: 3,
+    avoid_emotions: ['angry'],
+  },
+  say_goodnight_back: {
+    emotion: 'goodnight',
+    secondary_emotions: ['love', 'comfort', 'sleepy'],
+    scenario: ['good_night', 'flirting', 'comfort'],
+    keywords: ['晚安', '睡觉', '陪伴'],
+    intensity: 3,
+  },
+  playful_continue: {
+    emotion: 'laugh',
+    secondary_emotions: ['happy', 'awkward'],
+    scenario: ['teasing', 'celebration', 'agree'],
+    keywords: ['哈哈', '接梗', '开心'],
+    intensity: 3,
+  },
+  celebrate_together: {
+    emotion: 'happy',
+    secondary_emotions: ['laugh', 'encourage'],
+    scenario: ['celebration', 'agree', 'encouragement'],
+    keywords: ['开心', '好耶', '太好了'],
+    intensity: 3,
+  },
+  accept_thanks: {
+    emotion: 'thanks',
+    secondary_emotions: ['happy', 'shy'],
+    scenario: ['thanks', 'agree', 'teasing'],
+    keywords: ['谢谢', '收到', '不客气'],
+    intensity: 2,
+  },
+  comfort_support: {
+    emotion: 'comfort',
+    secondary_emotions: ['encourage', 'goodnight'],
+    scenario: ['comfort', 'hug', 'encouragement', 'good_night'],
+    keywords: ['抱抱', '安慰', '加油', '休息'],
+    intensity: 3,
+  },
+  affectionate_reply: {
+    emotion: 'miss_you',
+    secondary_emotions: ['love', 'shy'],
+    scenario: ['missing_you', 'flirting', 'hug'],
+    keywords: ['想你', '喜欢', '抱抱'],
+    intensity: 3,
+  },
+  encourage_support: {
+    emotion: 'encourage',
+    secondary_emotions: ['comfort', 'happy'],
+    scenario: ['encouragement', 'studying', 'comfort'],
+    keywords: ['加油', '鼓励', '陪你'],
+    intensity: 3,
+  },
+  warm_greeting: {
+    emotion: 'greeting',
+    secondary_emotions: ['happy', 'shy'],
+    scenario: ['greeting', 'teasing'],
+    keywords: ['你好', '嗨', '认识'],
+    intensity: 2,
+  },
+  flirty_continue: {
+    emotion: 'shy',
+    secondary_emotions: ['love', 'happy', 'awkward'],
+    scenario: ['flirting', 'teasing', 'missing_you'],
+    keywords: ['偷看', '嘴硬', '心动'],
+    intensity: 3,
+  },
+  playful_awkward: {
+    emotion: 'awkward',
+    secondary_emotions: ['shy', 'surprised', 'happy'],
+    scenario: ['teasing', 'speechless'],
+    keywords: ['真的假的', '可疑', '啊这'],
+    intensity: 2,
+  },
+  deescalate_gracefully: {
+    emotion: 'awkward',
+    secondary_emotions: ['apology', 'comfort'],
+    scenario: ['safe_exit', 'bye', 'speechless'],
+    keywords: ['先撤', '不打扰', '缓和'],
+    intensity: 2,
+  },
+  warm_continue: {
+    emotion: 'happy',
+    secondary_emotions: ['shy', 'thinking'],
+    scenario: ['teasing', 'greeting', 'agree'],
+    keywords: ['接话', '继续聊'],
+    intensity: 2,
+  },
+};
 
-function buildDefaultStickerSuggestions(stage) {
-  const suggestions = {
-    初次认识: [
-      { text: 'Hi', mood: 'playful', scene: 'hello' },
-      { text: '你好呀', mood: 'playful', scene: 'happy' },
-      { text: '小巧思', mood: 'curious', scene: 'think' },
-      { text: '展开说说', mood: 'curious', scene: 'peek' },
-      { text: '我听着呢', mood: 'caring', scene: 'listen' },
-      { text: '有点可爱', mood: 'teasing', scene: 'miss' },
-    ],
-    轻松破冰: [
-      { text: '说了啥', mood: 'curious', scene: 'hello' },
-      { text: '真的假的', mood: 'playful', scene: 'doubt' },
-      { text: '有点意思', mood: 'playful', scene: 'cheer' },
-      { text: '我听听', mood: 'caring', scene: 'listen' },
-      { text: '再聊一会', mood: 'teasing', scene: 'miss' },
-      { text: '让我想想', mood: 'curious', scene: 'think' },
-    ],
-    稳定了解: [
-      { text: '好巧', mood: 'playful', scene: 'hello' },
-      { text: '记下了', mood: 'playful', scene: 'study' },
-      { text: '一家人', mood: 'teasing', scene: 'miss' },
-      { text: '继续展开', mood: 'curious', scene: 'peek' },
-      { text: '我有在听', mood: 'caring', scene: 'listen' },
-      { text: '学到了', mood: 'curious', scene: 'think' },
-    ],
-    暧昧升温: [
-      { text: '你在质疑我', mood: 'teasing', scene: 'doubt' },
-      { text: '有点犯规', mood: 'teasing', scene: 'miss' },
-      { text: '我只想你', mood: 'teasing', scene: 'love' },
-      { text: '嘴硬啦', mood: 'playful', scene: 'peek' },
-      { text: '再聊一会', mood: 'playful', scene: 'hello' },
-      { text: '优雅离场', mood: 'retreat', scene: 'happy' },
-    ],
-    情绪陪伴: [
-      { text: '先缓一会儿', mood: 'caring', scene: 'rest' },
-      { text: '我在听', mood: 'caring', scene: 'listen' },
-      { text: '给你抱抱', mood: 'caring', scene: 'comfort' },
-      { text: '给你拍拍', mood: 'caring', scene: 'pat' },
-      { text: '慢慢来', mood: 'caring', scene: 'cheer' },
-      { text: '别硬撑啦', mood: 'caring', scene: 'study' },
-    ],
-    建议停手: [
-      { text: '我先撤啦', mood: 'retreat', scene: 'rest' },
-      { text: '当我没说', mood: 'speechless', scene: 'doubt' },
-      { text: '优雅离场', mood: 'retreat', scene: 'peek' },
-      { text: '好吧好吧', mood: 'retreat', scene: 'listen' },
-      { text: '先消失', mood: 'retreat', scene: 'sob' },
-      { text: '不打扰啦', mood: 'retreat', scene: 'comfort' },
-    ],
+function loadStickerCatalog() {
+  try {
+    const catalog = JSON.parse(readFileSync(STICKER_CATALOG_PATH, 'utf8'));
+    return Array.isArray(catalog.items) ? catalog.items : [];
+  } catch (error) {
+    console.warn(`Sticker catalog failed to load: ${error.message}`);
+    return [];
+  }
+}
+
+function normalizeStickerEmotionName(value) {
+  const emotion = cleanText(value, 40);
+  return STICKER_CANONICAL_EMOTIONS[emotion] || emotion;
+}
+
+function normalizeStickerHints(suggestions) {
+  if (!Array.isArray(suggestions)) return [];
+  return suggestions.map((suggestion) => {
+    const emotion = normalizeStickerEmotionName(suggestion?.emotion);
+    return {
+      text: cleanText(suggestion?.text, 24),
+      emotion: STICKER_EMOTIONS.has(emotion) ? emotion : '',
+      scenario: STICKER_SCENARIOS.has(suggestion?.scenario) ? suggestion.scenario : '',
+      relationship_stage: STICKER_RELATIONSHIP_STAGES.has(suggestion?.relationship_stage) ? suggestion.relationship_stage : '',
+      keywords: Array.isArray(suggestion?.keywords)
+        ? suggestion.keywords.map((keyword) => cleanText(keyword, 16)).filter(Boolean).slice(0, 8)
+        : [],
+    };
+  }).filter((hint) => hint.text || hint.emotion || hint.scenario || hint.keywords.length);
+}
+
+function normalizeCatalogList(value) {
+  if (Array.isArray(value)) return value.map((item) => cleanText(item, 40)).filter(Boolean);
+  const text = cleanText(value, 40);
+  return text ? [text] : [];
+}
+
+function normalizeCatalogEmotion(value) {
+  if (typeof value === 'string') {
+    return { primary: normalizeStickerEmotionName(value), secondary: [], intensity: 0 };
+  }
+  if (!value || typeof value !== 'object') {
+    return { primary: '', secondary: [], intensity: 0 };
+  }
+  return {
+    primary: normalizeStickerEmotionName(value.primary),
+    secondary: normalizeCatalogList(value.secondary).map(normalizeStickerEmotionName).slice(0, 5),
+    intensity: Number.isFinite(Number(value.intensity)) ? Number(value.intensity) : 0,
   };
-  return balanceStickerPresentation(suggestions[normalizeConversationStage(stage)], stage);
 }
 
-function buildContextualStickerSuggestions(context, stage = '轻松破冰') {
-  const contextualSuggestions = {
-    physical_discomfort: [
-      { text: '听着就难受', mood: 'caring', scene: 'comfort' },
-      { text: '先缓一会儿', mood: 'caring', scene: 'rest' },
-      { text: '我在这儿', mood: 'caring', scene: 'listen' },
-      { text: '给你拍拍', mood: 'caring', scene: 'pat' },
-      { text: '别硬撑啦', mood: 'caring', scene: 'cheer' },
-      { text: '作业慢慢来', mood: 'caring', scene: 'study' },
-    ],
-    study_stress: [
-      { text: '考试加油', mood: 'caring', scene: 'study' },
-      { text: '稳住 能行', mood: 'caring', scene: 'cheer' },
-      { text: '先别慌', mood: 'caring', scene: 'comfort' },
-      { text: '累了歇会儿', mood: 'caring', scene: 'rest' },
-      { text: '给你拍拍', mood: 'caring', scene: 'pat' },
-      { text: '辛苦啦', mood: 'caring', scene: 'sob' },
-    ],
-    late_night_miss: [
-      { text: '晚安要给你', mood: 'teasing', scene: 'night' },
-      { text: '刚醒想你', mood: 'teasing', scene: 'miss' },
-      { text: '梦里见', mood: 'playful', scene: 'sleepy' },
-      { text: '再聊一会', mood: 'playful', scene: 'love' },
-      { text: '在等你呀', mood: 'teasing', scene: 'peek' },
-      { text: '别熬太晚', mood: 'caring', scene: 'rest' },
-    ],
-    new_friend: [
-      { text: 'Hi', mood: 'playful', scene: 'hello' },
-      { text: '你好呀', mood: 'playful', scene: 'happy' },
-      { text: '小巧思', mood: 'curious', scene: 'think' },
-      { text: '展开说说', mood: 'curious', scene: 'peek' },
-      { text: '我听着呢', mood: 'caring', scene: 'listen' },
-      { text: '有点可爱', mood: 'teasing', scene: 'miss' },
-    ],
-    playful_flirt: [
-      { text: '你在质疑我', mood: 'teasing', scene: 'doubt' },
-      { text: '我只想你', mood: 'teasing', scene: 'miss' },
-      { text: '有点犯规', mood: 'teasing', scene: 'love' },
-      { text: '再聊一会', mood: 'playful', scene: 'hello' },
-      { text: '嘴硬啦', mood: 'playful', scene: 'peek' },
-      { text: '心动了吗', mood: 'teasing', scene: 'happy' },
-    ],
-    question_tease: [
-      { text: '你在质疑我', mood: 'teasing', scene: 'doubt' },
-      { text: '让我想想', mood: 'curious', scene: 'think' },
-      { text: '听不懂啦', mood: 'speechless', scene: 'confused' },
-      { text: '我看出来了', mood: 'playful', scene: 'peek' },
-      { text: '说了啥', mood: 'playful', scene: 'hello' },
-      { text: '有点可疑', mood: 'teasing', scene: 'happy' },
-    ],
-    happy: [
-      { text: '好耶', mood: 'playful', scene: 'happy' },
-      { text: '替你开心', mood: 'playful', scene: 'cheer' },
-      { text: '可以可以', mood: 'playful', scene: 'hello' },
-      { text: '收到快乐', mood: 'playful', scene: 'love' },
-      { text: '有点可爱', mood: 'teasing', scene: 'pat' },
-      { text: '继续保持', mood: 'playful', scene: 'miss' },
-    ],
-    emotional_disclosure: buildDefaultStickerSuggestions('情绪陪伴'),
-  };
-  return balanceStickerPresentation(contextualSuggestions[context] || buildDefaultStickerSuggestions(stage), stage);
+function expandCatalogTerms(values, aliases) {
+  const expanded = [];
+  normalizeCatalogList(values).forEach((value) => {
+    expanded.push(value);
+    normalizeCatalogList(aliases[value]).forEach((alias) => expanded.push(alias));
+  });
+  return [...new Set(expanded.filter(Boolean))];
 }
 
-function getDefaultStickerText(suggestion, stage = '轻松破冰') {
-  if (stage === '建议停手') return '先撤啦';
-  const textByScene = {
-    comfort: '抱抱你',
-    rest: '先缓缓',
-    study: '加油呀',
-    listen: '我在听',
-    happy: '好耶',
-    cheer: '可以可以',
-    peek: '在等你呀',
-    confused: '欸？',
-    pat: '摸摸头',
-    miss: '想你一下',
-    doubt: '真的假的',
-    hello: 'Hi',
-    night: '晚安安',
-    love: '心动',
-    think: '让我想想',
-    sleepy: '困困',
-    sob: '别难过',
-  };
-  return textByScene[suggestion.scene] || '';
+function getStockStickerCharacter(sticker) {
+  return cleanText(sticker?.character || sticker?.id, 80) || 'unknown';
 }
 
-function getDefaultStickerAnimation(scene, index = 0) {
-  if (ANIMATED_STICKER_SCENES.has(scene)) return true;
-  return index % 3 === 0;
+function stockStickerCharacterOrderIndex(character) {
+  const index = STICKER_CHARACTER_ORDER.indexOf(character);
+  return index >= 0 ? index : STICKER_CHARACTER_ORDER.length + 1;
 }
 
-function balanceStickerPresentation(suggestions, stage = '轻松破冰') {
-  const items = suggestions.slice(0, STICKER_RECOMMENDATION_COUNT).map((suggestion, index) => ({
-    ...suggestion,
-    animated: typeof suggestion.animated === 'boolean'
-      ? suggestion.animated
-      : getDefaultStickerAnimation(suggestion.scene, index),
-  }));
-
-  let textCount = items.filter((suggestion) => suggestion.text).length;
-  for (let index = 0; textCount > 3 && index < items.length; index += 1) {
-    if (index % 2 === 1 && items[index].text) {
-      items[index] = { ...items[index], text: '' };
-      textCount -= 1;
-    }
-  }
-  for (let index = 0; textCount < 2 && index < items.length; index += 1) {
-    if (!items[index].text) {
-      const text = getDefaultStickerText(items[index], stage);
-      if (text) {
-        items[index] = { ...items[index], text };
-        textCount += 1;
-      }
-    }
-  }
-
-  let animatedCount = items.filter((suggestion) => suggestion.animated).length;
-  for (let index = items.length - 1; animatedCount > 4 && index >= 0; index -= 1) {
-    if (items[index].animated) {
-      items[index] = { ...items[index], animated: false };
-      animatedCount -= 1;
-    }
-  }
-  for (let index = 0; animatedCount < 2 && index < items.length; index += 1) {
-    if (!items[index].animated) {
-      items[index] = { ...items[index], animated: true };
-      animatedCount += 1;
-    }
-  }
-
-  return items;
+function getStockDiversityCharacters(byCharacter) {
+  const preferredCharacters = STICKER_CHARACTER_ORDER.filter((character) => byCharacter.has(character));
+  if (preferredCharacters.length >= 2) return preferredCharacters;
+  return [...byCharacter.keys()].sort((a, b) => {
+    const order = stockStickerCharacterOrderIndex(a) - stockStickerCharacterOrderIndex(b);
+    if (order !== 0) return order;
+    return (byCharacter.get(b)?.[0]?.score || 0) - (byCharacter.get(a)?.[0]?.score || 0);
+  });
 }
 
 function getStickerContext(dialogue) {
@@ -842,33 +910,310 @@ function getStickerContext(dialogue) {
   return 'generic';
 }
 
-function uniqueStickerSuggestions(suggestions) {
-  const seenScenes = new Set();
-  const seenTexts = new Set();
-  return suggestions.filter((suggestion) => {
-    if (!suggestion.scene || seenScenes.has(suggestion.scene)) return false;
-    if (suggestion.text && seenTexts.has(suggestion.text)) return false;
-    seenScenes.add(suggestion.scene);
-    if (suggestion.text) seenTexts.add(suggestion.text);
-    return true;
+function mapStageToStickerRelationshipStages(stage, { suggestStop = false, emotionalDisclosure = false } = {}) {
+  if (suggestStop) return ['post_conflict', 'acquaintance', 'talking_stage'];
+  if (emotionalDisclosure) return ['talking_stage', 'flirting', 'relationship'];
+  const byStage = {
+    初次认识: ['stranger', 'acquaintance'],
+    轻松破冰: ['acquaintance', 'talking_stage'],
+    稳定了解: ['talking_stage', 'flirting'],
+    暧昧升温: ['flirting', 'relationship', 'talking_stage'],
+    情绪陪伴: ['talking_stage', 'flirting', 'relationship'],
+    建议停手: ['post_conflict', 'acquaintance', 'talking_stage'],
+  };
+  return byStage[normalizeConversationStage(stage)] || byStage.轻松破冰;
+}
+
+function pushUnique(list, values) {
+  values.filter(Boolean).forEach((value) => {
+    if (!list.includes(value)) list.push(value);
   });
 }
 
-function normalizeStickerSuggestions(suggestions, stage = '轻松破冰', dialogue = []) {
+function collectKeywordMatches(text, keywordGroups) {
+  const found = [];
+  keywordGroups.forEach((keywords) => {
+    keywords.forEach((keyword) => {
+      if (text.includes(keyword)) found.push(keyword);
+    });
+  });
+  return found;
+}
+
+function getLatestOpponentText(dialogue) {
+  return [...(dialogue || [])]
+    .reverse()
+    .find((message) => message.speaker === '对方')
+    ?.text || '';
+}
+
+function inferStickerReplyIntent({
+  dialogue = [],
+  conversationStage = '轻松破冰',
+  conversationMode = '',
+  flirtLevel = '',
+  suggestStop = false,
+  emotionalDisclosure = false,
+  activeCuriosity = false,
+} = {}) {
+  const latestOpponentText = getLatestOpponentText(dialogue);
+  const recentText = recentDialogueText(dialogue, 10);
+  const flirtyContext = conversationStage === '暧昧升温'
+    || conversationMode === '轻松暧昧'
+    || flirtLevel === '轻微暧昧'
+    || flirtLevel === '自然升温'
+    || hasPlayfulFlirt(dialogue)
+    || /想你|喜欢|嘴硬|亲亲|钓|犯规|讨厌你/.test(recentText);
+
+  if (suggestStop) return 'deescalate_gracefully';
+  if (/讨厌你|不喜欢你|烦你|我生气了|气死我了|哼/.test(latestOpponentText) && flirtyContext) {
+    return 'soften_flirty_conflict';
+  }
+  if (/晚安|睡了|睡觉|早点睡|先睡|好梦/.test(latestOpponentText)) return 'say_goodnight_back';
+  if (/哈哈哈|哈哈|笑死|乐疯|嘿嘿|嘻嘻/.test(latestOpponentText)) return 'playful_continue';
+  if (/谢谢|谢啦|谢了|感谢|辛苦你/.test(latestOpponentText)) return 'accept_thanks';
+  if (/好累|太累|累死|我.{0,3}累|好困|太困|困死|撑不住/.test(latestOpponentText)) return 'comfort_support';
+  if (/想你了|想你|想我|想见你|有点想/.test(latestOpponentText)) return 'affectionate_reply';
+
+  if (hasPhysicalDiscomfort(dialogue) || emotionalDisclosure || contextFromDialogue(dialogue) === 'emotional_disclosure') return 'comfort_support';
+  if (hasStudyStress(dialogue)) return 'encourage_support';
+  if (hasLateNightMiss(dialogue)) return /想你|想我|等你|在等/.test(recentText) ? 'affectionate_reply' : 'say_goodnight_back';
+  if (hasPlayfulFlirt(dialogue) || conversationStage === '暧昧升温') return 'flirty_continue';
+  if (hasHappyEmotion(dialogue)) {
+    return /哈哈哈|哈哈|笑死|乐疯|嘿嘿|嘻嘻/.test(latestOpponentText || recentText)
+      ? 'playful_continue'
+      : 'celebrate_together';
+  }
+  if (hasQuestionTease(dialogue)) return 'playful_awkward';
+  if (hasNewFriendOpening(dialogue)) return 'warm_greeting';
+  if (activeCuriosity) return 'warm_continue';
+  return 'warm_continue';
+}
+
+function contextFromDialogue(dialogue) {
+  return getStickerContext(dialogue);
+}
+
+function applyReplyIntentPlan(replyIntent, { emotions, scenarios, keywords, intensityRef }) {
+  const plan = STICKER_REPLY_INTENT_PLANS[replyIntent] || STICKER_REPLY_INTENT_PLANS.warm_continue;
+  pushUnique(emotions, [plan.emotion, ...(plan.secondary_emotions || [])]);
+  pushUnique(scenarios, plan.scenario || []);
+  pushUnique(keywords, plan.keywords || []);
+  intensityRef.value = plan.intensity || intensityRef.value || 2;
+  return plan;
+}
+
+function buildStickerMatchIntent({
+  rawSuggestions = [],
+  conversationStage = '轻松破冰',
+  conversationMode = '',
+  flirtLevel = '',
+  dialogue = [],
+  suggestStop = false,
+  emotionalDisclosure = false,
+  activeCuriosity = false,
+} = {}) {
+  const hints = normalizeStickerHints(rawSuggestions);
+  const text = [
+    recentDialogueText(dialogue, 12),
+    hints.map((hint) => [hint.text, hint.emotion, hint.scenario, hint.relationship_stage, ...hint.keywords].join(' ')).join(' '),
+    conversationStage,
+    conversationMode,
+    flirtLevel,
+  ].join(' ');
   const context = getStickerContext(dialogue);
-  if (context !== 'generic') return buildContextualStickerSuggestions(context, stage);
-  const normalized = Array.isArray(suggestions)
-    ? suggestions.map((suggestion) => ({
-        text: cleanText(suggestion?.text, 16),
-        mood: STICKER_MOODS.has(suggestion?.mood) ? suggestion.mood : 'playful',
-        scene: STICKER_SCENES.has(suggestion?.scene) ? suggestion.scene : '',
-        animated: typeof suggestion?.animated === 'boolean' ? suggestion.animated : undefined,
-      })).filter((suggestion) => suggestion.scene).slice(0, STICKER_RECOMMENDATION_COUNT)
-    : [];
-  const fallback = buildDefaultStickerSuggestions(stage);
-  if (normalized.length < 3) return fallback;
-  return balanceStickerPresentation(uniqueStickerSuggestions([...normalized, ...fallback]), stage)
-    .slice(0, STICKER_RECOMMENDATION_COUNT);
+  const scenarios = [];
+  const keywords = collectKeywordMatches(text, [
+    ['哈哈哈', '哈哈', '笑死', '乐疯', '开心', '好耶', '太好了', '收到'],
+    ['偷看', '害羞', '脸红', '不好意思', '想你', '心动', '犯规', '嘴硬', '亲亲'],
+    ['哭哭', '委屈', '可怜巴巴', '抱抱', '拍拍', '摸摸头', '难受', '疼', '累', '压力'],
+    ['无语', '白眼', '沉默', '你说得对', '听不懂', '真的假的', '可疑'],
+    ['生气', '气死', '怒火', '拳头硬了', '哼'],
+    ['考试', '作业', '论文', '复习', 'ddl', '加油'],
+    ['晚安', '睡了', '睡觉', '困', '刚醒', '梦里'],
+    ['对不起', '不好意思', '抱歉', '不打扰', '先撤'],
+  ]);
+
+  const replyIntent = inferStickerReplyIntent({
+    dialogue,
+    conversationStage,
+    conversationMode,
+    flirtLevel,
+    suggestStop,
+    emotionalDisclosure,
+    activeCuriosity,
+  });
+  const intentEmotions = [];
+  const intensityRef = { value: 2 };
+  const replyPlan = applyReplyIntentPlan(replyIntent, {
+    emotions: intentEmotions,
+    scenarios,
+    keywords,
+    intensityRef,
+  });
+
+  hints.forEach((hint) => {
+    if (hint.emotion && !(replyPlan.avoid_emotions || []).includes(hint.emotion)) pushUnique(intentEmotions, [hint.emotion]);
+    if (hint.scenario) pushUnique(scenarios, [hint.scenario]);
+    pushUnique(keywords, hint.keywords);
+    if (hint.text) pushUnique(keywords, [hint.text]);
+  });
+
+  const primaryEmotion = intentEmotions[0] || 'happy';
+  const intensity = intensityRef.value;
+
+  pushUnique(scenarios, hints.map((hint) => hint.scenario));
+  const relationshipStages = mapStageToStickerRelationshipStages(conversationStage, { suggestStop, emotionalDisclosure });
+  pushUnique(relationshipStages, hints.map((hint) => hint.relationship_stage));
+
+  return {
+    reply_intent: replyIntent,
+    emotion: primaryEmotion,
+    secondary_emotions: intentEmotions.filter((emotion) => emotion !== primaryEmotion).slice(0, 4),
+    scenario: scenarios.slice(0, 5),
+    relationship_stage: relationshipStages.slice(0, 4),
+    keywords: keywords.slice(0, 12),
+    intensity,
+    context,
+  };
+}
+
+function scoreStockSticker(sticker, intent) {
+  const stickerEmotion = normalizeCatalogEmotion(sticker.emotion);
+  const stickerSecondary = stickerEmotion.secondary;
+  const stickerScenario = normalizeCatalogList(sticker.scenario);
+  const stickerStages = normalizeCatalogList(sticker.relationship_stage);
+  const stickerTags = normalizeCatalogList(sticker.tags);
+  const exactEmotions = [intent.emotion, ...intent.secondary_emotions].filter(Boolean);
+  const relatedEmotions = expandCatalogTerms(exactEmotions, STICKER_EMOTION_ALIASES);
+  const exactScenarios = normalizeCatalogList(intent.scenario);
+  const relatedScenarios = expandCatalogTerms(exactScenarios, STICKER_SCENARIO_ALIASES);
+  const searchableText = [
+    sticker.id,
+    sticker.character,
+    sticker.text,
+    sticker.source_filename,
+    ...stickerTags,
+    ...stickerScenario,
+  ].join(' ').toLowerCase();
+  let score = 0;
+
+  if (stickerEmotion.primary === intent.emotion) score += STICKER_SCORE_WEIGHTS.primaryEmotion;
+  else if (stickerSecondary.includes(intent.emotion)) score += STICKER_SCORE_WEIGHTS.secondaryEmotion;
+  else if (relatedEmotions.includes(stickerEmotion.primary)) score += STICKER_SCORE_WEIGHTS.relatedEmotion;
+  score += intent.secondary_emotions.filter((emotion) => stickerEmotion.primary === emotion || stickerSecondary.includes(emotion)).length * STICKER_SCORE_WEIGHTS.secondaryEmotion;
+  score += exactScenarios.filter((scenario) => stickerScenario.includes(scenario)).length * STICKER_SCORE_WEIGHTS.scenario;
+  score += relatedScenarios.filter((scenario) => !exactScenarios.includes(scenario) && stickerScenario.includes(scenario)).length * STICKER_SCORE_WEIGHTS.relatedScenario;
+  score += intent.relationship_stage.filter((stage) => stickerStages.includes(stage)).length * STICKER_SCORE_WEIGHTS.relationshipStage;
+
+  const keywordHits = intent.keywords.filter((keyword) => searchableText.includes(keyword.toLowerCase()));
+  score += keywordHits.length * STICKER_SCORE_WEIGHTS.keyword;
+  score += intent.keywords.filter((keyword) => stickerTags.includes(keyword)).length * STICKER_SCORE_WEIGHTS.tag;
+
+  if (Number.isFinite(stickerEmotion.intensity) && stickerEmotion.intensity > 0) {
+    score += Math.max(0, STICKER_SCORE_WEIGHTS.intensity - Math.abs(stickerEmotion.intensity - intent.intensity));
+  }
+  if (Array.isArray(sticker.avoid_tags) && sticker.avoid_tags.some((tag) => intent.keywords.includes(tag) || intent.scenario.includes(tag))) {
+    score += STICKER_SCORE_WEIGHTS.avoidTagPenalty;
+  }
+  score += (Number(sticker.quality_score) || 0) * STICKER_SCORE_WEIGHTS.qualityScore;
+  score += (Number(sticker.usage_priority) || 0) * STICKER_SCORE_WEIGHTS.usagePriority;
+
+  return Math.round(score * 100) / 100;
+}
+
+function toStockStickerSuggestion(sticker, score, intent) {
+  return {
+    id: sticker.id,
+    file: sticker.file,
+    thumb: sticker.thumb || sticker.file,
+    pack: sticker.pack || '',
+    character: getStockStickerCharacter(sticker),
+    text: sticker.text || '',
+    emotion: normalizeCatalogEmotion(sticker.emotion),
+    scenario: normalizeCatalogList(sticker.scenario),
+    relationship_stage: normalizeCatalogList(sticker.relationship_stage),
+    tags: normalizeCatalogList(sticker.tags),
+    static: sticker.static !== false,
+    score,
+    match: {
+      reply_intent: intent.reply_intent,
+      emotion: intent.emotion,
+      secondary_emotions: intent.secondary_emotions,
+      scenario: intent.scenario,
+      relationship_stage: intent.relationship_stage,
+      keywords: intent.keywords,
+    },
+  };
+}
+
+function sortScoredStockStickers(a, b) {
+  return b.score - a.score
+    || (Number(b.sticker.usage_priority) || 0) - (Number(a.sticker.usage_priority) || 0)
+    || stockStickerCharacterOrderIndex(getStockStickerCharacter(a.sticker)) - stockStickerCharacterOrderIndex(getStockStickerCharacter(b.sticker))
+    || a.sticker.id.localeCompare(b.sticker.id);
+}
+
+function selectDiverseStockStickers(scored, count) {
+  const sorted = scored.slice().sort(sortScoredStockStickers);
+  const byCharacter = new Map();
+  sorted.forEach((entry) => {
+    const character = getStockStickerCharacter(entry.sticker);
+    if (!byCharacter.has(character)) byCharacter.set(character, []);
+    byCharacter.get(character).push(entry);
+  });
+
+  const characters = getStockDiversityCharacters(byCharacter);
+  const selected = [];
+  const selectedIds = new Set();
+  const characterCounts = new Map();
+
+  const takeNextForCharacter = (character, maxForCharacter = Infinity) => {
+    if ((characterCounts.get(character) || 0) >= maxForCharacter) return;
+    const next = (byCharacter.get(character) || []).find(({ sticker }) => !selectedIds.has(sticker.id));
+    if (!next) return;
+    selected.push(next);
+    selectedIds.add(next.sticker.id);
+    characterCounts.set(character, (characterCounts.get(character) || 0) + 1);
+  };
+
+  for (let pass = 1; pass <= STICKER_MAX_PER_CHARACTER_SOFT && selected.length < count; pass += 1) {
+    characters.forEach((character) => {
+      if (selected.length < count) takeNextForCharacter(character, pass);
+    });
+  }
+
+  sorted.forEach((entry) => {
+    if (selected.length < count && !selectedIds.has(entry.sticker.id)) {
+      selected.push(entry);
+      selectedIds.add(entry.sticker.id);
+    }
+  });
+
+  return selected.slice(0, count);
+}
+
+function recommendStockStickers(intent, count = STICKER_RECOMMENDATION_COUNT) {
+  if (!intent || !STOCK_STICKER_CATALOG.length) return [];
+  const scored = STOCK_STICKER_CATALOG
+    .filter((sticker) => sticker?.file && sticker.static !== false)
+    .map((sticker) => ({ sticker, score: scoreStockSticker(sticker, intent) }));
+  return selectDiverseStockStickers(scored, count)
+    .map(({ sticker, score }) => toStockStickerSuggestion(sticker, score, intent));
+}
+
+function normalizeStickerSuggestions(suggestions, stage = '轻松破冰', dialogue = [], analysis = {}) {
+  const intent = buildStickerMatchIntent({
+    rawSuggestions: suggestions,
+    conversationStage: stage,
+    conversationMode: analysis.conversation_mode,
+    flirtLevel: analysis.flirt_level,
+    dialogue,
+    suggestStop: analysis.suggest_stop === true,
+    emotionalDisclosure: analysis.emotional_disclosure === true,
+    activeCuriosity: analysis.active_curiosity === true,
+  });
+  return recommendStockStickers(intent);
 }
 
 function getDefaultNonChatReply() {
@@ -1317,4 +1662,4 @@ function buildStoragePath({ visitorId, index, ext }) {
   return `${day}/${safeVisitorId}-${Date.now()}-${index}-${suffix}.${ext}`;
 }
 
-export { CHAT_ADVICE_SCHEMA, IMAGE_READING_RULES, MODELS, PRIMARY_IMAGE_DETAIL, PRIMARY_MAX_COMPLETION_TOKENS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, REPLY_REFINEMENT_SCHEMA, REFINEMENT_MAX_COMPLETION_TOKENS, buildActiveCuriosityGuide, buildContextualStickerSuggestions, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildReplyRefinementPrompt, buildStageChatGuide, extractFirstJsonObject, getRequestParts, getStickerContext, hasActiveCuriosity, hasHappyEmotion, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, hasStudyStress, inferConversationStage, isRetryableModelError, isVerifiedChatScreenshot, logUsage, mergeRefinedReplies, needsReplyRefinement, normalizeChatGuide, normalizeConversationMode, normalizeConversationStage, normalizeDialogue, normalizeChatEvidence, normalizeStickerSuggestions, parseAdvice, repairReplyCandidates, requestOpenAIAdvice, requestOpenAIReplyRefinement };
+export { CHAT_ADVICE_SCHEMA, IMAGE_READING_RULES, MODELS, PRIMARY_IMAGE_DETAIL, PRIMARY_MAX_COMPLETION_TOKENS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, REPLY_REFINEMENT_SCHEMA, REFINEMENT_MAX_COMPLETION_TOKENS, buildActiveCuriosityGuide, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildReplyRefinementPrompt, buildStageChatGuide, buildStickerMatchIntent, extractFirstJsonObject, getRequestParts, getStickerContext, hasActiveCuriosity, hasHappyEmotion, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, hasStudyStress, inferConversationStage, isRetryableModelError, isVerifiedChatScreenshot, logUsage, mergeRefinedReplies, needsReplyRefinement, normalizeChatGuide, normalizeConversationMode, normalizeConversationStage, normalizeDialogue, normalizeChatEvidence, normalizeStickerSuggestions, parseAdvice, recommendStockStickers, repairReplyCandidates, requestOpenAIAdvice, requestOpenAIReplyRefinement, scoreStockSticker };
