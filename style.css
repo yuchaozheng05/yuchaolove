@@ -659,13 +659,25 @@ footer {
 }
 .sticker-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.7rem;
 }
 .sticker-wrap {
   position: relative;
   min-width: 0;
   text-align: center;
+}
+.sticker-text-label {
+  min-height: 1.55em;
+  margin-bottom: 0.35rem;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 .sticker-thumb {
   display: block;

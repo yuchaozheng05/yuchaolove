@@ -1,7 +1,7 @@
 /* yuchaolove - stock sticker recommendations with canvas fallback */
 
 const STICKER_CATALOG_URL = '/assets/stickers/catalog.v1.json';
-const STICKER_PANEL_RECOMMENDATION_COUNT = 6;
+const STICKER_PANEL_RECOMMENDATION_COUNT = 4;
 const STICKER_CHARACTER_ORDER = ['white_mochi', 'hamster', 'cat', 'shiba'];
 const STICKER_MAX_PER_CHARACTER_SOFT = 2;
 const STICKER_CANONICAL_EMOTIONS = {
@@ -299,6 +299,15 @@ function createStockStickerElement(sticker) {
   return image;
 }
 
+function createStickerTextElement(sticker) {
+  const text = String(sticker.text || '').trim();
+  if (!text) return null;
+  const label = document.createElement('div');
+  label.className = 'sticker-text-label';
+  label.textContent = text;
+  return label;
+}
+
 function drawFallbackCharacter(ctx, size, sticker) {
   const cx = size * 0.5;
   const cy = size * 0.56;
@@ -362,7 +371,6 @@ function makeFallbackCanvas(sticker, size) {
   canvas.height = size;
   const ctx = canvas.getContext('2d');
   drawFallbackCharacter(ctx, size, sticker);
-  drawStickerText(ctx, sticker.text, size);
   return canvas;
 }
 
@@ -385,6 +393,8 @@ async function showStickerPanel(advice) {
   stickers.forEach((sticker) => {
     const wrap = document.createElement('div');
     wrap.className = 'sticker-wrap';
+    const label = createStickerTextElement(sticker);
+    if (label) wrap.appendChild(label);
     wrap.appendChild(sticker.file ? createStockStickerElement(sticker) : createFallbackStickerElement(sticker));
     grid.appendChild(wrap);
   });

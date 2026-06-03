@@ -155,7 +155,7 @@ function buildPrompt(imageCount) {
   return `请分析上传的 ${imageCount} 张图片。截图已经按聊天时间从早到晚排列。
 按系统规则识别有效聊天截图、还原 dialogue、判断态度，并生成自然可发送的回复。
 请输出 3 到 5 条推荐回复；每条推荐回复可以是 1 到 3 句或短气泡，具体写 1、2 还是 3 句，要根据截图里的关系阶段、情绪和最后一句来决定。
-表情包只给 3 个最贴合当前聊天的库存检索意图；每个意图包含 emotion、scenario、relationship_stage、keywords 和可发送短配字 text。页面只会从本地库存里按相关性推荐 6 个表情包，不要编造文件名。
+表情包只给 3 个最贴合当前聊天的库存检索意图；每个意图包含 emotion、scenario、relationship_stage、keywords 和可发送短配字 text。页面只会从本地库存里按相关性推荐 4 个表情包，不要编造文件名。
 ${context ? `补充背景：${context}` : ''}
 只返回符合 schema 的 JSON。`;
 }
@@ -713,7 +713,7 @@ function buildActiveCuriosityGuide() {
   return buildStageChatGuide('稳定了解');
 }
 
-const STICKER_RECOMMENDATION_COUNT = 6;
+const STICKER_RECOMMENDATION_COUNT = 4;
 
 function normalizeStickerSuggestions(suggestions) {
   if (!Array.isArray(suggestions)) return [];

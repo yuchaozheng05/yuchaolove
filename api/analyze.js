@@ -42,7 +42,7 @@ const REPLY_COACH_SYSTEM_PROMPT = `你是中文聊天回复顾问。你的目标
 - 绝对不要替用户编造截图或补充背景里没有出现的个人信息，例如爱好、经历、课程、行程和家乡。需要用户自己填写时，用“___”保留一个明显空位。
 - 除了回复候选，还要给用户一条可以照着走的聊天路线：现在先做什么、后续怎么展开、什么不要做。每一步不是让用户一次发完，而是根据对方回应逐步推进。
 - 先判断 conversation_stage。阶段决定下一步，不要把所有聊天都套成“接一句、聊兴趣、马上邀约”。只有对方持续接球，才逐步增加个人化话题或轻松邀约。
-- 给 3 条最贴合“我方应该怎么回复”的 sticker_suggestions 作为库存检索意图，不要复读对方表面情绪，也不要编造具体文件名。表情包意图先判断 reply_intent，再选择适合我方发出的 emotion、scenario、relationship_stage、keywords 和可发送短配字 text。比如对方说“我讨厌你”这种暧昧撒娇冲突，不要给 angry，要给 shy / apology / comfort / love 方向来缓和、撒娇、哄对方。后端会从库存 catalog 中按相关性打分选出 6 个真实表情包。
+- 给 3 条最贴合“我方应该怎么回复”的 sticker_suggestions 作为库存检索意图，不要复读对方表面情绪，也不要编造具体文件名。表情包意图先判断 reply_intent，再选择适合我方发出的 emotion、scenario、relationship_stage、keywords 和可发送短配字 text。比如对方说“我讨厌你”这种暧昧撒娇冲突，不要给 angry，要给 shy / apology / comfort / love 方向来缓和、撒娇、哄对方。后端会从库存 catalog 中按相关性打分选出 4 个真实表情包。
 - 少用“听起来”“感觉你”“那你平时”“有需要告诉我”“调整好状态”“看来”这类模板句。
 - 候选要自然、有变化，但不要给每条回复套风格标签。`;
 
@@ -143,6 +143,8 @@ const CHAT_ADVICE_SCHEMA = {
     needs_retry: { type: 'boolean' },
     replies: {
       type: 'array',
+      minItems: 3,
+      maxItems: 5,
       items: {
         type: 'object',
         additionalProperties: false,
@@ -217,17 +219,33 @@ const REPLY_REFINEMENT_SCHEMA = {
 };
 
 export default async function handler(req, res) {
+  const requestId = `analyze-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
+    console.error(`[${requestId}] /api/analyze missing OPENAI_API_KEY`, {
+      nodeEnv: process.env.NODE_ENV || '',
+      vercelEnv: process.env.VERCEL_ENV || '',
+      hasOpenAIKey: false,
+    });
     return res.status(500).json({ error: '分析服务尚未配置，请联系管理员。' });
   }
 
   try {
     const { imageParts, textPart, metadata } = getRequestParts(req.body);
+    console.info(`[${requestId}] /api/analyze request accepted`, {
+      hasOpenAIKey: true,
+      imageCount: imageParts.length,
+      mediaTypes: imageParts.map((part) => part.source.media_type),
+      base64Lengths: imageParts.map((part) => part.source.data.length),
+      totalBase64Length: imageParts.reduce((sum, part) => sum + part.source.data.length, 0),
+      promptLength: textPart.text.length,
+      visitorIdPresent: Boolean(metadata.visitor_id),
+      pagePath: metadata.page_path || '',
+    });
     let lastError;
 
     for (const model of MODELS) {
@@ -265,12 +283,24 @@ export default async function handler(req, res) {
         });
       } catch (error) {
         lastError = error;
-        console.warn(`OpenAI model ${model} failed: ${summarizeError(error)}`);
+        console.error(`[${requestId}] OpenAI model ${model} failed`, {
+          summary: summarizeError(error),
+          providerStatus: error?.providerStatus || null,
+          providerCode: error?.providerCode || '',
+          retryable: isRetryableModelError(error),
+          message: cleanText(error?.message || '', 500),
+        });
         if (!isRetryableModelError(error)) break;
       }
     }
 
     if (isRetryableModelError(lastError)) {
+      console.error(`[${requestId}] /api/analyze returning degraded fallback`, {
+        reason: 'retryable-openai-error',
+        summary: summarizeError(lastError),
+        providerStatus: lastError?.providerStatus || null,
+        providerCode: lastError?.providerCode || '',
+      });
       const advice = buildFreeTierFallbackAdvice();
       await logUsage({ req, advice, imageParts, metadata, model: 'fallback', degraded: true });
       return res.status(200).json({
@@ -280,9 +310,20 @@ export default async function handler(req, res) {
       });
     }
 
+    console.error(`[${requestId}] /api/analyze returning 502`, {
+      reason: 'non-retryable-openai-error',
+      summary: summarizeError(lastError),
+      providerStatus: lastError?.providerStatus || null,
+      providerCode: lastError?.providerCode || '',
+    });
     return res.status(502).json({ error: '分析服务暂时不可用，请稍后再试。' });
   } catch (error) {
     const status = error.statusCode || 400;
+    console.error(`[${requestId}] /api/analyze request failed before OpenAI`, {
+      status,
+      message: cleanText(error?.message || '', 500),
+      publicMessage: error.publicMessage || '',
+    });
     return res.status(status).json({ error: error.publicMessage || '截图格式有问题，请重新上传后再试。' });
   }
 }
@@ -660,7 +701,7 @@ function buildActiveCuriosityGuide() {
 
 const STICKER_CATALOG_PATH = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'stickers', 'catalog.v1.json');
 const STOCK_STICKER_CATALOG = loadStickerCatalog();
-const STICKER_RECOMMENDATION_COUNT = 6;
+const STICKER_RECOMMENDATION_COUNT = 4;
 const STICKER_EMOTIONS = new Set(['greeting', 'happy', 'laugh', 'shy', 'flirt', 'love', 'missing', 'miss_you', 'sad', 'cry', 'wronged', 'comfort', 'comforting', 'encourage', 'thanks', 'goodnight', 'angry', 'awkward', 'speechless', 'excited', 'proud', 'jealous', 'surprised', 'thinking', 'sleepy', 'apology']);
 const STICKER_SCENARIOS = new Set(['greeting', 'studying', 'working', 'tired', 'good_morning', 'good_night', 'missing_you', 'apology', 'encouragement', 'celebration', 'teasing', 'flirting', 'confession', 'thanks', 'waiting', 'reply_late', 'asking_attention', 'agree', 'refuse', 'speechless', 'angry_complaint', 'jealousy', 'hug', 'comfort', 'cute_acting', 'bye', 'safe_exit']);
 const STICKER_RELATIONSHIP_STAGES = new Set(['stranger', 'acquaintance', 'talking_stage', 'flirting', 'relationship', 'post_conflict']);

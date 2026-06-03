@@ -63,6 +63,8 @@ test('defines a strict schema for richer attraction analysis', () => {
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('sticker_suggestions'));
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('flirt_level'));
   assert.equal(CHAT_ADVICE_SCHEMA.properties.chat_guide.additionalProperties, false);
+  assert.equal(CHAT_ADVICE_SCHEMA.properties.replies.minItems, 3);
+  assert.equal(CHAT_ADVICE_SCHEMA.properties.replies.maxItems, 5);
   assert.equal(CHAT_ADVICE_SCHEMA.properties.replies.items.additionalProperties, false);
   assert.equal(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.minItems, 3);
   assert.equal(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.maxItems, 3);
@@ -107,7 +109,7 @@ test('parses willingness signals, flirt level, and clean untagged replies', () =
   assert.ok(advice.sticker_match_intent.scenario.includes('flirting'));
   assert.ok(advice.sticker_match_intent.relationship_stage.includes('flirting'));
   assert.ok(advice.sticker_match_intent.keywords.includes('偷看'));
-  assert.equal(advice.sticker_suggestions.length, 6);
+  assert.equal(advice.sticker_suggestions.length, 4);
   assert.equal(advice.sticker_suggestions[0].match.reply_intent, 'flirty_continue');
   assert.equal(advice.conversation_summary, '对方：你感受到我的了吗；我：好像遇到我你才对白由向往');
 });
@@ -460,7 +462,7 @@ test('builds stock sticker retrieval intent instead of legacy random templates',
   assert.ok(stopIntent.relationship_stage.includes('post_conflict'));
   assert.ok(stopIntent.keywords.includes('先撤'));
   const stopSuggestions = normalizeStickerSuggestions([{ text: ' 行 你继续 ', emotion: 'awkward', scenario: 'speechless', relationship_stage: 'post_conflict', keywords: ['先撤'] }], '建议停手', [], { suggest_stop: true });
-  assert.equal(stopSuggestions.length, 6);
+  assert.equal(stopSuggestions.length, 4);
   assert.equal(stopSuggestions[0].match.reply_intent, 'deescalate_gracefully');
 
   const contextualIntent = buildStickerMatchIntent({
@@ -554,7 +556,7 @@ test('scores caring stock stickers higher for physical discomfort', () => {
   assert.ok(intent.scenario.includes('comfort'));
   assert.ok(scoreStockSticker(caringSticker, intent) > scoreStockSticker(unrelatedSticker, intent));
   const supportSuggestions = normalizeStickerSuggestions([], '情绪陪伴', dialogue, { emotional_disclosure: true });
-  assert.equal(supportSuggestions.length, 6);
+  assert.equal(supportSuggestions.length, 4);
   assert.equal(supportSuggestions[0].match.reply_intent, 'comfort_support');
 });
 
