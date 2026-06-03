@@ -218,7 +218,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { imageParts, textPart } = getRequestParts(req.body);
+    const { imageParts, textPart, metadata } = getRequestParts(req.body);
     let lastError;
 
     for (const model of MODELS) {
@@ -248,8 +248,7 @@ export default async function handler(req, res) {
           }
         }
 
-        // Log usage asynchronously (don't block response)
-        logUsage({ req, advice, imageParts, model }).catch(() => {});
+        await logUsage({ req, advice, imageParts, metadata, model });
 
         return res.status(200).json({
           content: [{ type: 'text', text: JSON.stringify(advice) }],
@@ -264,6 +263,7 @@ export default async function handler(req, res) {
 
     if (isRetryableModelError(lastError)) {
       const advice = buildFreeTierFallbackAdvice();
+      await logUsage({ req, advice, imageParts, metadata, model: 'fallback', degraded: true });
       return res.status(200).json({
         content: [{ type: 'text', text: JSON.stringify(advice) }],
         degraded: true,
@@ -305,7 +305,23 @@ function getRequestParts(body) {
     throw createPublicError(400, '分析说明缺失，请刷新页面后重试。');
   }
 
-  return { imageParts, textPart };
+  return { imageParts, textPart, metadata: normalizeClientMetadata(payload?.metadata) };
+}
+
+function normalizeClientMetadata(metadata) {
+  if (!metadata || typeof metadata !== 'object') return {};
+
+  return {
+    visitor_id: cleanText(metadata.visitor_id, 80),
+    client_started_at: cleanText(metadata.client_started_at, 40),
+    image_count: Number.isFinite(Number(metadata.image_count)) ? Number(metadata.image_count) : undefined,
+    page_path: cleanText(metadata.page_path, 240),
+    browser_language: cleanText(metadata.browser_language, 40),
+    client_timezone: cleanText(metadata.client_timezone, 80),
+    screen_width: Number.isFinite(Number(metadata.screen_width)) ? Number(metadata.screen_width) : undefined,
+    screen_height: Number.isFinite(Number(metadata.screen_height)) ? Number(metadata.screen_height) : undefined,
+    device_pixel_ratio: Number.isFinite(Number(metadata.device_pixel_ratio)) ? Number(metadata.device_pixel_ratio) : undefined,
+  };
 }
 
 async function requestOpenAIAdvice({
@@ -663,11 +679,11 @@ function buildDefaultStickerSuggestions(stage) {
       { text: '我在听', mood: 'caring', scene: 'listen' },
       { text: '给你抱抱', mood: 'caring', scene: 'comfort' },
       { text: '给你拍拍', mood: 'caring', scene: 'pat' },
-      { text: '很辛苦呀', mood: 'caring', scene: 'sob' },
       { text: '慢慢来', mood: 'caring', scene: 'cheer' },
+      { text: '别硬撑啦', mood: 'caring', scene: 'study' },
     ],
     建议停手: [
-      { text: '我先撤啦', mood: 'retreat', scene: 'rest' },
+      { text: '行 你继续玩', mood: 'retreat', scene: 'rest' },
       { text: '当我没说', mood: 'speechless', scene: 'doubt' },
       { text: '优雅离场', mood: 'retreat', scene: 'peek' },
       { text: '好吧好吧', mood: 'retreat', scene: 'listen' },
@@ -685,8 +701,8 @@ function buildContextualStickerSuggestions(context, stage = '轻松破冰') {
       { text: '先缓一会儿', mood: 'caring', scene: 'rest' },
       { text: '我在这儿', mood: 'caring', scene: 'listen' },
       { text: '给你拍拍', mood: 'caring', scene: 'pat' },
-      { text: '很辛苦呀', mood: 'caring', scene: 'sob' },
       { text: '别硬撑啦', mood: 'caring', scene: 'cheer' },
+      { text: '作业慢慢来', mood: 'caring', scene: 'study' },
     ],
     study_stress: [
       { text: '考试加油', mood: 'caring', scene: 'study' },
@@ -986,7 +1002,7 @@ function repairReplyCandidates(advice) {
     return {
       ...advice,
       replies: [
-        { text: '有点难概括\n我平时比较喜欢___' },
+        { text: '有，我平时比较喜欢___' },
         { text: '最近比较常___\n但跟你聊这个也挺上头' },
         { text: '这个得说真话：___\n你呢，你是不是也有点难描述' },
         { text: '我最常做的是___\n不过现在好像在练怎么跟你聊天' },
@@ -1095,41 +1111,135 @@ function createPublicError(statusCode, publicMessage) {
   return error;
 }
 
-async function logUsage({ req, advice, imageParts }) {
+async function logUsage({ req, advice, imageParts, metadata = {}, model = '', degraded = false }) {
   const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
   if (!supabaseUrl || !supabaseKey) return;
 
   try {
-    const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
-    const country = req.headers['x-vercel-ip-country'] || 'unknown';
-    const city = decodeURIComponent(req.headers['x-vercel-ip-city'] || 'unknown');
-    const userAgent = req.headers['user-agent'] || 'unknown';
+    const visitorId = cleanText(metadata.visitor_id, 80) || 'unknown';
+    const ip = getClientIp(req);
+    const country = readHeader(req, 'x-vercel-ip-country') || 'unknown';
+    const region = readHeader(req, 'x-vercel-ip-country-region') || readHeader(req, 'x-vercel-ip-region') || 'unknown';
+    const city = decodeHeader(readHeader(req, 'x-vercel-ip-city')) || 'unknown';
+    const timezone = readHeader(req, 'x-vercel-ip-timezone') || 'unknown';
+    const latitude = toNullableNumber(readHeader(req, 'x-vercel-ip-latitude'));
+    const longitude = toNullableNumber(readHeader(req, 'x-vercel-ip-longitude'));
+    const userAgent = readHeader(req, 'user-agent') || 'unknown';
+    const referer = readHeader(req, 'referer') || readHeader(req, 'referrer') || '';
+    const locationLabel = [city, region, country].filter((part) => part && part !== 'unknown').join(', ') || 'unknown';
 
-    const imageUrls = [];
+    const imageRecords = [];
     for (let i = 0; i < imageParts.length; i++) {
       const part = imageParts[i];
       const ext = part.source.media_type.split('/')[1] || 'jpg';
-      const filename = `${Date.now()}-${i}.${ext}`;
+      const path = buildStoragePath({ visitorId, index: i, ext });
       const buffer = Buffer.from(part.source.data, 'base64');
-      const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/screenshots/${filename}`, {
+      const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/screenshots/${path}`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': part.source.media_type },
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          'apikey': supabaseKey,
+          'Content-Type': part.source.media_type,
+          'x-upsert': 'false',
+        },
         body: buffer,
       });
       if (uploadRes.ok) {
-        imageUrls.push(`${supabaseUrl}/storage/v1/object/authenticated/screenshots/${filename}`);
+        imageRecords.push({
+          path,
+          url: `${supabaseUrl}/storage/v1/object/authenticated/screenshots/${path}`,
+          media_type: part.source.media_type,
+          bytes: buffer.length,
+        });
+      } else {
+        console.warn(`Supabase screenshot upload failed with ${uploadRes.status}`);
       }
     }
 
     await fetch(`${supabaseUrl}/rest/v1/usage_logs`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseKey}`, 'apikey': supabaseKey },
-      body: JSON.stringify({ ip, country, city, user_agent: userAgent, attitude_label: advice.attitude_label, attitude_desc: advice.attitude_desc, replies: advice.replies, image_urls: imageUrls }),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseKey}`,
+        'apikey': supabaseKey,
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({
+        visitor_id: visitorId,
+        ip,
+        country,
+        region,
+        city,
+        timezone,
+        latitude,
+        longitude,
+        location_label: locationLabel,
+        user_agent: userAgent,
+        referer,
+        page_path: metadata.page_path || '',
+        browser_language: metadata.browser_language || '',
+        client_timezone: metadata.client_timezone || '',
+        image_count: imageParts.length,
+        storage_paths: imageRecords.map((image) => image.path),
+        image_urls: imageRecords.map((image) => image.url),
+        images: imageRecords,
+        model,
+        degraded,
+        attitude_label: advice.attitude_label || '',
+        attitude_desc: advice.attitude_desc || '',
+        interest_score: Number.isFinite(Number(advice.interest_score)) ? Number(advice.interest_score) : null,
+        interest_level: advice.interest_level || '',
+        conversation_mode: advice.conversation_mode || '',
+        conversation_stage: advice.conversation_stage || '',
+        flirt_level: advice.flirt_level || '',
+        replies: advice.replies || [],
+        sticker_suggestions: advice.sticker_suggestions || [],
+        chat_guide: advice.chat_guide || {},
+        dialogue: advice.dialogue || [],
+        analysis_result: advice,
+        request_metadata: {
+          ...metadata,
+          log_schema_version: 1,
+        },
+      }),
     });
   } catch (err) {
     console.warn('logUsage failed:', err.message);
   }
+}
+
+function readHeader(req, name) {
+  const headers = req?.headers || {};
+  const value = headers[name] || headers[name.toLowerCase()] || headers[name.toUpperCase()];
+  if (Array.isArray(value)) return value[0] || '';
+  return typeof value === 'string' ? value : '';
+}
+
+function getClientIp(req) {
+  const forwarded = readHeader(req, 'x-forwarded-for');
+  return forwarded.split(',')[0].trim() || readHeader(req, 'x-real-ip') || 'unknown';
+}
+
+function decodeHeader(value) {
+  if (!value) return '';
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function toNullableNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function buildStoragePath({ visitorId, index, ext }) {
+  const day = new Date().toISOString().slice(0, 10);
+  const safeVisitorId = visitorId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80) || 'unknown';
+  const suffix = Math.random().toString(36).slice(2, 10);
+  return `${day}/${safeVisitorId}-${Date.now()}-${index}-${suffix}.${ext}`;
 }
 
 export { CHAT_ADVICE_SCHEMA, IMAGE_READING_RULES, MODELS, PRIMARY_IMAGE_DETAIL, PRIMARY_MAX_COMPLETION_TOKENS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, REPLY_REFINEMENT_SCHEMA, REFINEMENT_MAX_COMPLETION_TOKENS, buildActiveCuriosityGuide, buildContextualStickerSuggestions, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildReplyRefinementPrompt, buildStageChatGuide, extractFirstJsonObject, getRequestParts, getStickerContext, hasActiveCuriosity, hasHappyEmotion, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, hasStudyStress, inferConversationStage, isRetryableModelError, isVerifiedChatScreenshot, logUsage, mergeRefinedReplies, needsReplyRefinement, normalizeChatGuide, normalizeConversationMode, normalizeConversationStage, normalizeDialogue, normalizeChatEvidence, normalizeStickerSuggestions, parseAdvice, repairReplyCandidates, requestOpenAIAdvice, requestOpenAIReplyRefinement };
