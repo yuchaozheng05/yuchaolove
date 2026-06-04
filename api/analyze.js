@@ -7,7 +7,7 @@ const ALLOWED_MEDIA_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_IMAGE_COUNT = 6;
 const MAX_TOTAL_IMAGE_BASE64_LENGTH = 4_000_000;
 const PRIMARY_IMAGE_DETAIL = 'low';
-const PRIMARY_MAX_COMPLETION_TOKENS = 1400;
+const PRIMARY_MAX_COMPLETION_TOKENS = 3200;
 const REFINEMENT_MAX_COMPLETION_TOKENS = 560;
 const PRIMARY_OPENAI_TIMEOUT_MS = 25_000;
 const REFINEMENT_OPENAI_TIMEOUT_MS = 3_500;
@@ -429,7 +429,21 @@ export default async function handler(req, res) {
         });
         debug.vision_success = true;
         debug.elapsed_ms = Date.now() - startedAt;
-        let advice = parseAdvice(rawText);
+        let advice;
+        try {
+          advice = parseAdvice(rawText);
+        } catch (parseError) {
+          console.error(`[${requestId}] OpenAI content parse failed`, {
+            summary: summarizeError(parseError),
+            raw_text_length: rawText.length,
+            raw_text_preview: rawText.slice(0, 1600),
+            raw_text_tail: rawText.slice(-1000),
+            elapsed_ms: Date.now() - startedAt,
+          });
+          parseError.providerStatus = parseError.providerStatus || 503;
+          parseError.providerCode = parseError.providerCode || 'invalid_json';
+          throw parseError;
+        }
         debug.extracted_text = buildDebugExtractedText(advice);
         debug.scene_detected = advice.analysis?.scene || '';
         debug.is_chat_screenshot = advice.is_chat_screenshot === true;
@@ -832,10 +846,18 @@ async function requestOpenAIAdvice({
     throw providerError;
   }
 
-  const text = data.choices?.[0]?.message?.content?.trim();
+  const choice = data.choices?.[0] || {};
+  const finishReason = choice.finish_reason || '';
+  const text = choice.message?.content?.trim();
   if (!text) {
+    console.error(`[${requestId}] OpenAI returned empty content`, {
+      elapsed_ms: Date.now() - requestStartedAt,
+      finish_reason: finishReason,
+      raw_response: data,
+    });
     const emptyError = new Error('OpenAI returned an empty response');
     emptyError.providerStatus = 503;
+    emptyError.providerCode = finishReason || '';
     throw emptyError;
   }
 
@@ -843,6 +865,9 @@ async function requestOpenAIAdvice({
     model,
     elapsed_ms: Date.now() - requestStartedAt,
     output_length: text.length,
+    finish_reason: finishReason,
+    content_preview: text.slice(0, 600),
+    content_tail: text.slice(-400),
   });
   console.log({
     image_size_kb: imagePayload.map((image) => image.imageSizeKb).join(', '),
