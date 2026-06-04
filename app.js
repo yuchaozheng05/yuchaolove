@@ -5,9 +5,9 @@ const MAX_FILE_COUNT = 6;
 const MAX_TOTAL_IMAGE_BASE64_LENGTH = 3_800_000;
 const MAX_UPLOAD_IMAGE_EDGE = 1280;
 const ALLOWED_FILE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const EMOTIONAL_DISCLOSURE_PATTERN = /困死|好困|太困|困了|很困|累死|好累|太累|累了|很累|疼|痛|难受|不舒服|烦|焦虑|压力|不想上学|不想去|没写完|睡不着|崩溃|想哭|生病|发烧|胃疼|肚子疼|头疼/;
-const PHYSICAL_DISCOMFORT_PATTERN = /疼|痛|难受|不舒服|生病|发烧|胃疼|肚子疼|头疼/;
-const STUDY_STRESS_PATTERN = /考试|考完|考砸|复习|作业|没写完|论文|ddl|期中|期末|测验|quiz|midterm|final/i;
+const EMOTIONAL_DISCLOSURE_PATTERN = /困死|好困|太困|困了|很困|累死|好累|太累|累了|很累|疼|痛|难受|不舒服|烦|焦虑|压力|不想上学|不想去|没写完|睡不着|崩溃|想哭|生病|发烧|胃疼|肚子疼|头疼|头痛|想太多|做不出来|卡住|里面好闷|好闷/;
+const PHYSICAL_DISCOMFORT_PATTERN = /疼|痛|难受|不舒服|生病|发烧|胃疼|肚子疼|头疼|头痛/;
+const STUDY_STRESS_PATTERN = /考试|考完|考砸|复习|作业|没写完|论文|ddl|期中|期末|测验|quiz|midterm|final|题|第一题|做不出来|卡住|想太多|最近的东西/i;
 const HAPPY_EMOTION_PATTERN = /哈哈|开心|好耶|太好了|笑死|嘿嘿|嘻嘻|期待|成功|过了|收到|喜欢|可以呀|行呀|耶/;
 const LATE_NIGHT_MISS_PATTERN = /睡了吗|睡了|睡醒|刚醒|醒了|晚安|熬夜|想你|等你|梦里|白睡|困但想聊|在等/;
 const PLAYFUL_FLIRT_PATTERN = /想你|喜欢你|喜欢我|心动|见面|想我|等我|香味|新人|新包|嘴硬|亲亲|钓|上钩|暧昧|犯规|靠近|只想你|在等我|自由向往/;
@@ -150,7 +150,7 @@ async function analyze() {
     renderResults(parsed);
   } catch (error) {
     console.error('Analyze failed:', error);
-    renderRetryNotice('分析服务暂时繁忙，请稍后再试。你的截图没有问题。');
+    renderRetryNotice(error.message || '分析超时，请重新分析或换一张更清晰截图。你的截图没有问题。');
   } finally {
     document.getElementById('loadingState').style.display = 'none';
     setSubmitState(false, '重新分析');
@@ -210,7 +210,7 @@ function parseAdvice(rawText) {
   const suggestStop = isChatScreenshot && !emotionalDisclosure && (Boolean(data.suggest_stop) || hasRepeatedColdReplies(verifiedDialogue));
   const conversationStage = inferConversationStage(data.conversation_stage, { emotionalDisclosure, activeCuriosity, suggestStop });
   return {
-    attitude_label: isChatScreenshot ? (emotionalDisclosure ? '愿意倾诉' : activeCuriosity ? '主动了解' : cleanText(data.attitude_label, 12) || '态度待判断') : '这不是聊天截图',
+    attitude_label: isChatScreenshot ? (emotionalDisclosure ? '愿意倾诉' : activeCuriosity ? '主动了解' : cleanAttitudeLabel(data.attitude_label) || '态度待判断') : '这不是聊天截图',
     attitude_desc: emotionalDisclosure
       ? '对方在连续表达自己的疲惫、不舒服或压力，也愿意补充细节。这是在向你倾诉，不是敷衍，但不能直接换算成好感分数。目前更适合先接住情绪，不急着升温。'
       : activeCuriosity
@@ -331,13 +331,14 @@ function renderResults(data) {
   if (!data.is_chat_screenshot) {
     list.appendChild(createSystemCard('识图小提示', data.non_chat_reply || getDefaultNonChatReply(), '#c96b52'));
   } else if (data.suggest_stop) {
-    list.appendChild(createSystemCard('止损提醒', '舔狗照照镜子：对方连续短回，先别硬聊了。停一下，等对方愿意主动再说。', '#e57373'));
+    list.appendChild(createSystemCard('节奏提醒', '对方现在接话信号比较弱，先别硬聊。停一下，把空间留给对方主动回来。', '#e57373'));
   }
 
   if (!data.is_chat_screenshot) {
     list.appendChild(createSystemCard('下一步', '换一张能看到左右聊天气泡的截图，我再认真帮你读空气。', '#e8927c'));
   } else if (data.needs_retry || data.degraded) {
-    list.appendChild(createSystemCard('请稍后重试', '免费分析通道暂时繁忙，或者截图不够清晰。本次没有猜测内容，请稍后重新分析。', '#c96b52'));
+    const retryCopy = data.attitude_desc || '分析超时，请重新分析或换一张更清晰截图。本次没有猜测内容。';
+    list.appendChild(createSystemCard(data.degraded ? '分析超时' : '识别提示', retryCopy, '#c96b52'));
   } else if (data.suggest_stop) {
     list.appendChild(createSystemCard('建议动作', '先不要继续发消息。看对方之后会不会主动回来，比继续找话题更有参考价值。', '#c96b52'));
   } else {
@@ -502,6 +503,11 @@ function setSubmitState(disabled, text) {
 function cleanText(value, maxLength) {
   if (typeof value !== 'string') return '';
   return value.replace(/\s+/g, ' ').trim().slice(0, maxLength);
+}
+
+function cleanAttitudeLabel(value) {
+  const label = cleanText(value, 16);
+  return /舔狗|照镜子|卑微|备胎/.test(label) ? '' : label;
 }
 
 function cleanReplyText(value, maxLength = 140) {

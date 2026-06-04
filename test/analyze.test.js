@@ -56,7 +56,7 @@ const requestBody = {
 
 test('uses the OpenAI vision model', () => {
   assert.deepEqual(MODELS, ['gpt-4.1-mini']);
-  assert.equal(PRIMARY_OPENAI_TIMEOUT_MS, 25_000);
+  assert.equal(PRIMARY_OPENAI_TIMEOUT_MS, 16_000);
 });
 
 test('defines a strict schema for richer attraction analysis', () => {
@@ -158,6 +158,13 @@ test('detects required coach scenes from opponent messages', () => {
 
   const emo = sceneFor('今天有点 emo，什么都不想说');
   assert.match(emo.scene, /emo 动态|身体不舒服|委屈/);
+
+  const studyHeadache = sceneFor('我想太多了 第一题一直没做出来 是 midterm1 之前的东西 我的头好痛 里面好闷 真的');
+  assert.equal(studyHeadache.scene, '学习压力');
+  assert.equal(studyHeadache.stage, 'emotional_bonding');
+  assert.equal(studyHeadache.id, 'study_pressure_discomfort_001');
+  assert.ok(studyHeadache.sticker_strategy.includes('别硬撑'));
+  assert.ok(studyHeadache.sticker_strategy.includes('喝水'));
 });
 
 test('builds a relationship memory engine from the whole dialogue', () => {
@@ -348,6 +355,31 @@ test('does not reject a chat screenshot just because OCR evidence is incomplete'
   );
 });
 
+test('uses partial recognized chat text instead of forcing fallback', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue({
+    is_chat_screenshot: true,
+    chat_evidence: {
+      image_kind: 'wechat chat screenshot',
+      has_message_bubbles: true,
+      has_chat_ui: true,
+      has_two_sided_layout: false,
+    },
+    dialogue: [
+      { side: 'left', text: '我困死了，不想写作业' },
+    ],
+    replies: [
+      { text: '先眯十分钟' },
+      { text: '作业先放一下' },
+      { text: '我陪你把最急的那题拆出来' },
+    ],
+  })));
+
+  assert.equal(advice.is_chat_screenshot, true);
+  assert.equal(advice.needs_retry, false);
+  assert.equal(advice.replies.length, 3);
+  assert.match(advice.conversation_summary, /困死了/);
+});
+
 test('returns a playful redirect for non-chat images without inventing replies', () => {
   const advice = parseAdvice(JSON.stringify(adviceValue({
     attitude_label: '不是聊天截图',
@@ -513,8 +545,9 @@ test('repairs lecturing support replies with natural short messages', () => {
   const repaired = repairReplyCandidates(advice);
 
   assert.equal(needsReplyRefinement(advice), true);
-  assert.deepEqual(repaired.replies[0].messages, ['你现在感觉还好吗？', '有没有哪里特别不舒服', '先躺下，喝点温水']);
+  assert.deepEqual(repaired.replies[0].messages, ['先别逼自己了', '这题卡住真的会很烦', '你先出去透口气']);
   assert.doesNotMatch(repaired.replies[0].text, /肚子和头一起疼也太难受了/);
+  assert.doesNotMatch(repaired.replies[0].text, /你现在感觉还好吗|喝点温水/);
   assert.equal(needsReplyRefinement(repaired), false);
 });
 
@@ -534,7 +567,75 @@ test('repairs well-meant but robotic health reminder replies', () => {
   })));
 
   assert.equal(needsReplyRefinement(advice), true);
-  assert.deepEqual(repairReplyCandidates(advice).replies[1].messages, ['把地址发我', '我给你送点药和清淡的吃的', '你先别硬撑']);
+  assert.deepEqual(repairReplyCandidates(advice).replies[1].messages, ['不是你不行', '是脑子已经太累了', '先把第一题放一下']);
+});
+
+test('repairs study pressure with headache and stuffy room using screenshot details', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue({
+    dialogue: [
+      { side: 'left', text: '我想太多了' },
+      { side: 'left', text: '然后第一题一直没做出来' },
+      { side: 'left', text: '是 midterm1 之前的东西' },
+      { side: 'left', text: '我想的是最近的东西' },
+      { side: 'left', text: '我的头好痛' },
+      { side: 'left', text: '里面好闷' },
+      { side: 'left', text: '真的' },
+    ],
+    replies: [
+      { text: '你现在感觉还好吗？' },
+      { text: '有没有哪里特别不舒服' },
+      { text: '先躺下，喝点温水' },
+    ],
+  })));
+  const repaired = repairReplyCandidates(advice);
+
+  assert.equal(advice.analysis.scene, '学习压力');
+  assert.equal(advice.analysis.reply_intent, 'study_pressure_support');
+  assert.equal(needsReplyRefinement(advice), true);
+  assert.match(repaired.replies.map((reply) => reply.text).join('\n'), /第一题|midterm|头痛|闷|透口气|休息十分钟/);
+  assert.doesNotMatch(repaired.replies.map((reply) => reply.text).join('\n'), /喝点温水|你现在感觉还好吗/);
+  assert.equal(needsReplyRefinement(repaired), false);
+});
+
+test('repairs flirty conflict instead of leaking generic comfort templates', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue({
+    dialogue: [
+      { side: 'left', text: '我讨厌你' },
+    ],
+    replies: [
+      { text: '你现在感觉还好吗？' },
+      { text: '辛苦了，早点休息' },
+      { text: '别想太多，注意身体' },
+    ],
+  })));
+  const repaired = repairReplyCandidates(advice);
+
+  assert.equal(advice.analysis.reply_intent, 'soften_flirty_conflict');
+  assert.equal(needsReplyRefinement(advice), true);
+  assert.deepEqual(repaired.replies[0].messages, ['那我先认错半秒', '再认真哄你']);
+  assert.doesNotMatch(repaired.replies.map((reply) => reply.text).join('\n'), /喝点温水|早点休息|注意身体/);
+  assert.equal(needsReplyRefinement(repaired), false);
+});
+
+test('repairs tired homework replies with concrete action', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue({
+    dialogue: [
+      { side: 'left', text: '我困死了，不想写作业' },
+    ],
+    replies: [
+      { text: '你现在感觉还好吗？' },
+      { text: '辛苦了，早点休息' },
+      { text: '别想太多，注意身体' },
+    ],
+  })));
+  const repaired = repairReplyCandidates(advice);
+
+  assert.equal(advice.analysis.scene, '学习压力');
+  assert.equal(needsReplyRefinement(advice), true);
+  assert.deepEqual(repaired.replies[0].messages, ['先别硬撑', '眯十分钟再写会快很多']);
+  assert.match(repaired.replies.map((reply) => reply.text).join('\n'), /作业|眯十分钟|最急|拆出来/);
+  assert.doesNotMatch(repaired.replies.map((reply) => reply.text).join('\n'), /喝点温水|早点休息|注意身体/);
+  assert.equal(needsReplyRefinement(repaired), false);
 });
 
 test('recognizes consecutive personal questions as active curiosity', () => {
@@ -698,7 +799,7 @@ test('scores caring stock stickers higher for physical discomfort', () => {
   const dialogue = normalizeDialogue([
     { side: 'right', text: '先去睡觉吧' },
     { side: 'left', text: '肚子疼头也疼' },
-    { side: 'left', text: '我也不想 还没写完' },
+    { side: 'left', text: '我现在不太想动' },
   ]);
   const intent = buildStickerMatchIntent({ conversationStage: '情绪陪伴', dialogue, emotionalDisclosure: true });
   const caringSticker = {
@@ -736,6 +837,31 @@ test('scores caring stock stickers higher for physical discomfort', () => {
   assert.equal(supportSuggestions[0].match.reply_intent, 'care_action_support');
 });
 
+test('prioritizes comfort and encouragement stickers for study pressure with discomfort', () => {
+  const dialogue = normalizeDialogue([
+    { side: 'left', text: '我想太多了' },
+    { side: 'left', text: '第一题一直没做出来' },
+    { side: 'left', text: '是 midterm1 之前的东西' },
+    { side: 'left', text: '我的头好痛' },
+    { side: 'left', text: '里面好闷' },
+  ]);
+  const intent = buildStickerMatchIntent({ conversationStage: '情绪陪伴', dialogue, emotionalDisclosure: true });
+  const suggestions = normalizeStickerSuggestions([], '情绪陪伴', dialogue, {
+    emotional_disclosure: true,
+    analysis: { scene: '学习压力', reply_intent: 'study_pressure_support' },
+  });
+
+  assert.equal(intent.context, 'study_discomfort');
+  assert.equal(intent.reply_intent, 'study_pressure_support');
+  assert.equal(intent.emotion, 'comfort');
+  assert.ok(intent.secondary_emotions.includes('encourage'));
+  assert.ok(intent.keywords.includes('别硬撑'));
+  assert.equal(suggestions.length, 6);
+  const stickerText = suggestions.map((sticker) => `${sticker.id} ${sticker.text} ${(sticker.tags || []).join(' ')}`).join(' ');
+  assert.match(stickerText, /抱|摸|硬撑|休息|我在|加油|喝水|comfort|pat|hug|cheer|drink|tired|hard/);
+  assert.doesNotMatch(stickerText, /umbrella|伞|保暖/);
+});
+
 test('maps study encouragement and happy chats to stock sticker intent', () => {
   const studyIntent = buildStickerMatchIntent({ conversationStage: '轻松破冰', dialogue: normalizeDialogue([
     { side: 'right', text: '明天考完就好了' },
@@ -755,6 +881,19 @@ test('maps study encouragement and happy chats to stock sticker intent', () => {
   assert.equal(happyIntent.emotion, 'happy');
   assert.ok(happyIntent.secondary_emotions.includes('laugh'));
   assert.ok(happyIntent.scenario.includes('celebration'));
+});
+
+test('softens flirty conflict instead of matching opponent anger literally', () => {
+  const dialogue = normalizeDialogue([{ side: 'left', text: '我讨厌你' }]);
+  const intent = buildStickerMatchIntent({ conversationStage: '轻松破冰', dialogue });
+  const suggestions = normalizeStickerSuggestions([], '轻松破冰', dialogue, {});
+
+  assert.equal(intent.reply_intent, 'soften_flirty_conflict');
+  assert.equal(intent.emotion, 'shy');
+  assert.ok(intent.secondary_emotions.includes('apology'));
+  assert.notEqual(intent.emotion, 'angry');
+  assert.equal(suggestions.length, 6);
+  assert.equal(suggestions.some((sticker) => sticker.emotion?.primary === 'angry'), false);
 });
 
 test('flags flirt that evades a direct clarification question', () => {
@@ -912,7 +1051,14 @@ test('returns a timeout fallback instead of service-busy copy for Vision timeout
   const originalFetch = global.fetch;
   const originalApiKey = process.env.OPENAI_API_KEY;
   process.env.OPENAI_API_KEY = 'test-key';
-  global.fetch = async () => jsonResponse(408, { error: { code: 'timeout', message: 'OpenAI request timed out after 25000ms' } });
+  let callCount = 0;
+  const timeoutValues = [];
+  global.fetch = async (_url, options) => {
+    callCount += 1;
+    const payload = JSON.parse(options.body);
+    timeoutValues.push(payload.max_completion_tokens);
+    return jsonResponse(408, { error: { code: 'timeout', message: 'OpenAI request timed out after 16000ms' } });
+  };
 
   try {
     const response = createResponseRecorder();
@@ -925,6 +1071,8 @@ test('returns a timeout fallback instead of service-busy copy for Vision timeout
     assert.equal(response.body.debug.vision_timeout, true);
     assert.equal(response.body.debug.fallback_used, true);
     assert.equal(Number.isFinite(response.body.debug.elapsed_ms), true);
+    assert.equal(callCount, 2);
+    assert.deepEqual(timeoutValues, [PRIMARY_MAX_COMPLETION_TOKENS, 700]);
     assert.equal(advice.attitude_label, '识图超时');
     assert.equal(advice.is_chat_screenshot, true);
     assert.equal(advice.needs_retry, true);
