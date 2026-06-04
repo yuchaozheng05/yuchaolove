@@ -33,6 +33,7 @@ import handler, {
   parseAdvice,
   repairReplyCandidates,
   requestOpenAIAdvice,
+  safeJsonParse,
   scoreStockSticker,
 } from '../api/analyze.js';
 
@@ -842,6 +843,11 @@ test('parses the first complete JSON object when OpenAI repeats a response', () 
   );
 });
 
+test('safely parses fenced JSON blocks with common formatting issues', () => {
+  assert.deepEqual(safeJsonParse('```json\n{"ok":true,}\n```'), { ok: true });
+  assert.deepEqual(safeJsonParse('说明文字\n[{"ok":true,}]\n补充文字'), [{ ok: true }]);
+});
+
 test('validates uploaded screenshot format', () => {
   assert.equal(getRequestParts(requestBody).imageParts[0].source.media_type, 'image/png');
   assert.throws(() => getRequestParts({ messages: [{ content: [] }] }), /1 到 6 张/);
@@ -923,6 +929,40 @@ test('returns a timeout fallback instead of service-busy copy for Vision timeout
     assert.equal(advice.is_chat_screenshot, true);
     assert.equal(advice.needs_retry, true);
     assert.doesNotMatch(advice.attitude_desc, /服务暂时繁忙|不是聊天截图/);
+  } finally {
+    global.fetch = originalFetch;
+    restoreEnvironment('OPENAI_API_KEY', originalApiKey);
+  }
+});
+
+test('returns a minimal usable result instead of degraded fallback for malformed model JSON', async () => {
+  const originalFetch = global.fetch;
+  const originalApiKey = process.env.OPENAI_API_KEY;
+  process.env.OPENAI_API_KEY = 'test-key';
+  global.fetch = async () => jsonResponse(200, {
+    choices: [{
+      finish_reason: 'length',
+      message: { content: '{"analysis":{"scene":"身体不舒服"},"replies":[' },
+    }],
+  });
+
+  try {
+    const response = createResponseRecorder();
+    await handler({ method: 'POST', body: requestBody, headers: {} }, response);
+    const advice = JSON.parse(response.body.content[0].text);
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.body.degraded, undefined);
+    assert.equal(response.body.debug.vision_success, true);
+    assert.equal(response.body.debug.json_parse_failed, true);
+    assert.match(response.body.debug.raw_output, /身体不舒服/);
+    assert.equal(advice.degraded, false);
+    assert.equal(advice.json_parse_failed, true);
+    assert.deepEqual(advice.analysis.scene, '');
+    assert.deepEqual(advice.replies, []);
+    assert.deepEqual(advice.stickers, []);
+    assert.deepEqual(advice.next_topics, []);
+    assert.doesNotMatch(advice.attitude_desc, /服务暂时繁忙/);
   } finally {
     global.fetch = originalFetch;
     restoreEnvironment('OPENAI_API_KEY', originalApiKey);

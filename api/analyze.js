@@ -7,7 +7,7 @@ const ALLOWED_MEDIA_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_IMAGE_COUNT = 6;
 const MAX_TOTAL_IMAGE_BASE64_LENGTH = 4_000_000;
 const PRIMARY_IMAGE_DETAIL = 'low';
-const PRIMARY_MAX_COMPLETION_TOKENS = 3200;
+const PRIMARY_MAX_COMPLETION_TOKENS = 2200;
 const REFINEMENT_MAX_COMPLETION_TOKENS = 560;
 const PRIMARY_OPENAI_TIMEOUT_MS = 25_000;
 const REFINEMENT_OPENAI_TIMEOUT_MS = 3_500;
@@ -436,13 +436,14 @@ export default async function handler(req, res) {
           console.error(`[${requestId}] OpenAI content parse failed`, {
             summary: summarizeError(parseError),
             raw_text_length: rawText.length,
+            raw_output: rawText.slice(0, 2000),
             raw_text_preview: rawText.slice(0, 1600),
             raw_text_tail: rawText.slice(-1000),
             elapsed_ms: Date.now() - startedAt,
           });
-          parseError.providerStatus = parseError.providerStatus || 503;
-          parseError.providerCode = parseError.providerCode || 'invalid_json';
-          throw parseError;
+          debug.json_parse_failed = true;
+          debug.raw_output = rawText.slice(0, 2000);
+          advice = buildJsonParseFallbackAdvice(rawText);
         }
         debug.extracted_text = buildDebugExtractedText(advice);
         debug.scene_detected = advice.analysis?.scene || '';
@@ -455,7 +456,7 @@ export default async function handler(req, res) {
           elapsed_ms: debug.elapsed_ms,
         });
 
-        if (needsReplyRefinement(advice)) {
+        if (!debug.json_parse_failed && needsReplyRefinement(advice)) {
           advice = await refineOrRepairAdvice({ apiKey, model, advice });
         }
         debug.elapsed_ms = Date.now() - startedAt;
@@ -682,6 +683,8 @@ function buildVisionDebug(imageParts, overrides = {}) {
     vision_called: false,
     vision_success: false,
     vision_timeout: false,
+    json_parse_failed: false,
+    raw_output: '',
     ocr_called: false,
     ocr_success: false,
     fallback_used: false,
@@ -866,6 +869,7 @@ async function requestOpenAIAdvice({
     elapsed_ms: Date.now() - requestStartedAt,
     output_length: text.length,
     finish_reason: finishReason,
+    raw_output: text.slice(0, 2000),
     content_preview: text.slice(0, 600),
     content_tail: text.slice(-400),
   });
@@ -935,7 +939,7 @@ async function refineOrRepairAdvice({ apiKey, model, advice }) {
 }
 
 function mergeRefinedReplies(advice, rawText) {
-  const value = JSON.parse(extractFirstJsonObject(rawText));
+  const value = safeJsonParse(rawText);
   const replies = Array.isArray(value.replies)
     ? value.replies
         .map((reply) => normalizeReplyCandidate(reply, 140))
@@ -947,7 +951,10 @@ function mergeRefinedReplies(advice, rawText) {
 }
 
 function parseAdvice(rawText) {
-  const value = JSON.parse(extractFirstJsonObject(rawText));
+  const value = safeJsonParse(rawText);
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('OpenAI returned invalid JSON');
+  }
   const replies = Array.isArray(value.replies)
     ? value.replies
         .map((reply) => normalizeReplyCandidate(reply, 140))
@@ -1092,20 +1099,89 @@ function parseAdvice(rawText) {
   };
 }
 
-function extractFirstJsonObject(rawText) {
-  const cleaned = rawText.replace(/```json|```/gi, '').trim();
-  const start = cleaned.indexOf('{');
+function stripJsonFences(rawText = '') {
+  return String(rawText || '')
+    .replace(/^\s*```(?:json)?\s*/i, '')
+    .replace(/\s*```\s*$/i, '')
+    .trim();
+}
+
+function repairCommonJsonIssues(rawText = '') {
+  return String(rawText || '').replace(/,\s*([}\]])/g, '$1').trim();
+}
+
+function extractFirstJsonBlock(rawText, { objectOnly = false } = {}) {
+  const cleaned = stripJsonFences(rawText);
+  let start = -1;
+  for (let index = 0; index < cleaned.length; index += 1) {
+    if (cleaned[index] === '{' || (!objectOnly && cleaned[index] === '[')) {
+      start = index;
+      break;
+    }
+  }
   if (start < 0) throw new Error('OpenAI returned invalid JSON');
-  let depth = 0, inString = false, isEscaped = false;
-  for (let index = start; index < cleaned.length; index += 1) {
+
+  const opening = cleaned[start];
+  const stack = [opening];
+  let inString = false;
+  let isEscaped = false;
+  for (let index = start + 1; index < cleaned.length; index += 1) {
     const character = cleaned[index];
     if (inString) {
-      if (isEscaped) { isEscaped = false; } else if (character === '\\') { isEscaped = true; } else if (character === '"') { inString = false; }
+      if (isEscaped) {
+        isEscaped = false;
+      } else if (character === '\\') {
+        isEscaped = true;
+      } else if (character === '"') {
+        inString = false;
+      }
       continue;
     }
-    if (character === '"') { inString = true; } else if (character === '{') { depth += 1; } else if (character === '}') { depth -= 1; if (depth === 0) return cleaned.slice(start, index + 1); }
+    if (character === '"') {
+      inString = true;
+    } else if (character === '{' || character === '[') {
+      stack.push(character);
+    } else if (character === '}' || character === ']') {
+      const expectedOpening = character === '}' ? '{' : '[';
+      if (stack.at(-1) !== expectedOpening) break;
+      stack.pop();
+      if (stack.length === 0) return cleaned.slice(start, index + 1);
+    }
   }
+
   throw new Error('OpenAI returned invalid JSON');
+}
+
+function extractFirstJsonObject(rawText) {
+  return extractFirstJsonBlock(rawText, { objectOnly: true });
+}
+
+function safeJsonParse(rawOutput) {
+  const attempts = [];
+  const original = String(rawOutput || '');
+  const cleaned = stripJsonFences(original);
+  attempts.push(original, cleaned, repairCommonJsonIssues(cleaned));
+
+  try {
+    const block = extractFirstJsonBlock(cleaned);
+    attempts.push(block, repairCommonJsonIssues(block));
+  } catch {
+    // Keep the direct parse attempts above; truncated output will still fail below.
+  }
+
+  const uniqueAttempts = [...new Set(attempts.filter((attempt) => attempt && attempt.trim()))];
+  let lastError;
+  for (const attempt of uniqueAttempts) {
+    try {
+      return JSON.parse(attempt);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  const parseError = new Error('OpenAI returned invalid JSON');
+  parseError.cause = lastError;
+  throw parseError;
 }
 
 function buildFreeTierFallbackAdvice() {
@@ -1120,6 +1196,68 @@ function buildFreeTierFallbackAdvice() {
   };
   const relationshipGoal = normalizeRelationshipGoal({}, relationshipMemory);
   return { attitude_label: '服务暂时繁忙', attitude_desc: '当前分析服务暂时不可用。为了避免给你不准确的建议，本次不会猜测截图内容，请稍后点击"重新分析"。', interest_score: 0, interest_level: '低意愿', interest_signals: [], conversation_mode: '礼貌回应', conversation_stage: '初次认识', analysis: { stage: 'ice_breaking', stage_label: RELATIONSHIP_STAGE_LABELS.ice_breaking, scene: '', scene_id: '', emotion: '', reply_intent: '', intimacy_score: 0 }, relationship_memory_engine: relationshipMemory, relationship_stage: 'ice_breaking', intimacy_score: 0, attraction_score: 0, investment_balance: 'balanced', initiator: 'unclear', reply_risk: 'safe', risk_level: 'safe', next_best_move: '', conversation_future: normalizeConversationFuture({}, { relationshipMemory, scene: null }), relationship_goal: relationshipGoal, coach_advice: normalizeCoachAdvice({}, { relationshipMemory, relationshipGoal, scene: null }), reply_explanation: [], next_5_moves: [], reply_strategy: '', flirt_level: '先别暧昧', is_chat_screenshot: true, non_chat_reply: '', chat_evidence: {}, conversation_summary: '', chat_guide: buildDefaultChatGuide(), next_topics: [], dialogue: [], suggest_stop: false, needs_retry: true, degraded: true, replies: [], sticker_match_intent: null, sticker_suggestions: [] };
+}
+
+function buildJsonParseFallbackAdvice(rawOutput = '') {
+  const relationshipMemory = {
+    relationship_stage: 'ice_breaking',
+    intimacy_score: 0,
+    attraction_score: 0,
+    investment_balance: 'balanced',
+    initiator: 'unclear',
+    risk_level: 'safe',
+    next_best_move: '',
+  };
+  const relationshipGoal = normalizeRelationshipGoal({}, relationshipMemory);
+  return {
+    attitude_label: '解析失败',
+    attitude_desc: 'OpenAI 已经返回内容，但 JSON 不完整或格式异常。本次不会降级成服务繁忙，也不会误判为不是聊天截图。',
+    interest_score: 0,
+    interest_level: '低意愿',
+    interest_signals: [],
+    conversation_mode: '礼貌回应',
+    conversation_stage: '初次认识',
+    analysis: {
+      stage: 'ice_breaking',
+      stage_label: RELATIONSHIP_STAGE_LABELS.ice_breaking,
+      scene: '',
+      scene_id: '',
+      emotion: '',
+      reply_intent: '',
+      intimacy_score: 0,
+    },
+    relationship_memory_engine: relationshipMemory,
+    relationship_stage: 'ice_breaking',
+    intimacy_score: 0,
+    attraction_score: 0,
+    investment_balance: 'balanced',
+    initiator: 'unclear',
+    reply_risk: 'safe',
+    risk_level: 'safe',
+    next_best_move: '',
+    conversation_future: normalizeConversationFuture({}, { relationshipMemory, scene: null }),
+    relationship_goal: relationshipGoal,
+    coach_advice: normalizeCoachAdvice({}, { relationshipMemory, relationshipGoal, scene: null }),
+    reply_explanation: [],
+    next_5_moves: [],
+    reply_strategy: '',
+    flirt_level: '先别暧昧',
+    is_chat_screenshot: true,
+    non_chat_reply: '',
+    chat_evidence: {},
+    conversation_summary: cleanText(rawOutput, 260),
+    chat_guide: buildDefaultChatGuide(),
+    next_topics: [],
+    dialogue: [],
+    suggest_stop: false,
+    needs_retry: true,
+    degraded: false,
+    json_parse_failed: true,
+    replies: [],
+    stickers: [],
+    sticker_match_intent: null,
+    sticker_suggestions: [],
+  };
 }
 
 function buildVisionTimeoutFallbackAdvice() {
@@ -3051,4 +3189,4 @@ function buildStoragePath({ visitorId, index, ext }) {
   return `${day}/${safeVisitorId}-${Date.now()}-${index}-${suffix}.${ext}`;
 }
 
-export { CHAT_ADVICE_SCHEMA, CHAT_SCENE_LIBRARY, IMAGE_READING_RULES, MODELS, PRIMARY_IMAGE_DETAIL, PRIMARY_MAX_COMPLETION_TOKENS, PRIMARY_OPENAI_TIMEOUT_MS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, REPLY_REFINEMENT_SCHEMA, REFINEMENT_MAX_COMPLETION_TOKENS, buildActiveCuriosityGuide, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildReplyRefinementPrompt, buildStageChatGuide, buildStickerMatchIntent, detectScene, extractFirstJsonObject, getRequestParts, getStickerContext, hasActiveCuriosity, hasHappyEmotion, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, hasStudyStress, inferConversationStage, isRetryableModelError, isVerifiedChatScreenshot, logUsage, mergeRefinedReplies, needsReplyRefinement, normalizeChatGuide, normalizeConversationMode, normalizeConversationStage, normalizeDialogue, normalizeChatEvidence, normalizeStickerSuggestions, parseAdvice, recommendStockStickers, repairReplyCandidates, requestOpenAIAdvice, requestOpenAIReplyRefinement, scoreStockSticker };
+export { CHAT_ADVICE_SCHEMA, CHAT_SCENE_LIBRARY, IMAGE_READING_RULES, MODELS, PRIMARY_IMAGE_DETAIL, PRIMARY_MAX_COMPLETION_TOKENS, PRIMARY_OPENAI_TIMEOUT_MS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, REPLY_REFINEMENT_SCHEMA, REFINEMENT_MAX_COMPLETION_TOKENS, buildActiveCuriosityGuide, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildReplyRefinementPrompt, buildStageChatGuide, buildStickerMatchIntent, detectScene, extractFirstJsonObject, getRequestParts, getStickerContext, hasActiveCuriosity, hasHappyEmotion, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, hasStudyStress, inferConversationStage, isRetryableModelError, isVerifiedChatScreenshot, logUsage, mergeRefinedReplies, needsReplyRefinement, normalizeChatGuide, normalizeConversationMode, normalizeConversationStage, normalizeDialogue, normalizeChatEvidence, normalizeStickerSuggestions, parseAdvice, recommendStockStickers, repairReplyCandidates, requestOpenAIAdvice, requestOpenAIReplyRefinement, safeJsonParse, scoreStockSticker };
