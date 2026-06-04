@@ -68,7 +68,8 @@ test('defines a strict schema for richer attraction analysis', () => {
   assert.equal(CHAT_ADVICE_SCHEMA.properties.replies.items.additionalProperties, false);
   assert.equal(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.minItems, 3);
   assert.equal(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.maxItems, 3);
-  assert.deepEqual(Object.keys(CHAT_ADVICE_SCHEMA.properties.replies.items.properties), ['text']);
+  assert.deepEqual(Object.keys(CHAT_ADVICE_SCHEMA.properties.replies.items.properties), ['text', 'messages']);
+  assert.ok(CHAT_ADVICE_SCHEMA.properties.replies.items.required.includes('messages'));
   const stickerIntentSchema = CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.items;
   assert.deepEqual(Object.keys(stickerIntentSchema.properties), ['text', 'emotion', 'scenario', 'relationship_stage', 'keywords']);
   assert.ok(stickerIntentSchema.required.includes('emotion'));
@@ -83,7 +84,7 @@ test('defines a strict schema for richer attraction analysis', () => {
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /连续倾诉/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /主动了解/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /绝对不要替用户编造/);
-  assert.match(REPLY_COACH_SYSTEM_PROMPT, /换行表示用户可以分成几条气泡/);
+  assert.match(REPLY_COACH_SYSTEM_PROMPT, /messages 表示 1 到 3 条微信连续消息/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /库存检索意图/);
   assert.ok(stickerIntentSchema.properties.emotion.enum.includes('flirt'));
   assert.ok(stickerIntentSchema.properties.scenario.enum.includes('missing_you'));
@@ -102,14 +103,14 @@ test('parses willingness signals, flirt level, and clean untagged replies', () =
   assert.equal(advice.conversation_stage, '暧昧升温');
   assert.equal(advice.flirt_level, '轻微暧昧');
   assert.deepEqual(advice.interest_signals, ['主动回问', '接住共同梗']);
-  assert.deepEqual(advice.replies[0], { text: '感受到了，嘴硬但还挺会关心人' });
+  assert.deepEqual(advice.replies[0], { text: '感受到了，嘴硬但还挺会关心人', messages: ['感受到了，嘴硬但还挺会关心人'] });
   assert.equal(advice.sticker_match_intent.reply_intent, 'flirty_continue');
   assert.equal(advice.sticker_match_intent.emotion, 'shy');
   assert.ok(advice.sticker_match_intent.secondary_emotions.includes('love'));
   assert.ok(advice.sticker_match_intent.scenario.includes('flirting'));
   assert.ok(advice.sticker_match_intent.relationship_stage.includes('flirting'));
   assert.ok(advice.sticker_match_intent.keywords.includes('偷看'));
-  assert.equal(advice.sticker_suggestions.length, 4);
+  assert.equal(advice.sticker_suggestions.length, 6);
   assert.equal(advice.sticker_suggestions[0].match.reply_intent, 'flirty_continue');
   assert.equal(advice.conversation_summary, '对方：你感受到我的了吗；我：好像遇到我你才对白由向往');
 });
@@ -120,7 +121,11 @@ test('merges lightweight text-only reply refinements into the original advice', 
     replies: [{ text: '回复一' }, { text: '回复二' }, { text: '回复三' }],
   }));
 
-  assert.deepEqual(merged.replies, [{ text: '回复一' }, { text: '回复二' }, { text: '回复三' }]);
+  assert.deepEqual(merged.replies, [
+    { text: '回复一', messages: ['回复一'] },
+    { text: '回复二', messages: ['回复二'] },
+    { text: '回复三', messages: ['回复三'] },
+  ]);
   assert.equal(merged.attitude_label, advice.attitude_label);
 });
 
@@ -134,6 +139,7 @@ test('preserves multi-bubble reply candidates with line breaks', () => {
   })));
 
   assert.equal(advice.replies[0].text, '其实也没想很多\n就是睡前想到你一下\n结果一下有点久');
+  assert.deepEqual(advice.replies[0].messages, ['其实也没想很多', '就是睡前想到你一下', '结果一下有点久']);
   assert.equal(needsReplyRefinement(advice), false);
 });
 
@@ -340,7 +346,8 @@ test('repairs lecturing support replies with natural short messages', () => {
   const repaired = repairReplyCandidates(advice);
 
   assert.equal(needsReplyRefinement(advice), true);
-  assert.deepEqual(repaired.replies[0], { text: '肚子和头一起疼也太难受了' });
+  assert.deepEqual(repaired.replies[0].messages, ['先别硬撑了', '你现在先躺一下', '作业我先替你骂两句']);
+  assert.doesNotMatch(repaired.replies[0].text, /肚子和头一起疼也太难受了/);
   assert.equal(needsReplyRefinement(repaired), false);
 });
 
@@ -360,7 +367,7 @@ test('repairs well-meant but robotic health reminder replies', () => {
   })));
 
   assert.equal(needsReplyRefinement(advice), true);
-  assert.deepEqual(repairReplyCandidates(advice).replies[1], { text: '先躺一会儿缓缓，作业别硬撑了' });
+  assert.deepEqual(repairReplyCandidates(advice).replies[1].messages, ['头和肚子都在抗议了', '今晚先别跟自己较劲']);
 });
 
 test('recognizes consecutive personal questions as active curiosity', () => {
@@ -404,7 +411,7 @@ test('upgrades active curiosity and repairs invented personal details', () => {
   assert.equal(advice.interest_score, 62);
   assert.match(advice.chat_guide.next_steps[2], /邀约/);
   assert.equal(needsReplyRefinement(advice), true);
-  assert.deepEqual(repaired.replies[0], { text: '有，我平时比较喜欢___' });
+  assert.deepEqual(repaired.replies[0], { text: '有，我平时比较喜欢___', messages: ['有，我平时比较喜欢___'] });
 });
 
 test('flags robotic or perspective-reversed reply candidates for refinement', () => {
@@ -462,7 +469,7 @@ test('builds stock sticker retrieval intent instead of legacy random templates',
   assert.ok(stopIntent.relationship_stage.includes('post_conflict'));
   assert.ok(stopIntent.keywords.includes('先撤'));
   const stopSuggestions = normalizeStickerSuggestions([{ text: ' 行 你继续 ', emotion: 'awkward', scenario: 'speechless', relationship_stage: 'post_conflict', keywords: ['先撤'] }], '建议停手', [], { suggest_stop: true });
-  assert.equal(stopSuggestions.length, 4);
+  assert.equal(stopSuggestions.length, 6);
   assert.equal(stopSuggestions[0].match.reply_intent, 'deescalate_gracefully');
 
   const contextualIntent = buildStickerMatchIntent({
@@ -556,7 +563,7 @@ test('scores caring stock stickers higher for physical discomfort', () => {
   assert.ok(intent.scenario.includes('comfort'));
   assert.ok(scoreStockSticker(caringSticker, intent) > scoreStockSticker(unrelatedSticker, intent));
   const supportSuggestions = normalizeStickerSuggestions([], '情绪陪伴', dialogue, { emotional_disclosure: true });
-  assert.equal(supportSuggestions.length, 4);
+  assert.equal(supportSuggestions.length, 6);
   assert.equal(supportSuggestions[0].match.reply_intent, 'comfort_support');
 });
 
@@ -653,7 +660,7 @@ test('repairs stubborn clarification replies with sendable short messages', () =
   const repaired = repairReplyCandidates(advice);
 
   assert.equal(needsReplyRefinement(repaired), false);
-  assert.deepEqual(repaired.replies[0], { text: '我瞎猜的，那我撤回' });
+  assert.deepEqual(repaired.replies[0], { text: '我瞎猜的，那我撤回', messages: ['我瞎猜的，那我撤回'] });
   assert.equal(repaired.replies.length, 4);
 });
 
@@ -788,7 +795,7 @@ test('uses a safe short fallback when OpenAI refinement stays too long', async (
     const advice = JSON.parse(response.body.content[0].text);
 
     assert.equal(response.statusCode, 200);
-    assert.deepEqual(advice.replies[0], { text: '我瞎猜的，那我撤回' });
+    assert.deepEqual(advice.replies[0], { text: '我瞎猜的，那我撤回', messages: ['我瞎猜的，那我撤回'] });
     assert.equal(needsReplyRefinement(advice), false);
   } finally {
     global.fetch = originalFetch;

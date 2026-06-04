@@ -36,11 +36,15 @@ test('shows contextual stickers only after a usable chat result', () => {
   assert.match(stickers, /function scoreSticker/);
   assert.match(stickers, /FALLBACK_STICKERS/);
   assert.match(stickers, /makeFallbackCanvas/);
-  assert.match(stickers, /STICKER_PANEL_RECOMMENDATION_COUNT = 4/);
+  assert.match(stickers, /STICKER_PANEL_RECOMMENDATION_COUNT = 6/);
+  assert.match(stickers, /function createStickerArtElement/);
   assert.match(stickers, /function createStickerTextElement/);
   assert.match(stickers, /sticker-text-label/);
-  assert.match(read('style.css'), /\.reply-text \{[^}]*white-space: pre-line/);
-  assert.match(read('style.css'), /\.sticker-grid \{[^}]*repeat\(4, minmax\(0, 1fr\)\)/);
+  assert.match(app, /function normalizeReplyCandidate/);
+  assert.match(app, /reply-message-bubble/);
+  assert.match(read('style.css'), /\.reply-message-bubble/);
+  assert.match(read('style.css'), /\.sticker-grid \{[^}]*repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(read('style.css'), /\.sticker-art/);
   assert.match(read('style.css'), /\.sticker-text-label/);
   assert.match(stickers, /sticker_suggestions/);
   assert.match(stickers, /sticker_match_intent/);

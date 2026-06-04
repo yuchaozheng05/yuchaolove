@@ -154,8 +154,8 @@ function buildPrompt(imageCount) {
   const context = document.getElementById('contextInput').value.trim();
   return `请分析上传的 ${imageCount} 张图片。截图已经按聊天时间从早到晚排列。
 按系统规则识别有效聊天截图、还原 dialogue、判断态度，并生成自然可发送的回复。
-请输出 3 到 5 条推荐回复；每条推荐回复可以是 1 到 3 句或短气泡，具体写 1、2 还是 3 句，要根据截图里的关系阶段、情绪和最后一句来决定。
-表情包只给 3 个最贴合当前聊天的库存检索意图；每个意图包含 emotion、scenario、relationship_stage、keywords 和可发送短配字 text。页面只会从本地库存里按相关性推荐 4 个表情包，不要编造文件名。
+请输出 3 到 5 组推荐回复；每组用 messages 表示 1 到 3 条微信连续消息，text 等于 messages 用换行拼起来。
+表情包只给 3 个最贴合当前聊天的库存检索意图；每个意图包含 emotion、scenario、relationship_stage、keywords 和可发送短配字 text。页面只会从本地库存里按相关性推荐 6 个表情包，不要编造文件名。
 ${context ? `补充背景：${context}` : ''}
 只返回符合 schema 的 JSON。`;
 }
@@ -227,10 +227,8 @@ function parseAdvice(rawText) {
     degraded: Boolean(data.degraded),
     replies: isChatScreenshot && Array.isArray(data.replies)
       ? data.replies
-        .map((reply) => ({
-            text: cleanReplyText(reply?.text, 140),
-          }))
-          .filter((reply) => reply.text)
+        .map((reply) => normalizeReplyCandidate(reply))
+          .filter(Boolean)
           .slice(0, 5)
       : [],
     sticker_match_intent: data.sticker_match_intent || null,
@@ -356,10 +354,17 @@ function createReplyCard(reply, index) {
   const card = document.createElement('div');
   card.className = 'reply-card';
   card.style.animationDelay = `${index * 0.08}s`;
+  const messages = normalizeReplyMessages(reply);
+  const copyValue = messages.join('\n');
 
   const text = document.createElement('div');
   text.className = 'reply-text';
-  text.textContent = reply.text;
+  messages.forEach((message) => {
+    const bubble = document.createElement('div');
+    bubble.className = 'reply-message-bubble';
+    bubble.textContent = message;
+    text.appendChild(bubble);
+  });
 
   const copy = document.createElement('div');
   copy.className = 'reply-copy';
@@ -368,7 +373,7 @@ function createReplyCard(reply, index) {
   card.appendChild(text);
   card.appendChild(copy);
   card.addEventListener('click', () => {
-    copyText(reply.text);
+    copyText(copyValue);
     card.classList.add('copied');
     setTimeout(() => card.classList.remove('copied'), 1200);
   });
@@ -449,6 +454,38 @@ function cleanReplyText(value, maxLength = 140) {
     .join('\n')
     .slice(0, maxLength)
     .trim();
+}
+
+function normalizeReplyMessages(reply, maxLength = 140) {
+  const rawMessages = Array.isArray(reply?.messages) && reply.messages.length
+    ? reply.messages
+    : cleanReplyText(reply?.text, maxLength).split('\n');
+  const messages = rawMessages
+    .map((message) => cleanText(message, 54))
+    .filter(Boolean)
+    .slice(0, 3);
+  if (!messages.length) return [];
+
+  const shortened = [];
+  let usedLength = 0;
+  messages.forEach((message) => {
+    if (usedLength >= maxLength) return;
+    const available = Math.max(0, maxLength - usedLength);
+    const next = message.slice(0, available).trim();
+    if (!next) return;
+    shortened.push(next);
+    usedLength += next.length + 1;
+  });
+  return shortened;
+}
+
+function normalizeReplyCandidate(reply, maxLength = 140) {
+  const messages = normalizeReplyMessages(reply, maxLength);
+  if (!messages.length) return null;
+  return {
+    text: messages.join('\n'),
+    messages,
+  };
 }
 
 function clampScore(value) {
@@ -713,7 +750,7 @@ function buildActiveCuriosityGuide() {
   return buildStageChatGuide('稳定了解');
 }
 
-const STICKER_RECOMMENDATION_COUNT = 4;
+const STICKER_RECOMMENDATION_COUNT = 6;
 
 function normalizeStickerSuggestions(suggestions) {
   if (!Array.isArray(suggestions)) return [];
