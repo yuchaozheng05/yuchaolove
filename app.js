@@ -3,6 +3,7 @@
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_FILE_COUNT = 6;
 const MAX_TOTAL_IMAGE_BASE64_LENGTH = 3_800_000;
+const MAX_UPLOAD_IMAGE_EDGE = 1280;
 const ALLOWED_FILE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const EMOTIONAL_DISCLOSURE_PATTERN = /困死|好困|太困|困了|很困|累死|好累|太累|累了|很累|疼|痛|难受|不舒服|烦|焦虑|压力|不想上学|不想去|没写完|睡不着|崩溃|想哭|生病|发烧|胃疼|肚子疼|头疼/;
 const PHYSICAL_DISCOMFORT_PATTERN = /疼|痛|难受|不舒服|生病|发烧|胃疼|肚子疼|头疼/;
@@ -125,6 +126,12 @@ async function analyze() {
                 type: 'base64',
                 media_type: image.mediaType,
                 data: image.base64,
+                width: image.width,
+                height: image.height,
+                original_width: image.originalWidth,
+                original_height: image.originalHeight,
+                original_size_bytes: image.originalSizeBytes,
+                compressed_size_bytes: image.compressedSizeBytes,
               },
             })),
             { type: 'text', text: buildPrompt(uploadedImages.length) },
@@ -625,10 +632,18 @@ async function optimizeUploads(files, totalFileCount = files.length) {
 async function prepareImage(file, fileCount, forceCompression = false) {
   const originalUrl = await readFileAsDataUrl(file);
   const image = await loadImage(originalUrl);
-  const shouldCompress = forceCompression || fileCount > 1 || file.size > 900 * 1024;
-  const maxEdge = forceCompression ? 1400 : shouldCompress ? 1900 : 2200;
+  const shouldCompress = forceCompression || fileCount > 1 || file.size > 900 * 1024 || Math.max(image.naturalWidth, image.naturalHeight) > MAX_UPLOAD_IMAGE_EDGE;
+  const maxEdge = MAX_UPLOAD_IMAGE_EDGE;
   const scale = Math.min(1, maxEdge / Math.max(image.naturalWidth, image.naturalHeight));
-  if (!shouldCompress && scale === 1) return getImagePayload(originalUrl, file.name);
+  if (!shouldCompress && scale === 1) {
+    return getImagePayload(originalUrl, file.name, {
+      width: image.naturalWidth,
+      height: image.naturalHeight,
+      originalWidth: image.naturalWidth,
+      originalHeight: image.naturalHeight,
+      originalSizeBytes: file.size,
+    });
+  }
 
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
@@ -637,7 +652,13 @@ async function prepareImage(file, fileCount, forceCompression = false) {
   context.drawImage(image, 0, 0, canvas.width, canvas.height);
 
   const compressedUrl = canvas.toDataURL('image/webp', forceCompression ? 0.76 : shouldCompress ? 0.88 : 0.94);
-  return getImagePayload(compressedUrl, file.name);
+  return getImagePayload(compressedUrl, file.name, {
+    width: canvas.width,
+    height: canvas.height,
+    originalWidth: image.naturalWidth,
+    originalHeight: image.naturalHeight,
+    originalSizeBytes: file.size,
+  });
 }
 
 function readFileAsDataUrl(file) {
@@ -658,11 +679,22 @@ function loadImage(dataUrl) {
   });
 }
 
-function getImagePayload(dataUrl, name) {
+function getImagePayload(dataUrl, name, dimensions = {}) {
   const [header, base64] = dataUrl.split(',');
   const mediaType = header.match(/^data:([^;]+);base64$/)?.[1];
   if (!mediaType || !base64) throw new Error('截图格式无法读取');
-  return { base64, mediaType, name, previewUrl: dataUrl };
+  return {
+    base64,
+    mediaType,
+    name,
+    previewUrl: dataUrl,
+    width: Number(dimensions.width) || null,
+    height: Number(dimensions.height) || null,
+    originalWidth: Number(dimensions.originalWidth) || null,
+    originalHeight: Number(dimensions.originalHeight) || null,
+    originalSizeBytes: Number(dimensions.originalSizeBytes) || null,
+    compressedSizeBytes: Math.round(base64.length * 0.75),
+  };
 }
 
 function getTotalBase64Length(images) {

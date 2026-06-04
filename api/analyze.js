@@ -6,7 +6,7 @@ const MODELS = ['gpt-4.1-mini'];
 const ALLOWED_MEDIA_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_IMAGE_COUNT = 6;
 const MAX_TOTAL_IMAGE_BASE64_LENGTH = 4_000_000;
-const PRIMARY_IMAGE_DETAIL = 'auto';
+const PRIMARY_IMAGE_DETAIL = 'low';
 const PRIMARY_MAX_COMPLETION_TOKENS = 1400;
 const REFINEMENT_MAX_COMPLETION_TOKENS = 560;
 const PRIMARY_OPENAI_TIMEOUT_MS = 25_000;
@@ -389,6 +389,12 @@ export default async function handler(req, res) {
   try {
     const { imageParts, textPart, metadata } = getRequestParts(req.body);
     const debug = buildVisionDebug(imageParts);
+    const promptDebug = buildVisionPromptDebug({
+      imageParts,
+      prompt: textPart.text,
+      imageDetail: PRIMARY_IMAGE_DETAIL,
+    });
+    Object.assign(debug, promptDebug);
     const startedAt = Date.now();
     console.info(`[${requestId}] /api/analyze request accepted`, {
       hasOpenAIKey: true,
@@ -396,7 +402,16 @@ export default async function handler(req, res) {
       mediaTypes: imageParts.map((part) => part.source.media_type),
       base64Lengths: imageParts.map((part) => part.source.data.length),
       totalBase64Length: imageParts.reduce((sum, part) => sum + part.source.data.length, 0),
-      promptLength: textPart.text.length,
+      promptLength: promptDebug.prompt_length,
+      systemPromptLength: promptDebug.system_prompt_length,
+      userPromptLength: promptDebug.user_prompt_length,
+      responseSchemaLength: promptDebug.response_schema_length,
+      estimatedPromptTokens: promptDebug.estimated_prompt_tokens,
+      estimatedSchemaTokens: promptDebug.estimated_schema_tokens,
+      estimatedImageTokens: promptDebug.estimated_image_tokens,
+      estimatedTotalInputTokens: promptDebug.estimated_total_input_tokens,
+      imageDetail: promptDebug.image_detail,
+      imageSummaries: debug.images,
       visitorIdPresent: Boolean(metadata.visitor_id),
       pagePath: metadata.page_path || '',
     });
@@ -419,6 +434,12 @@ export default async function handler(req, res) {
         debug.scene_detected = advice.analysis?.scene || '';
         debug.is_chat_screenshot = advice.is_chat_screenshot === true;
         debug.needs_retry = advice.needs_retry === true;
+        console.info(`[${requestId}] Vision extracted chat text`, {
+          extracted_text: debug.extracted_text,
+          scene_detected: debug.scene_detected,
+          is_chat_screenshot: debug.is_chat_screenshot,
+          elapsed_ms: debug.elapsed_ms,
+        });
 
         if (needsReplyRefinement(advice)) {
           advice = await refineOrRepairAdvice({ apiKey, model, advice });
@@ -458,6 +479,7 @@ export default async function handler(req, res) {
       const isTimeout = lastError?.providerCode === 'timeout';
       const advice = isTimeout ? buildVisionTimeoutFallbackAdvice() : buildFreeTierFallbackAdvice();
       const debug = buildVisionDebug(imageParts, {
+        ...promptDebug,
         vision_called: true,
         vision_success: false,
         vision_timeout: isTimeout,
@@ -537,21 +559,89 @@ function getApproxBase64Bytes(base64 = '') {
   return Math.max(0, Math.floor((base64.length * 3) / 4) - padding);
 }
 
+function toPositiveInteger(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? Math.round(number) : 0;
+}
+
 function formatBytes(bytes) {
   if (!bytes) return '0 KB';
   if (bytes < 1024) return `${bytes} B`;
   return `${Math.round(bytes / 1024)} KB`;
 }
 
+function estimateTextTokens(text = '') {
+  return Math.ceil(String(text || '').length / 2);
+}
+
+function estimateImageTokensForDetail(imagePart, detail = PRIMARY_IMAGE_DETAIL) {
+  if (detail === 'low') return 85;
+  const width = toPositiveInteger(imagePart?.source?.width);
+  const height = toPositiveInteger(imagePart?.source?.height);
+  if (!width || !height) return 85;
+
+  const scale = Math.min(1, 2048 / Math.max(width, height));
+  const scaledWidth = Math.ceil(width * scale);
+  const scaledHeight = Math.ceil(height * scale);
+  const tileCount = Math.ceil(scaledWidth / 512) * Math.ceil(scaledHeight / 512);
+  return 85 + tileCount * 170;
+}
+
+function buildVisionPromptDebug({
+  imageParts = [],
+  prompt = '',
+  systemPrompt = PRIMARY_SYSTEM_PROMPT,
+  responseSchema = CHAT_ADVICE_SCHEMA,
+  imageDetail = PRIMARY_IMAGE_DETAIL,
+} = {}) {
+  const schemaString = JSON.stringify(responseSchema);
+  const imageInstructionText = imageParts
+    .map((_, index) => `上传图片 ${index + 1}/${imageParts.length}。先判断它是否为聊天截图；多张有效聊天截图按此顺序从旧到新排列。`)
+    .join('\n');
+  const promptLength = systemPrompt.length + prompt.length + imageInstructionText.length;
+  const schemaLength = schemaString.length;
+  const estimatedPromptTokens = estimateTextTokens(`${systemPrompt}\n${imageInstructionText}\n${prompt}`);
+  const estimatedSchemaTokens = estimateTextTokens(schemaString);
+  const estimatedImageTokens = imageParts.reduce(
+    (sum, part) => sum + estimateImageTokensForDetail(part, imageDetail),
+    0,
+  );
+
+  return {
+    prompt_length: promptLength,
+    user_prompt_length: prompt.length,
+    system_prompt_length: systemPrompt.length,
+    response_schema_length: schemaLength,
+    estimated_prompt_tokens: estimatedPromptTokens,
+    estimated_schema_tokens: estimatedSchemaTokens,
+    estimated_image_tokens: estimatedImageTokens,
+    estimated_total_input_tokens: estimatedPromptTokens + estimatedSchemaTokens + estimatedImageTokens,
+    image_detail: imageDetail,
+  };
+}
+
 function buildVisionDebug(imageParts, overrides = {}) {
   const imageSummaries = imageParts.map((part, index) => {
     const approxBytes = getApproxBase64Bytes(part?.source?.data || '');
+    const width = toPositiveInteger(part?.source?.width);
+    const height = toPositiveInteger(part?.source?.height);
+    const originalWidth = toPositiveInteger(part?.source?.original_width);
+    const originalHeight = toPositiveInteger(part?.source?.original_height);
+    const originalSizeBytes = toPositiveInteger(part?.source?.original_size_bytes);
+    const compressedSizeBytes = toPositiveInteger(part?.source?.compressed_size_bytes) || approxBytes;
     return {
       index,
       mime_type: part?.source?.media_type || '',
       base64_length: part?.source?.data?.length || 0,
       approx_bytes: approxBytes,
       approx_size: formatBytes(approxBytes),
+      image_width: width,
+      image_height: height,
+      original_width: originalWidth,
+      original_height: originalHeight,
+      original_size_bytes: originalSizeBytes,
+      compressed_size_bytes: compressedSizeBytes,
+      image_size_kb: Math.round((compressedSizeBytes / 1024) * 10) / 10,
       data_prefix: (part?.source?.data || '').slice(0, 24),
     };
   });
@@ -567,6 +657,14 @@ function buildVisionDebug(imageParts, overrides = {}) {
       mime_types: imageSummaries.map((image) => image.mime_type),
       base64_lengths: imageSummaries.map((image) => image.base64_length),
     },
+    image_size_kb: imageSummaries.map((image) => image.image_size_kb).join(', '),
+    image_width: imageSummaries.map((image) => image.image_width || '').join(', '),
+    image_height: imageSummaries.map((image) => image.image_height || '').join(', '),
+    base64_length: imageSummaries.map((image) => image.base64_length).join(', '),
+    prompt_length: 0,
+    estimated_prompt_tokens: 0,
+    estimated_image_tokens: 0,
+    estimated_total_input_tokens: 0,
     vision_called: false,
     vision_success: false,
     vision_timeout: false,
@@ -617,6 +715,7 @@ async function requestOpenAIAdvice({
   systemPrompt = PRIMARY_SYSTEM_PROMPT,
   timeoutMs = PRIMARY_OPENAI_TIMEOUT_MS,
 }) {
+  const requestStartedAt = Date.now();
   const imageMessages = imageParts.flatMap((imagePart, index) => [
     {
       type: 'text',
@@ -630,49 +729,103 @@ async function requestOpenAIAdvice({
       },
     },
   ]);
+  const promptDebug = buildVisionPromptDebug({
+    imageParts,
+    prompt,
+    systemPrompt,
+    responseSchema,
+    imageDetail,
+  });
+  const imagePayload = imageParts.map((part, index) => {
+    const approxBytes = getApproxBase64Bytes(part.source.data);
+    const compressedSizeBytes = toPositiveInteger(part.source.compressed_size_bytes) || approxBytes;
+    return {
+      index,
+      mimeType: part.source.media_type,
+      base64Length: part.source.data.length,
+      approxBytes,
+      imageSizeKb: Math.round((compressedSizeBytes / 1024) * 10) / 10,
+      imageWidth: toPositiveInteger(part.source.width),
+      imageHeight: toPositiveInteger(part.source.height),
+      originalWidth: toPositiveInteger(part.source.original_width),
+      originalHeight: toPositiveInteger(part.source.original_height),
+      originalSizeBytes: toPositiveInteger(part.source.original_size_bytes),
+      compressedSizeBytes,
+      dataPrefix: part.source.data.slice(0, 24),
+    };
+  });
+
+  console.log({
+    image_size_kb: imagePayload.map((image) => image.imageSizeKb).join(', '),
+    image_width: imagePayload.map((image) => image.imageWidth || '').join(', '),
+    image_height: imagePayload.map((image) => image.imageHeight || '').join(', '),
+    base64_length: imagePayload.map((image) => image.base64Length).join(', '),
+    prompt_length: promptDebug.prompt_length,
+    model,
+    elapsed_ms: 0,
+  });
 
   console.info(`[${requestId}] OpenAI Vision payload`, {
     model,
     imageCount: imageParts.length,
     imageDetail,
-    imagePayload: imageParts.map((part, index) => ({
-      index,
-      mimeType: part.source.media_type,
-      base64Length: part.source.data.length,
-      approxBytes: getApproxBase64Bytes(part.source.data),
-      dataPrefix: part.source.data.slice(0, 24),
-    })),
-    promptLength: prompt.length,
+    imagePayload,
+    promptLength: promptDebug.prompt_length,
+    userPromptLength: promptDebug.user_prompt_length,
+    systemPromptLength: promptDebug.system_prompt_length,
+    responseSchemaLength: promptDebug.response_schema_length,
+    estimatedPromptTokens: promptDebug.estimated_prompt_tokens,
+    estimatedSchemaTokens: promptDebug.estimated_schema_tokens,
+    estimatedImageTokens: promptDebug.estimated_image_tokens,
+    estimatedTotalInputTokens: promptDebug.estimated_total_input_tokens,
     maxCompletionTokens,
+    timeoutMs,
   });
 
-  const response = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: [...imageMessages, { type: 'text', text: prompt }] },
-      ],
-      temperature: 0.55,
-      max_completion_tokens: maxCompletionTokens,
-      response_format: {
-        type: 'json_schema',
-        json_schema: {
-          name: 'chat_advice',
-          strict: true,
-          schema: responseSchema,
-        },
+  let response;
+  try {
+    response = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
       },
-    }),
-  }, timeoutMs);
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: [...imageMessages, { type: 'text', text: prompt }] },
+        ],
+        temperature: 0.55,
+        max_completion_tokens: maxCompletionTokens,
+        response_format: {
+          type: 'json_schema',
+          json_schema: {
+            name: 'chat_advice',
+            strict: true,
+            schema: responseSchema,
+          },
+        },
+      }),
+    }, timeoutMs);
+  } catch (error) {
+    console.error(`[${requestId}] OpenAI Vision transport failed`, {
+      elapsed_ms: Date.now() - requestStartedAt,
+      providerStatus: error?.providerStatus || null,
+      providerCode: error?.providerCode || '',
+      message: cleanText(error?.message || '', 500),
+      raw_response: null,
+    });
+    throw error;
+  }
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data.error) {
+    console.error(`[${requestId}] OpenAI raw response`, {
+      status: response.status,
+      elapsed_ms: Date.now() - requestStartedAt,
+      raw_response: data,
+    });
     const providerError = new Error(data.error?.message || `OpenAI request failed with ${response.status}`);
     providerError.providerStatus = response.status;
     providerError.providerCode = data.error?.code || '';
@@ -685,6 +838,21 @@ async function requestOpenAIAdvice({
     emptyError.providerStatus = 503;
     throw emptyError;
   }
+
+  console.info(`[${requestId}] OpenAI Vision completed`, {
+    model,
+    elapsed_ms: Date.now() - requestStartedAt,
+    output_length: text.length,
+  });
+  console.log({
+    image_size_kb: imagePayload.map((image) => image.imageSizeKb).join(', '),
+    image_width: imagePayload.map((image) => image.imageWidth || '').join(', '),
+    image_height: imagePayload.map((image) => image.imageHeight || '').join(', '),
+    base64_length: imagePayload.map((image) => image.base64Length).join(', '),
+    prompt_length: promptDebug.prompt_length,
+    model,
+    elapsed_ms: Date.now() - requestStartedAt,
+  });
 
   return text;
 }
