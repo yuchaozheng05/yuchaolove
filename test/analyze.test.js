@@ -23,6 +23,7 @@ import handler, {
   hasRecentEmotionalDisclosure,
   hasRepeatedColdReplies,
   inferConversationStage,
+  isVerifiedChatScreenshot,
   logUsage,
   mergeRefinedReplies,
   needsReplyRefinement,
@@ -308,6 +309,39 @@ test('drops a single-column message when its sender is not visible', () => {
       { side: 'feed', speaker: '对方', text: '这句话有明确发送者' },
     ]),
     [{ side: 'feed', speaker: '对方', text: '这句话有明确发送者' }],
+  );
+});
+
+test('does not reject a chat screenshot just because OCR evidence is incomplete', () => {
+  assert.equal(
+    isVerifiedChatScreenshot(
+      { is_chat_screenshot: false },
+      [],
+      {
+        image_kind: 'wechat screenshot',
+        has_message_bubbles: true,
+        has_chat_ui: true,
+        has_two_sided_layout: false,
+      },
+    ),
+    true,
+  );
+
+  assert.equal(
+    isVerifiedChatScreenshot(
+      { is_chat_screenshot: true },
+      normalizeDialogue([
+        { side: 'left', text: '你今天几点下课？' },
+        { side: 'right', text: '下午' },
+      ]),
+      {
+        image_kind: 'wechat screenshot',
+        has_message_bubbles: false,
+        has_chat_ui: false,
+        has_two_sided_layout: false,
+      },
+    ),
+    true,
   );
 });
 
@@ -859,6 +893,30 @@ test('returns an honest retry result if OpenAI is unavailable', async () => {
     assert.equal(response.statusCode, 200);
     assert.equal(response.body.degraded, true);
     assert.deepEqual(JSON.parse(response.body.content[0].text), buildFreeTierFallbackAdvice());
+  } finally {
+    global.fetch = originalFetch;
+    restoreEnvironment('OPENAI_API_KEY', originalApiKey);
+  }
+});
+
+test('returns vision debug info for uploaded screenshots', async () => {
+  const originalFetch = global.fetch;
+  const originalApiKey = process.env.OPENAI_API_KEY;
+  process.env.OPENAI_API_KEY = 'test-key';
+  global.fetch = async () => jsonResponse(200, openAIAdviceResponse());
+
+  try {
+    const response = createResponseRecorder();
+    await handler({ method: 'POST', body: requestBody, headers: {} }, response);
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.body.debug.image_received, true);
+    assert.equal(response.body.debug.image_count, 1);
+    assert.equal(response.body.debug.images[0].mime_type, 'image/png');
+    assert.equal(response.body.debug.images[0].base64_length, 8);
+    assert.equal(response.body.debug.vision_called, true);
+    assert.equal(response.body.debug.vision_success, true);
+    assert.match(response.body.debug.extracted_text, /对方/);
   } finally {
     global.fetch = originalFetch;
     restoreEnvironment('OPENAI_API_KEY', originalApiKey);

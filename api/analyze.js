@@ -388,6 +388,7 @@ export default async function handler(req, res) {
 
   try {
     const { imageParts, textPart, metadata } = getRequestParts(req.body);
+    const debug = buildVisionDebug(imageParts);
     console.info(`[${requestId}] /api/analyze request accepted`, {
       hasOpenAIKey: true,
       imageCount: imageParts.length,
@@ -402,13 +403,20 @@ export default async function handler(req, res) {
 
     for (const model of MODELS) {
       try {
+        debug.vision_called = true;
         const rawText = await requestOpenAIAdvice({
           apiKey,
           model,
           imageParts,
           prompt: textPart.text,
+          requestId,
         });
+        debug.vision_success = true;
         let advice = parseAdvice(rawText);
+        debug.extracted_text = buildDebugExtractedText(advice);
+        debug.scene_detected = advice.analysis?.scene || '';
+        debug.is_chat_screenshot = advice.is_chat_screenshot === true;
+        debug.needs_retry = advice.needs_retry === true;
 
         if (needsReplyRefinement(advice)) {
           advice = await refineOrRepairAdvice({ apiKey, model, advice });
@@ -419,9 +427,11 @@ export default async function handler(req, res) {
         return res.status(200).json({
           content: [{ type: 'text', text: JSON.stringify(advice) }],
           model,
+          debug,
         });
       } catch (error) {
         lastError = error;
+        debug.vision_success = false;
         console.error(`[${requestId}] OpenAI model ${model} failed`, {
           summary: summarizeError(error),
           providerStatus: error?.providerStatus || null,
@@ -441,11 +451,17 @@ export default async function handler(req, res) {
         providerCode: lastError?.providerCode || '',
       });
       const advice = buildFreeTierFallbackAdvice();
+      const debug = buildVisionDebug(imageParts, {
+        vision_called: true,
+        vision_success: false,
+        fallback_used: true,
+      });
       queueUsageLog({ req, advice, imageParts, metadata, model: 'fallback', degraded: true });
       return res.status(200).json({
         content: [{ type: 'text', text: JSON.stringify(advice) }],
         degraded: true,
         reason: 'service-unavailable',
+        debug,
       });
     }
 
@@ -507,6 +523,62 @@ function dedupeImageParts(imageParts) {
   });
 }
 
+function getApproxBase64Bytes(base64 = '') {
+  if (!base64) return 0;
+  const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
+  return Math.max(0, Math.floor((base64.length * 3) / 4) - padding);
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return '0 KB';
+  if (bytes < 1024) return `${bytes} B`;
+  return `${Math.round(bytes / 1024)} KB`;
+}
+
+function buildVisionDebug(imageParts, overrides = {}) {
+  const imageSummaries = imageParts.map((part, index) => {
+    const approxBytes = getApproxBase64Bytes(part?.source?.data || '');
+    return {
+      index,
+      mime_type: part?.source?.media_type || '',
+      base64_length: part?.source?.data?.length || 0,
+      approx_bytes: approxBytes,
+      approx_size: formatBytes(approxBytes),
+      data_prefix: (part?.source?.data || '').slice(0, 24),
+    };
+  });
+  return {
+    image_received: imageParts.length > 0,
+    image_count: imageParts.length,
+    image_size: imageSummaries.map((image) => image.approx_size).join(', '),
+    images: imageSummaries,
+    payload: {
+      transport: 'json_base64_image_url',
+      content_type: 'application/json',
+      image_array_length: imageParts.length,
+      mime_types: imageSummaries.map((image) => image.mime_type),
+      base64_lengths: imageSummaries.map((image) => image.base64_length),
+    },
+    vision_called: false,
+    vision_success: false,
+    ocr_called: false,
+    ocr_success: false,
+    fallback_used: false,
+    extracted_text: '',
+    scene_detected: '',
+    is_chat_screenshot: false,
+    needs_retry: false,
+    ...overrides,
+  };
+}
+
+function buildDebugExtractedText(advice) {
+  const dialogueText = Array.isArray(advice?.dialogue)
+    ? advice.dialogue.map((message) => `${message.speaker || ''}:${message.text || ''}`).join(' | ')
+    : '';
+  return cleanText(dialogueText || advice?.conversation_summary || '', 500);
+}
+
 function normalizeClientMetadata(metadata) {
   if (!metadata || typeof metadata !== 'object') return {};
 
@@ -528,6 +600,7 @@ async function requestOpenAIAdvice({
   model,
   imageParts = [],
   prompt,
+  requestId = 'analyze',
   imageDetail = PRIMARY_IMAGE_DETAIL,
   maxCompletionTokens = PRIMARY_MAX_COMPLETION_TOKENS,
   responseSchema = CHAT_ADVICE_SCHEMA,
@@ -547,6 +620,21 @@ async function requestOpenAIAdvice({
       },
     },
   ]);
+
+  console.info(`[${requestId}] OpenAI Vision payload`, {
+    model,
+    imageCount: imageParts.length,
+    imageDetail,
+    imagePayload: imageParts.map((part, index) => ({
+      index,
+      mimeType: part.source.media_type,
+      base64Length: part.source.data.length,
+      approxBytes: getApproxBase64Bytes(part.source.data),
+      dataPrefix: part.source.data.slice(0, 24),
+    })),
+    promptLength: prompt.length,
+    maxCompletionTokens,
+  });
 
   const response = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -663,10 +751,11 @@ function parseAdvice(rawText) {
         .filter(Boolean)
         .slice(0, 5)
     : [];
-  const needsRetry = Boolean(value.needs_retry);
+  const modelNeedsRetry = Boolean(value.needs_retry);
   const dialogue = normalizeDialogue(value.dialogue);
   const chatEvidence = normalizeChatEvidence(value.chat_evidence);
   const isChatScreenshot = isVerifiedChatScreenshot(value, dialogue, chatEvidence);
+  const needsRetry = modelNeedsRetry || (isChatScreenshot && dialogue.length < 2);
   const verifiedDialogue = isChatScreenshot ? dialogue : [];
   const emotionalDisclosure = isChatScreenshot && hasRecentEmotionalDisclosure(verifiedDialogue);
   const activeCuriosity = isChatScreenshot && !emotionalDisclosure && hasActiveCuriosity(verifiedDialogue);
@@ -2552,10 +2641,25 @@ function normalizeChatEvidence(evidence) {
 
 function isVerifiedChatScreenshot(value, dialogue, evidence) {
   const hasTwoSidedDialogue = dialogue.some((message) => message.side === 'left') && dialogue.some((message) => message.side === 'right');
+  const hasAnyDialogue = dialogue.length > 0;
   const hasVisualEvidence = evidence.has_message_bubbles || evidence.has_chat_ui || (evidence.has_two_sided_layout && hasTwoSidedDialogue);
-  if (!hasVisualEvidence || dialogue.length < 2) return false;
-  if (value.is_chat_screenshot === false && !hasTwoSidedDialogue) return false;
-  return true;
+  const modelSaysChat = value.is_chat_screenshot === true;
+  if (hasStrongNonChatEvidence(evidence, dialogue)) return false;
+  if (hasVisualEvidence) return true;
+  if (modelSaysChat && dialogue.length >= 2) return true;
+  if (value.is_chat_screenshot === false && !hasVisualEvidence) return false;
+  return false;
+}
+
+function hasStrongNonChatEvidence(evidence, dialogue = []) {
+  const imageKind = cleanText(evidence?.image_kind, 80).toLowerCase();
+  const hasChatEvidence = evidence?.has_message_bubbles === true || evidence?.has_chat_ui === true || evidence?.has_two_sided_layout === true;
+  if (hasChatEvidence) return false;
+  if (/document|homework|worksheet|paper|pdf|slide|spreadsheet|landscape|poster|webpage|article|receipt|menu|photo|image|diagram|chart/.test(imageKind)) {
+    return true;
+  }
+  const text = (dialogue || []).map((message) => message.text).join(' ');
+  return /loss function|classification|using mlp|write down|homework|worksheet|equation|dataset|algorithm/i.test(text);
 }
 
 function isHelperText(text) {

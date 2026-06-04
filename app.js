@@ -194,7 +194,7 @@ function parseAdvice(rawText) {
   const data = JSON.parse(extractFirstJsonObject(rawText));
   const dialogue = normalizeDialogue(data.dialogue);
   const chatEvidence = normalizeChatEvidence(data.chat_evidence);
-  const isChatScreenshot = isVerifiedChatScreenshot(data, dialogue, chatEvidence);
+  const isChatScreenshot = data.is_chat_screenshot === true || isVerifiedChatScreenshot(data, dialogue, chatEvidence);
   const verifiedDialogue = isChatScreenshot ? dialogue : [];
   const emotionalDisclosure = isChatScreenshot && hasRecentEmotionalDisclosure(verifiedDialogue);
   const activeCuriosity = isChatScreenshot && !emotionalDisclosure && hasActiveCuriosity(verifiedDialogue);
@@ -909,13 +909,29 @@ function normalizeChatEvidence(evidence) {
 function isVerifiedChatScreenshot(data, dialogue, evidence) {
   const hasTwoSidedDialogue = dialogue.some((message) => message.side === 'left')
     && dialogue.some((message) => message.side === 'right');
+  const hasAnyDialogue = dialogue.length > 0;
   const hasVisualEvidence = evidence.has_message_bubbles
     || evidence.has_chat_ui
     || (evidence.has_two_sided_layout && hasTwoSidedDialogue);
 
-  if (!hasVisualEvidence || dialogue.length < 2) return false;
-  if (data.is_chat_screenshot === false && !hasTwoSidedDialogue) return false;
-  return true;
+  if (hasStrongNonChatEvidence(evidence, dialogue)) return false;
+  if (hasVisualEvidence) return true;
+  if (data.is_chat_screenshot === true && dialogue.length >= 2) return true;
+  if (data.is_chat_screenshot === false && !hasVisualEvidence) return false;
+  return hasAnyDialogue && hasTwoSidedDialogue && data.is_chat_screenshot !== false;
+}
+
+function hasStrongNonChatEvidence(evidence, dialogue = []) {
+  const imageKind = cleanText(evidence?.image_kind, 80).toLowerCase();
+  const hasChatEvidence = evidence?.has_message_bubbles === true
+    || evidence?.has_chat_ui === true
+    || evidence?.has_two_sided_layout === true;
+  if (hasChatEvidence) return false;
+  if (/document|homework|worksheet|paper|pdf|slide|spreadsheet|landscape|poster|webpage|article|receipt|menu|photo|image|diagram|chart/.test(imageKind)) {
+    return true;
+  }
+  const text = (dialogue || []).map((message) => message.text).join(' ');
+  return /loss function|classification|using mlp|write down|homework|worksheet|equation|dataset|algorithm/i.test(text);
 }
 
 function isHelperText(text) {
