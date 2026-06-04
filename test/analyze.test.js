@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import handler, {
   CHAT_ADVICE_SCHEMA,
+  CHAT_SCENE_LIBRARY,
   IMAGE_READING_RULES,
   MODELS,
   PRIMARY_IMAGE_DETAIL,
@@ -15,6 +16,7 @@ import handler, {
   buildFreeTierFallbackAdvice,
   buildReplyRefinementPrompt,
   buildStickerMatchIntent,
+  detectScene,
   extractFirstJsonObject,
   getRequestParts,
   hasActiveCuriosity,
@@ -59,16 +61,39 @@ test('defines a strict schema for richer attraction analysis', () => {
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('interest_signals'));
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('conversation_mode'));
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('conversation_stage'));
+  assert.ok(CHAT_ADVICE_SCHEMA.required.includes('analysis'));
+  assert.ok(CHAT_ADVICE_SCHEMA.required.includes('relationship_memory_engine'));
+  assert.ok(CHAT_ADVICE_SCHEMA.required.includes('reply_risk'));
+  assert.ok(CHAT_ADVICE_SCHEMA.required.includes('conversation_future'));
+  assert.ok(CHAT_ADVICE_SCHEMA.required.includes('relationship_goal'));
+  assert.ok(CHAT_ADVICE_SCHEMA.required.includes('coach_advice'));
+  assert.ok(CHAT_ADVICE_SCHEMA.required.includes('reply_explanation'));
+  assert.ok(CHAT_ADVICE_SCHEMA.required.includes('next_5_moves'));
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('chat_guide'));
+  assert.ok(CHAT_ADVICE_SCHEMA.required.includes('next_topics'));
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('sticker_suggestions'));
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('flirt_level'));
+  assert.deepEqual(CHAT_ADVICE_SCHEMA.properties.analysis.properties.stage.enum, [
+    'ice_breaking',
+    'daily_connection',
+    'emotional_bonding',
+    'push_pull_flirting',
+    'offline_invitation',
+    'relationship_confirmation',
+  ]);
+  assert.deepEqual(CHAT_ADVICE_SCHEMA.properties.relationship_memory_engine.properties.relationship_stage.enum, CHAT_ADVICE_SCHEMA.properties.analysis.properties.stage.enum);
+  assert.deepEqual(CHAT_ADVICE_SCHEMA.properties.relationship_memory_engine.properties.investment_balance.enum, ['user_investing_more', 'balanced', 'other_person_investing_more']);
+  assert.deepEqual(CHAT_ADVICE_SCHEMA.properties.relationship_memory_engine.properties.risk_level.enum, ['too_needy', 'too_cold', 'too_pushy', 'safe']);
+  assert.equal(CHAT_ADVICE_SCHEMA.properties.next_5_moves.minItems, 5);
+  assert.equal(CHAT_ADVICE_SCHEMA.properties.next_5_moves.maxItems, 5);
   assert.equal(CHAT_ADVICE_SCHEMA.properties.chat_guide.additionalProperties, false);
   assert.equal(CHAT_ADVICE_SCHEMA.properties.replies.minItems, 3);
   assert.equal(CHAT_ADVICE_SCHEMA.properties.replies.maxItems, 5);
   assert.equal(CHAT_ADVICE_SCHEMA.properties.replies.items.additionalProperties, false);
   assert.equal(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.minItems, 3);
   assert.equal(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.maxItems, 3);
-  assert.deepEqual(Object.keys(CHAT_ADVICE_SCHEMA.properties.replies.items.properties), ['text', 'messages']);
+  assert.deepEqual(Object.keys(CHAT_ADVICE_SCHEMA.properties.replies.items.properties), ['style', 'text', 'messages']);
+  assert.ok(CHAT_ADVICE_SCHEMA.properties.replies.items.required.includes('style'));
   assert.ok(CHAT_ADVICE_SCHEMA.properties.replies.items.required.includes('messages'));
   const stickerIntentSchema = CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.items;
   assert.deepEqual(Object.keys(stickerIntentSchema.properties), ['text', 'emotion', 'scenario', 'relationship_stage', 'keywords']);
@@ -85,12 +110,117 @@ test('defines a strict schema for richer attraction analysis', () => {
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /主动了解/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /绝对不要替用户编造/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /messages 表示 1 到 3 条微信连续消息/);
+  assert.match(REPLY_COACH_SYSTEM_PROMPT, /relationship_stage/);
+  assert.match(REPLY_COACH_SYSTEM_PROMPT, /next_topics/);
   assert.match(REPLY_COACH_SYSTEM_PROMPT, /库存检索意图/);
   assert.ok(stickerIntentSchema.properties.emotion.enum.includes('flirt'));
   assert.ok(stickerIntentSchema.properties.scenario.enum.includes('missing_you'));
   assert.ok(stickerIntentSchema.properties.scenario.enum.includes('speechless'));
   assert.match(IMAGE_READING_RULES, /左侧 = 对方，右侧 = 我/);
   assert.match(REPLY_PERSPECTIVE_EXAMPLES, /先夸我两句/);
+});
+
+test('ships a production scene library with relationship stages', () => {
+  assert.equal(CHAT_SCENE_LIBRARY.scenes.length >= 150, true);
+  const requiredScenes = ['身体不舒服', '查岗', '吃醋', '晚安', 'emo 动态', '关系确认'];
+  requiredScenes.forEach((sceneName) => {
+    assert.ok(CHAT_SCENE_LIBRARY.scenes.some((scene) => scene.scene === sceneName), sceneName);
+  });
+});
+
+test('detects required coach scenes from opponent messages', () => {
+  const sceneFor = (text) => detectScene({
+    dialogue: normalizeDialogue([{ side: 'left', text }]),
+    conversationStage: '轻松破冰',
+  });
+
+  const sick = sceneFor('我肚子疼，不想上学');
+  assert.equal(sick.scene, '身体不舒服');
+  assert.equal(sick.stage, 'emotional_bonding');
+  assert.ok(sick.sticker_strategy.includes('抱抱'));
+  assert.ok(sick.sticker_strategy.includes('摸头'));
+  assert.ok(sick.sticker_strategy.includes('盖被子'));
+
+  const jealousy = sceneFor('你今晚跟谁出去？');
+  assert.match(jealousy.scene, /查岗|吃醋/);
+  assert.equal(jealousy.stage, 'push_pull_flirting');
+
+  const goodnight = sceneFor('晚安');
+  assert.equal(goodnight.scene, '晚安');
+  assert.ok(['daily_connection', 'emotional_bonding'].includes(goodnight.stage));
+
+  const tired = sceneFor('我好累');
+  assert.match(tired.scene, /工作压力|学习压力|身体不舒服|emo 动态/);
+
+  const emo = sceneFor('今天有点 emo，什么都不想说');
+  assert.match(emo.scene, /emo 动态|身体不舒服|委屈/);
+});
+
+test('builds a relationship memory engine from the whole dialogue', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue({
+    conversation_stage: '稳定了解',
+    conversation_mode: '主动了解',
+    interest_score: 55,
+    dialogue: [
+      { side: 'left', speaker: '对方', text: '早安呀' },
+      { side: 'right', speaker: '我', text: '早' },
+      { side: 'left', speaker: '对方', text: '你今天几点下课？' },
+      { side: 'left', speaker: '对方', text: '我看到一家好吃的店，感觉你会喜欢' },
+      { side: 'right', speaker: '我', text: '那你发我看看' },
+    ],
+  })));
+
+  assert.equal(advice.relationship_memory_engine.relationship_stage, 'daily_connection');
+  assert.equal(advice.relationship_stage, 'daily_connection');
+  assert.equal(advice.relationship_memory_engine.initiator, 'other_person');
+  assert.equal(advice.relationship_memory_engine.investment_balance, 'other_person_investing_more');
+  assert.ok(advice.relationship_memory_engine.attraction_score >= 60);
+  assert.equal(advice.attraction_score, advice.relationship_memory_engine.attraction_score);
+  assert.equal(advice.relationship_goal.target_stage, 'emotional_bonding');
+  assert.match(advice.relationship_goal.today_should_do, /分享|接住|真实|生活/);
+  assert.equal(advice.next_5_moves.length, 5);
+  assert.equal(advice.reply_explanation.length, 3);
+  assert.ok(advice.conversation_future.next_reply_likely);
+  assert.ok(advice.coach_advice.do.length >= 2);
+});
+
+test('flags needy investment imbalance across the conversation', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue({
+    conversation_stage: '轻松破冰',
+    interest_score: 28,
+    suggest_stop: true,
+    dialogue: [
+      { side: 'right', speaker: '我', text: '你在干嘛' },
+      { side: 'left', speaker: '对方', text: '嗯' },
+      { side: 'right', speaker: '我', text: '怎么不回我' },
+      { side: 'right', speaker: '我', text: '你是不是不想聊' },
+      { side: 'left', speaker: '对方', text: '不知道' },
+      { side: 'right', speaker: '我', text: '那你到底去哪了' },
+    ],
+  })));
+
+  assert.equal(advice.relationship_memory_engine.investment_balance, 'user_investing_more');
+  assert.equal(advice.relationship_memory_engine.risk_level, 'too_needy');
+  assert.equal(advice.reply_risk, 'too_needy');
+  assert.match(advice.next_best_move, /收住|追问|留给对方/);
+});
+
+test('treats emotional discomfort as a too-cold risk unless answered with action', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue({
+    conversation_stage: '情绪陪伴',
+    conversation_mode: '情绪倾诉',
+    dialogue: [
+      { side: 'right', speaker: '我', text: '怎么啦' },
+      { side: 'left', speaker: '对方', text: '我肚子疼，不想上学' },
+      { side: 'left', speaker: '对方', text: '作业也没写完' },
+    ],
+  })));
+
+  assert.equal(advice.relationship_memory_engine.relationship_stage, 'emotional_bonding');
+  assert.equal(advice.relationship_memory_engine.risk_level, 'too_cold');
+  assert.equal(advice.relationship_goal.target_stage, 'push_pull_flirting');
+  assert.match(advice.coach_advice.summary, /情绪共鸣|身体不舒服/);
+  assert.match(advice.next_5_moves[0], /关心/);
 });
 
 test('parses willingness signals, flirt level, and clean untagged replies', () => {
@@ -326,7 +456,7 @@ test('allows an underfilled disclosure response to enter the repair pass', () =>
 
   assert.equal(advice.interest_score, 12);
   assert.equal(needsReplyRefinement(advice), true);
-  assert.equal(repairReplyCandidates(advice).replies.length, 4);
+  assert.equal(repairReplyCandidates(advice).replies.length, 5);
 });
 
 test('repairs lecturing support replies with natural short messages', () => {
@@ -346,7 +476,7 @@ test('repairs lecturing support replies with natural short messages', () => {
   const repaired = repairReplyCandidates(advice);
 
   assert.equal(needsReplyRefinement(advice), true);
-  assert.deepEqual(repaired.replies[0].messages, ['先别硬撑了', '你现在先躺一下', '作业我先替你骂两句']);
+  assert.deepEqual(repaired.replies[0].messages, ['你现在感觉还好吗？', '有没有哪里特别不舒服', '先躺下，喝点温水']);
   assert.doesNotMatch(repaired.replies[0].text, /肚子和头一起疼也太难受了/);
   assert.equal(needsReplyRefinement(repaired), false);
 });
@@ -367,7 +497,7 @@ test('repairs well-meant but robotic health reminder replies', () => {
   })));
 
   assert.equal(needsReplyRefinement(advice), true);
-  assert.deepEqual(repairReplyCandidates(advice).replies[1].messages, ['头和肚子都在抗议了', '今晚先别跟自己较劲']);
+  assert.deepEqual(repairReplyCandidates(advice).replies[1].messages, ['把地址发我', '我给你送点药和清淡的吃的', '你先别硬撑']);
 });
 
 test('recognizes consecutive personal questions as active curiosity', () => {
@@ -558,13 +688,15 @@ test('scores caring stock stickers higher for physical discomfort', () => {
   };
 
   assert.equal(intent.context, 'physical_discomfort');
-  assert.equal(intent.reply_intent, 'comfort_support');
+  assert.equal(intent.reply_intent, 'care_action_support');
   assert.equal(intent.emotion, 'comfort');
   assert.ok(intent.scenario.includes('comfort'));
+  assert.ok(intent.keywords.includes('盖被子'));
+  assert.ok(intent.keywords.includes('递热水'));
   assert.ok(scoreStockSticker(caringSticker, intent) > scoreStockSticker(unrelatedSticker, intent));
   const supportSuggestions = normalizeStickerSuggestions([], '情绪陪伴', dialogue, { emotional_disclosure: true });
   assert.equal(supportSuggestions.length, 6);
-  assert.equal(supportSuggestions[0].match.reply_intent, 'comfort_support');
+  assert.equal(supportSuggestions[0].match.reply_intent, 'care_action_support');
 });
 
 test('maps study encouragement and happy chats to stock sticker intent', () => {
@@ -743,13 +875,13 @@ test('asks OpenAI for one refinement pass when initial replies feel robotic', as
     if (requests.length === 1) {
       return jsonResponse(200, openAIAdviceResponse(adviceValue({
         dialogue: [
-          { side: 'right', speaker: '我', text: '等你先发现' },
-          { side: 'left', speaker: '对方', text: '那你要我怎么哄' },
+          { side: 'right', speaker: '我', text: '今天刚下课' },
+          { side: 'left', speaker: '对方', text: '我今天也挺忙的' },
         ],
         replies: [
-          { text: '哄你？你觉得怎样才算哄好？' },
-          { text: '那你平时喜欢怎么被哄？' },
-          { text: '听起来你挺会哄人' },
+          { text: '听起来你今天过得比较充实' },
+          { text: '感觉你最近状态还不错' },
+          { text: '有需要的话可以告诉我' },
         ],
       })));
     }

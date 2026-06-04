@@ -161,6 +161,10 @@ function buildStickerIntent(advice) {
   const stages = normalizeList(match.relationship_stage);
   const tags = normalizeList(match.keywords);
   normalizeList(replyIntentPlan?.tags).forEach((tag) => tags.push(tag));
+  const displayTexts = [];
+  normalizeList(match.display_texts).forEach((text) => displayTexts.push(text));
+  normalizeList(advice?.analysis?.scene).forEach((scene) => tags.push(scene));
+  normalizeList(advice?.analysis?.emotion).forEach((emotion) => emotions.push(normalizeEmotion(emotion)));
 
   suggestions.forEach((suggestion) => {
     const emotion = normalizeEmotion(suggestion.emotion) || suggestion.mood || '';
@@ -169,6 +173,8 @@ function buildStickerIntent(advice) {
     normalizeList(suggestion.relationship_stage).forEach((stage) => stages.push(stage));
     normalizeList(suggestion.tags).forEach((tag) => tags.push(tag));
     normalizeList(suggestion.keywords).forEach((keyword) => tags.push(keyword));
+    normalizeList(suggestion.match?.keywords).forEach((keyword) => tags.push(keyword));
+    normalizeList(suggestion.match?.display_texts).forEach((text) => displayTexts.push(text));
     if (suggestion.text) tags.push(suggestion.text);
   });
 
@@ -187,6 +193,7 @@ function buildStickerIntent(advice) {
     scenarios: [...new Set(scenarios.filter(Boolean))],
     stages: [...new Set(stages.filter(Boolean))],
     tags: [...new Set(tags.filter(Boolean))],
+    displayTexts: [...new Set(displayTexts.filter(Boolean))],
   };
 }
 
@@ -271,7 +278,11 @@ function recommendFromCatalog(catalog, advice) {
   const scored = catalog
     .filter((item) => item?.file)
     .map((item) => ({ ...item, score: scoreSticker(item, intent) }));
-  return selectDiverseStickers(scored, STICKER_PANEL_RECOMMENDATION_COUNT);
+  return selectDiverseStickers(scored, STICKER_PANEL_RECOMMENDATION_COUNT)
+    .map((item, index) => ({
+      ...item,
+      text: String(item.text || '').trim() || getStickerDisplayTextForIntent(intent, index),
+    }));
 }
 
 function getFallbackStickers(advice) {
@@ -284,10 +295,11 @@ function getFallbackStickers(advice) {
 
 function createStockStickerElement(sticker) {
   const image = document.createElement('img');
+  const displayText = getStickerDisplayText(sticker);
   image.className = 'sticker-thumb';
   image.src = sticker.file;
-  image.alt = sticker.text || '表情包';
-  image.title = sticker.text || '表情包';
+  image.alt = displayText || '表情包';
+  image.title = displayText || '表情包';
   image.loading = 'lazy';
   image.addEventListener('click', () => showStickerModal(sticker));
   image.onerror = () => {
@@ -300,12 +312,65 @@ function createStockStickerElement(sticker) {
 }
 
 function createStickerTextElement(sticker) {
-  const text = String(sticker.text || '').trim();
+  const text = getStickerDisplayText(sticker);
   if (!text) return null;
   const label = document.createElement('div');
   label.className = 'sticker-text-label';
   label.textContent = text;
   return label;
+}
+
+function getStickerDisplayText(sticker) {
+  const text = String(sticker?.text || '').trim();
+  if (text) return text.slice(0, 10);
+  const emotion = normalizeEmotion(sticker?.emotion);
+  const scenarios = normalizeList(sticker?.scenario);
+  const tags = normalizeList(sticker?.tags);
+  const searchable = [sticker?.id, sticker?.source_filename, ...scenarios, ...tags].join(' ');
+  if (/晚安|good.?night|sleep|睡|困/i.test(searchable) || emotion === 'goodnight' || emotion === 'sleepy') return '晚安';
+  if (/抱|hug|安慰|comfort/i.test(searchable) || emotion === 'comfort') return '抱抱';
+  if (/加油|encourage|study|作业|学习|鼓励/i.test(searchable) || emotion === 'encourage') return '加油';
+  if (/谢谢|thanks/i.test(searchable) || emotion === 'thanks') return '谢谢';
+  if (/想你|miss/i.test(searchable) || emotion === 'miss_you') return '想你';
+  if (/道歉|apology|sorry/i.test(searchable) || emotion === 'apology') return '对不起';
+  if (/害羞|shy|flirt/i.test(searchable) || emotion === 'shy') return '害羞';
+  if (/love|喜欢|心动/i.test(searchable) || emotion === 'love') return '喜欢你';
+  if (/哭|sad|cry/i.test(searchable) || emotion === 'sad' || emotion === 'cry') return '哭哭';
+  if (/气|angry/i.test(searchable) || emotion === 'angry') return '哼';
+  if (/尴尬|awkward|speechless/i.test(searchable) || emotion === 'awkward') return '啊这';
+  if (/惊|surprised/i.test(searchable) || emotion === 'surprised') return '欸？';
+  if (/thinking|想|思考/i.test(searchable) || emotion === 'thinking') return '想想';
+  if (/laugh|笑|哈哈/i.test(searchable) || emotion === 'laugh') return '哈哈哈';
+  if (/hello|greeting|早|你好/i.test(searchable) || emotion === 'greeting') return '你好呀';
+  return emotion === 'happy' ? '开心' : '收到';
+}
+
+function getStickerDisplayTextForIntent(intent, index = 0) {
+  if (intent?.displayTexts?.length) {
+    return String(intent.displayTexts[index % intent.displayTexts.length] || '').trim().slice(0, 10);
+  }
+  const text = [
+    ...(intent?.emotions || []),
+    ...(intent?.scenarios || []),
+    ...(intent?.tags || []),
+  ].join(' ');
+  if (/comfort|hug|安慰|抱|疼|难受|累/.test(text)) return '抱抱';
+  if (/encourage|加油|作业|学习|study/.test(text)) return '加油';
+  if (/good.?night|晚安|睡|困|sleepy/.test(text)) return '晚安';
+  if (/thanks|谢谢/.test(text)) return '谢谢';
+  if (/miss|想你/.test(text)) return '想你';
+  if (/apology|对不起|抱歉/.test(text)) return '对不起';
+  if (/shy|害羞|flirt/.test(text)) return '害羞';
+  if (/love|喜欢|心动/.test(text)) return '喜欢你';
+  if (/sad|cry|哭/.test(text)) return '哭哭';
+  if (/angry|生气/.test(text)) return '哼';
+  if (/awkward|speechless|尴尬/.test(text)) return '啊这';
+  if (/surprised|惊/.test(text)) return '欸？';
+  if (/thinking|思考/.test(text)) return '想想';
+  if (/laugh|哈哈|笑/.test(text)) return '哈哈哈';
+  if (/greeting|你好|早/.test(text)) return '你好呀';
+  if (/happy|开心/.test(text)) return '开心';
+  return '';
 }
 
 function createStickerArtElement(sticker) {
@@ -386,7 +451,7 @@ function makeFallbackCanvas(sticker, size) {
 function createFallbackStickerElement(sticker) {
   const canvas = makeFallbackCanvas(sticker, 180);
   canvas.className = 'sticker-thumb';
-  canvas.title = sticker.text || '表情包';
+  canvas.title = getStickerDisplayText(sticker) || '表情包';
   canvas.addEventListener('click', () => showStickerModal(sticker));
   return canvas;
 }
@@ -425,10 +490,11 @@ function showStickerModal(sticker) {
 
   const holder = document.getElementById('stickerModalCanvas');
   holder.replaceChildren();
+  const displayText = getStickerDisplayText(sticker);
   if (sticker.file) {
     const image = document.createElement('img');
     image.src = sticker.file;
-    image.alt = sticker.text || '表情包';
+    image.alt = displayText || '表情包';
     image.style.cssText = 'display:block;width:100%;border-radius:16px;';
     holder.appendChild(image);
   } else {
@@ -436,7 +502,7 @@ function showStickerModal(sticker) {
     canvas.style.cssText = 'display:block;max-width:100%;height:auto;border-radius:16px;';
     holder.appendChild(canvas);
   }
-  document.getElementById('stickerModalName').textContent = sticker.text ? `配字：${sticker.text}` : '库存表情包';
+  document.getElementById('stickerModalName').textContent = displayText ? `配字：${displayText}` : '库存表情包';
   document.getElementById('stickerDlPng').onclick = () => downloadStickerPng(sticker);
   modal.style.display = 'flex';
 }

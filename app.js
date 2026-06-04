@@ -153,8 +153,9 @@ async function analyze() {
 function buildPrompt(imageCount) {
   const context = document.getElementById('contextInput').value.trim();
   return `请分析上传的 ${imageCount} 张图片。截图已经按聊天时间从早到晚排列。
-按系统规则识别有效聊天截图、还原 dialogue、判断态度，并生成自然可发送的回复。
+按系统规则识别有效聊天截图、还原 dialogue，先判断 relationship_stage、scene、emotion、reply_intent，再生成自然可发送的回复。
 请输出 3 到 5 组推荐回复；每组用 messages 表示 1 到 3 条微信连续消息，text 等于 messages 用换行拼起来。
+请输出 next_topics，告诉用户接下来怎么聊、什么时候追踪、不要一次性发完。
 表情包只给 3 个最贴合当前聊天的库存检索意图；每个意图包含 emotion、scenario、relationship_stage、keywords 和可发送短配字 text。页面只会从本地库存里按相关性推荐 6 个表情包，不要编造文件名。
 ${context ? `补充背景：${context}` : ''}
 只返回符合 schema 的 JSON。`;
@@ -212,6 +213,21 @@ function parseAdvice(rawText) {
     interest_signals: isChatScreenshot ? (emotionalDisclosure ? buildEmotionalDisclosureSignals(verifiedDialogue) : activeCuriosity ? buildActiveCuriositySignals() : normalizeSignals(data.interest_signals)) : [],
     conversation_mode: isChatScreenshot ? (emotionalDisclosure ? '情绪倾诉' : activeCuriosity ? '主动了解' : normalizeConversationMode(data.conversation_mode)) : '礼貌回应',
     conversation_stage: isChatScreenshot ? conversationStage : '初次认识',
+    analysis: normalizeCoachAnalysis(data.analysis),
+    relationship_memory_engine: data.relationship_memory_engine || null,
+    relationship_stage: cleanText(data.relationship_stage || data.relationship_memory_engine?.relationship_stage, 48),
+    intimacy_score: clampScore(data.intimacy_score ?? data.relationship_memory_engine?.intimacy_score),
+    attraction_score: clampScore(data.attraction_score ?? data.relationship_memory_engine?.attraction_score),
+    investment_balance: cleanText(data.investment_balance || data.relationship_memory_engine?.investment_balance, 48),
+    initiator: cleanText(data.initiator || data.relationship_memory_engine?.initiator, 32),
+    reply_risk: cleanText(data.reply_risk || data.relationship_memory_engine?.risk_level, 32),
+    risk_level: cleanText(data.risk_level || data.relationship_memory_engine?.risk_level, 32),
+    next_best_move: cleanText(data.next_best_move || data.relationship_memory_engine?.next_best_move, 160),
+    conversation_future: data.conversation_future || null,
+    relationship_goal: data.relationship_goal || null,
+    coach_advice: data.coach_advice || null,
+    reply_explanation: Array.isArray(data.reply_explanation) ? data.reply_explanation : [],
+    next_5_moves: Array.isArray(data.next_5_moves) ? data.next_5_moves : [],
     reply_strategy: isChatScreenshot ? (emotionalDisclosure ? '先回应她现在的不舒服，给她一点喘息空间，等她愿意继续说再慢慢接话。' : activeCuriosity ? '先认真回答她最后的问题，给一个真实细节，再顺着她的反应慢慢展开。' : cleanText(data.reply_strategy, 100)) : '',
     flirt_level: isChatScreenshot ? (emotionalDisclosure ? '先别暧昧' : normalizeFlirtLevel(data.flirt_level)) : '先别暧昧',
     is_chat_screenshot: isChatScreenshot,
@@ -220,7 +236,11 @@ function parseAdvice(rawText) {
     conversation_summary: isChatScreenshot
       ? buildDialogueSummary(verifiedDialogue) || cleanText(data.conversation_summary, 260)
       : '',
-    chat_guide: isChatScreenshot ? (emotionalDisclosure ? buildEmotionalDisclosureGuide() : activeCuriosity ? buildActiveCuriosityGuide() : normalizeChatGuide(data.chat_guide, buildStageChatGuide(conversationStage))) : buildDefaultChatGuide(),
+    chat_guide: isChatScreenshot ? mergeNextTopicsIntoGuide(
+      emotionalDisclosure ? buildEmotionalDisclosureGuide() : activeCuriosity ? buildActiveCuriosityGuide() : normalizeChatGuide(data.chat_guide, buildStageChatGuide(conversationStage)),
+      data.next_topics,
+    ) : buildDefaultChatGuide(),
+    next_topics: normalizeNextTopics(data.next_topics),
     dialogue: verifiedDialogue,
     suggest_stop: suggestStop,
     needs_retry: isChatScreenshot && Boolean(data.needs_retry),
@@ -277,8 +297,8 @@ function renderResults(data) {
   document.getElementById('interestLevel').textContent = data.interest_level === '愿意倾诉'
     ? '愿意倾诉 · 暂不判断好感'
     : `${data.interest_level} · ${data.interest_score}`;
-  document.getElementById('conversationMode').textContent = data.conversation_mode;
-  document.getElementById('conversationStage').textContent = data.conversation_stage;
+  document.getElementById('conversationMode').textContent = data.analysis?.scene || data.conversation_mode;
+  document.getElementById('conversationStage').textContent = data.analysis?.stage_label || data.conversation_stage;
   document.getElementById('replyStrategy').textContent = data.reply_strategy || '结合对方后续反应调整节奏';
   document.getElementById('flirtLevel').textContent = data.flirt_level;
   const insights = document.getElementById('insightGrid');
@@ -335,6 +355,37 @@ function renderRetryNotice(message) {
     interest_signals: [],
     conversation_mode: '礼貌回应',
     conversation_stage: '初次认识',
+    analysis: {
+      stage: 'ice_breaking',
+      stage_label: '破冰期',
+      scene: '',
+      scene_id: '',
+      emotion: '',
+      reply_intent: '',
+      intimacy_score: 0,
+    },
+    relationship_memory_engine: {
+      relationship_stage: 'ice_breaking',
+      intimacy_score: 0,
+      attraction_score: 0,
+      investment_balance: 'balanced',
+      initiator: 'unclear',
+      risk_level: 'safe',
+      next_best_move: '',
+    },
+    relationship_stage: 'ice_breaking',
+    intimacy_score: 0,
+    attraction_score: 0,
+    investment_balance: 'balanced',
+    initiator: 'unclear',
+    reply_risk: 'safe',
+    risk_level: 'safe',
+    next_best_move: '',
+    conversation_future: null,
+    relationship_goal: null,
+    coach_advice: null,
+    reply_explanation: [],
+    next_5_moves: [],
     reply_strategy: '',
     flirt_level: '先别暧昧',
     is_chat_screenshot: true,
@@ -342,6 +393,7 @@ function renderRetryNotice(message) {
     chat_evidence: {},
     conversation_summary: '',
     chat_guide: buildDefaultChatGuide(),
+    next_topics: [],
     suggest_stop: false,
     needs_retry: true,
     degraded: true,
@@ -482,9 +534,50 @@ function normalizeReplyMessages(reply, maxLength = 140) {
 function normalizeReplyCandidate(reply, maxLength = 140) {
   const messages = normalizeReplyMessages(reply, maxLength);
   if (!messages.length) return null;
-  return {
+  const candidate = {
     text: messages.join('\n'),
     messages,
+  };
+  const style = cleanText(reply?.style, 18);
+  if (style) candidate.style = style;
+  return candidate;
+}
+
+function normalizeCoachAnalysis(analysis) {
+  const stageLabels = {
+    ice_breaking: '破冰期',
+    daily_connection: '日常连接期',
+    emotional_bonding: '情绪共鸣期',
+    push_pull_flirting: '推拉暧昧期',
+    offline_invitation: '线下邀约期',
+    relationship_confirmation: '关系确认期',
+  };
+  const stage = ['ice_breaking', 'daily_connection', 'emotional_bonding', 'push_pull_flirting', 'offline_invitation', 'relationship_confirmation'].includes(analysis?.stage)
+    ? analysis.stage
+    : '';
+  return {
+    stage,
+    stage_label: cleanText(analysis?.stage_label, 24) || stageLabels[stage] || '',
+    scene: cleanText(analysis?.scene, 40),
+    scene_id: cleanText(analysis?.scene_id, 80),
+    emotion: cleanText(analysis?.emotion, 32),
+    reply_intent: cleanText(analysis?.reply_intent, 48),
+    intimacy_score: clampScore(analysis?.intimacy_score),
+  };
+}
+
+function normalizeNextTopics(value) {
+  if (!Array.isArray(value)) return [];
+  return value.map((topic) => cleanText(topic, 120)).filter(Boolean).slice(0, 4);
+}
+
+function mergeNextTopicsIntoGuide(guide, nextTopics) {
+  const topics = normalizeNextTopics(nextTopics);
+  if (!topics.length) return guide;
+  const normalized = normalizeChatGuide(guide);
+  return {
+    ...normalized,
+    next_steps: topics,
   };
 }
 

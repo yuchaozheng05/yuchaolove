@@ -1,0 +1,47 @@
+{
+  "version": "1.0.0",
+  "relationship_stages": {
+    "ice_breaking": {
+      "label": "破冰期",
+      "target_stage": "daily_connection",
+      "today_should_do": "给一个轻松具体的日常入口，让对方容易接话。",
+      "avoid": "不要连续追问隐私，也不要突然强撩。"
+    },
+    "daily_connection": {
+      "label": "日常连接期",
+      "target_stage": "emotional_bonding",
+      "today_should_do": "分享一点真实生活，同时接住对方的状态。",
+      "avoid": "不要连续查岗，也不要只发表情或只问在干嘛。"
+    },
+    "emotional_bonding": {
+      "label": "情绪共鸣期",
+      "target_stage": "push_pull_flirting",
+      "today_should_do": "继续提供情绪价值，用具体行动让对方感到被照顾。",
+      "avoid": "不要急着表白，也不要把安慰写成说教。"
+    },
+    "push_pull_flirting": {
+      "label": "推拉暧昧期",
+      "target_stage": "offline_invitation",
+      "today_should_do": "顺着共同梗轻轻升温，并创造一个低压力见面理由。",
+      "avoid": "不要逼对方表态，也不要用占有欲测试对方。"
+    },
+    "offline_invitation": {
+      "label": "线下邀约期",
+      "target_stage": "relationship_confirmation",
+      "today_should_do": "给明确但低压力的时间和选项，让见面变得自然。",
+      "avoid": "不要临时强约，也不要把拒绝理解成关系失败。"
+    },
+    "relationship_confirmation": {
+      "label": "关系确认期",
+      "target_stage": "relationship_confirmation",
+      "today_should_do": "表达清楚态度，用稳定行动给安全感。",
+      "avoid": "不要继续只玩暧昧梗，也不要逃避关系定义。"
+    }
+  },
+  "reply_risks": {
+    "safe": "当前回复风险较低，可以按建议推进。",
+    "too_needy": "你方投入明显更高，继续追问或连发会显得需求感过重。",
+    "too_cold": "对方正在释放情绪或主动信号，回复太冷会错过连接机会。",
+    "too_pushy": "当前阶段还没到强推进节点，邀约、表白或逼问容易造成压力。"
+  }
+}

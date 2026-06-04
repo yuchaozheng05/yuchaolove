@@ -690,6 +690,7 @@ footer {
   position: relative;
   overflow: hidden;
   border-radius: 12px;
+  background: #fff;
 }
 .sticker-text-label {
   position: absolute;
@@ -700,7 +701,7 @@ footer {
   padding: 3px 8px 4px;
   transform: translateX(-50%);
   color: var(--text);
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.9);
   border-radius: 999px;
   box-shadow: 0 3px 10px rgba(99,55,39,0.08);
   font-family: var(--font-ui);
