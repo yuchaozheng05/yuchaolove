@@ -386,16 +386,21 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: '分析服务尚未配置，请联系管理员。' });
   }
 
+  const startedAt = Date.now();
+  let imageParts = [];
+  let textPart = null;
+  let metadata = {};
+  let promptDebug = {};
+
   try {
-    const { imageParts, textPart, metadata } = getRequestParts(req.body);
+    ({ imageParts, textPart, metadata } = getRequestParts(req.body));
     const debug = buildVisionDebug(imageParts);
-    const promptDebug = buildVisionPromptDebug({
+    promptDebug = buildVisionPromptDebug({
       imageParts,
       prompt: textPart.text,
       imageDetail: PRIMARY_IMAGE_DETAIL,
     });
     Object.assign(debug, promptDebug);
-    const startedAt = Date.now();
     console.info(`[${requestId}] /api/analyze request accepted`, {
       hasOpenAIKey: true,
       imageCount: imageParts.length,
@@ -461,7 +466,16 @@ export default async function handler(req, res) {
         }
         debug.elapsed_ms = Date.now() - startedAt;
 
-        queueUsageLog({ req, advice, imageParts, metadata, model });
+        queueUsageLog({
+          req,
+          advice,
+          imageParts,
+          metadata,
+          model,
+          status: debug.json_parse_failed || advice.needs_retry || advice.degraded ? 'failed' : 'success',
+          errorMessage: debug.json_parse_failed ? 'OpenAI returned invalid JSON; returned minimal usable structure.' : '',
+          elapsedMs: debug.elapsed_ms,
+        });
 
         return res.status(200).json({
           content: [{ type: 'text', text: JSON.stringify(advice) }],
@@ -501,7 +515,17 @@ export default async function handler(req, res) {
         fallback_used: true,
         elapsed_ms: Date.now() - startedAt,
       });
-      queueUsageLog({ req, advice, imageParts, metadata, model: 'fallback', degraded: true });
+      queueUsageLog({
+        req,
+        advice,
+        imageParts,
+        metadata,
+        model: 'fallback',
+        degraded: true,
+        status: 'failed',
+        errorMessage: summarizeError(lastError),
+        elapsedMs: debug.elapsed_ms,
+      });
       return res.status(200).json({
         content: [{ type: 'text', text: JSON.stringify(advice) }],
         degraded: true,
@@ -516,6 +540,21 @@ export default async function handler(req, res) {
       providerStatus: lastError?.providerStatus || null,
       providerCode: lastError?.providerCode || '',
     });
+    if (imageParts.length) {
+      queueUsageLog({
+        req,
+        advice: buildFailureUsageAdvice({
+          errorMessage: summarizeError(lastError),
+          elapsedMs: Date.now() - startedAt,
+        }),
+        imageParts,
+        metadata,
+        model: 'failed',
+        status: 'failed',
+        errorMessage: summarizeError(lastError),
+        elapsedMs: Date.now() - startedAt,
+      });
+    }
     return res.status(502).json({ error: '分析服务暂时不可用，请稍后再试。' });
   } catch (error) {
     const status = error.statusCode || 400;
@@ -524,6 +563,21 @@ export default async function handler(req, res) {
       message: cleanText(error?.message || '', 500),
       publicMessage: error.publicMessage || '',
     });
+    if (imageParts.length) {
+      queueUsageLog({
+        req,
+        advice: buildFailureUsageAdvice({
+          errorMessage: error.publicMessage || error.message,
+          elapsedMs: Date.now() - startedAt,
+        }),
+        imageParts,
+        metadata,
+        model: 'failed',
+        status: 'failed',
+        errorMessage: error.publicMessage || error.message,
+        elapsedMs: Date.now() - startedAt,
+      });
+    }
     return res.status(status).json({ error: error.publicMessage || '截图格式有问题，请重新上传后再试。' });
   }
 }
@@ -712,6 +766,7 @@ function normalizeClientMetadata(metadata) {
     client_started_at: cleanText(metadata.client_started_at, 40),
     image_count: Number.isFinite(Number(metadata.image_count)) ? Number(metadata.image_count) : undefined,
     page_path: cleanText(metadata.page_path, 240),
+    background_text: cleanText(metadata.background_text, 1000),
     browser_language: cleanText(metadata.browser_language, 40),
     client_timezone: cleanText(metadata.client_timezone, 80),
     screen_width: Number.isFinite(Number(metadata.screen_width)) ? Number(metadata.screen_width) : undefined,
@@ -1257,6 +1312,17 @@ function buildJsonParseFallbackAdvice(rawOutput = '') {
     stickers: [],
     sticker_match_intent: null,
     sticker_suggestions: [],
+  };
+}
+
+function buildFailureUsageAdvice({ errorMessage = '', elapsedMs = 0 } = {}) {
+  const advice = buildFreeTierFallbackAdvice();
+  return {
+    ...advice,
+    attitude_label: '分析失败',
+    attitude_desc: cleanText(errorMessage, 180) || '分析请求失败。',
+    analysis_result_error: cleanText(errorMessage, 500),
+    elapsed_ms: elapsedMs,
   };
 }
 
@@ -3053,10 +3119,23 @@ function queueUsageLog(args) {
   });
 }
 
-async function logUsage({ req, advice, imageParts, metadata = {}, model = '', degraded = false }) {
+async function logUsage({
+  req,
+  advice,
+  imageParts,
+  metadata = {},
+  model = '',
+  degraded = false,
+  status = '',
+  errorMessage = '',
+  elapsedMs = 0,
+}) {
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
-  if (!supabaseUrl || !supabaseKey) return;
+  if (!supabaseUrl || !supabaseKey) {
+    console.warn('Supabase usage logging skipped: missing SUPABASE_URL or service role key.');
+    return;
+  }
 
   try {
     const visitorId = cleanText(metadata.visitor_id, 80) || 'unknown';
@@ -3070,6 +3149,17 @@ async function logUsage({ req, advice, imageParts, metadata = {}, model = '', de
     const userAgent = readHeader(req, 'user-agent') || 'unknown';
     const referer = readHeader(req, 'referer') || readHeader(req, 'referrer') || '';
     const locationLabel = [city, region, country].filter((part) => part && part !== 'unknown').join(', ') || 'unknown';
+    const usageStatus = status || (degraded || advice?.needs_retry || advice?.json_parse_failed ? 'failed' : 'success');
+    const usageErrorMessage = cleanText(errorMessage || advice?.analysis_result_error || '', 500);
+    const analysis = advice?.analysis || {};
+    const relationshipStage = analysis.stage
+      || advice?.relationship_stage
+      || advice?.relationship_memory_engine?.relationship_stage
+      || '';
+    const scene = analysis.scene || '';
+    const replyIntent = analysis.reply_intent || advice?.sticker_match_intent?.reply_intent || '';
+    const stickerIds = extractUsageStickerIds(advice);
+    const extractedText = buildDebugExtractedText(advice);
 
     const imageRecords = [];
     for (let i = 0; i < imageParts.length; i++) {
@@ -3095,11 +3185,64 @@ async function logUsage({ req, advice, imageParts, metadata = {}, model = '', de
           bytes: buffer.length,
         });
       } else {
-        console.warn(`Supabase screenshot upload failed with ${uploadRes.status}`);
+        const body = await uploadRes.text().catch(() => '');
+        console.warn(`Supabase screenshot upload failed with ${uploadRes.status}: ${cleanText(body, 180)}`);
       }
     }
 
-    await fetch(`${supabaseUrl}/rest/v1/usage_logs`, {
+    const usagePayload = {
+      visitor_id: visitorId,
+      ip,
+      country,
+      region,
+      city,
+      timezone,
+      latitude,
+      longitude,
+      location_label: locationLabel,
+      user_agent: userAgent,
+      referer,
+      page_path: metadata.page_path || '',
+      background_text: metadata.background_text || '',
+      browser_language: metadata.browser_language || '',
+      client_timezone: metadata.client_timezone || '',
+      image_count: imageParts.length,
+      storage_paths: imageRecords.map((image) => image.path),
+      image_urls: imageRecords.map((image) => image.url),
+      images: imageRecords,
+      model,
+      degraded,
+      status: usageStatus,
+      error_message: usageErrorMessage,
+      elapsed_ms: Number.isFinite(Number(elapsedMs)) ? Number(elapsedMs) : null,
+      extracted_text: extractedText,
+      scene,
+      reply_intent: replyIntent,
+      sticker_ids: stickerIds,
+      attitude_label: advice.attitude_label || '',
+      attitude_desc: advice.attitude_desc || '',
+      interest_score: Number.isFinite(Number(advice.interest_score)) ? Number(advice.interest_score) : null,
+      interest_level: advice.interest_level || '',
+      conversation_mode: advice.conversation_mode || '',
+      conversation_stage: advice.conversation_stage || '',
+      relationship_stage: relationshipStage,
+      intimacy_score: Number.isFinite(Number(advice.intimacy_score)) ? Number(advice.intimacy_score) : null,
+      attraction_score: Number.isFinite(Number(advice.attraction_score)) ? Number(advice.attraction_score) : null,
+      investment_balance: advice.investment_balance || advice.relationship_memory_engine?.investment_balance || '',
+      reply_risk: advice.reply_risk || advice.relationship_memory_engine?.risk_level || '',
+      flirt_level: advice.flirt_level || '',
+      replies: advice.replies || [],
+      sticker_suggestions: advice.sticker_suggestions || [],
+      chat_guide: advice.chat_guide || {},
+      dialogue: advice.dialogue || [],
+      analysis_result: advice,
+      request_metadata: {
+        ...metadata,
+        log_schema_version: 2,
+      },
+    };
+
+    const logRes = await fetch(`${supabaseUrl}/rest/v1/usage_logs`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -3107,52 +3250,86 @@ async function logUsage({ req, advice, imageParts, metadata = {}, model = '', de
         'apikey': supabaseKey,
         'Prefer': 'return=minimal',
       },
-      body: JSON.stringify({
-        visitor_id: visitorId,
-        ip,
-        country,
-        region,
-        city,
-        timezone,
-        latitude,
-        longitude,
-        location_label: locationLabel,
-        user_agent: userAgent,
-        referer,
-        page_path: metadata.page_path || '',
-        browser_language: metadata.browser_language || '',
-        client_timezone: metadata.client_timezone || '',
-        image_count: imageParts.length,
-        storage_paths: imageRecords.map((image) => image.path),
-        image_urls: imageRecords.map((image) => image.url),
-        images: imageRecords,
-        model,
-        degraded,
-        attitude_label: advice.attitude_label || '',
-        attitude_desc: advice.attitude_desc || '',
-        interest_score: Number.isFinite(Number(advice.interest_score)) ? Number(advice.interest_score) : null,
-        interest_level: advice.interest_level || '',
-        conversation_mode: advice.conversation_mode || '',
-        conversation_stage: advice.conversation_stage || '',
-        relationship_stage: advice.relationship_stage || advice.relationship_memory_engine?.relationship_stage || '',
-        intimacy_score: Number.isFinite(Number(advice.intimacy_score)) ? Number(advice.intimacy_score) : null,
-        attraction_score: Number.isFinite(Number(advice.attraction_score)) ? Number(advice.attraction_score) : null,
-        investment_balance: advice.investment_balance || advice.relationship_memory_engine?.investment_balance || '',
-        reply_risk: advice.reply_risk || advice.relationship_memory_engine?.risk_level || '',
-        flirt_level: advice.flirt_level || '',
-        replies: advice.replies || [],
-        sticker_suggestions: advice.sticker_suggestions || [],
-        chat_guide: advice.chat_guide || {},
-        dialogue: advice.dialogue || [],
-        analysis_result: advice,
-        request_metadata: {
-          ...metadata,
-          log_schema_version: 1,
-        },
-      }),
+      body: JSON.stringify(usagePayload),
     });
+    if (!logRes.ok) {
+      const body = await logRes.text().catch(() => '');
+      console.warn(`Supabase usage log insert failed with ${logRes.status}: ${cleanText(body, 240)}`);
+      await retryLegacyUsageLog({
+        supabaseUrl,
+        supabaseKey,
+        usagePayload,
+        failureSummary: cleanText(body, 240),
+      });
+    }
   } catch (err) {
     console.warn('logUsage failed:', err.message);
+  }
+}
+
+function extractUsageStickerIds(advice) {
+  const values = [
+    ...(Array.isArray(advice?.stickers) ? advice.stickers : []),
+    ...(Array.isArray(advice?.sticker_suggestions) ? advice.sticker_suggestions : []),
+  ];
+  return values
+    .map((item) => cleanText(item?.id || item?.file || item?.text, 120))
+    .filter(Boolean)
+    .slice(0, 12);
+}
+
+async function retryLegacyUsageLog({ supabaseUrl, supabaseKey, usagePayload, failureSummary }) {
+  const {
+    status,
+    error_message,
+    elapsed_ms,
+    extracted_text,
+    scene,
+    reply_intent,
+    sticker_ids,
+    background_text,
+    ...legacyPayload
+  } = usagePayload;
+  const requestMetadata = {
+    ...(legacyPayload.request_metadata || {}),
+    background_text,
+    status,
+    error_message,
+    elapsed_ms,
+    extracted_text,
+    scene,
+    reply_intent,
+    sticker_ids,
+    log_schema_version: 2,
+    full_payload_insert_failed: true,
+    full_payload_insert_error: failureSummary,
+  };
+  const retryPayload = {
+    ...legacyPayload,
+    analysis_result: {
+      ...(legacyPayload.analysis_result || {}),
+      usage_log_status: status,
+      usage_log_error_message: error_message,
+      usage_log_elapsed_ms: elapsed_ms,
+      usage_log_scene: scene,
+      usage_log_reply_intent: reply_intent,
+      usage_log_sticker_ids: sticker_ids,
+    },
+    request_metadata: requestMetadata,
+  };
+  const retryRes = await fetch(`${supabaseUrl}/rest/v1/usage_logs`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${supabaseKey}`,
+      'apikey': supabaseKey,
+      'Prefer': 'return=minimal',
+    },
+    body: JSON.stringify(retryPayload),
+  });
+  if (!retryRes.ok) {
+    const body = await retryRes.text().catch(() => '');
+    console.warn(`Supabase legacy usage log retry failed with ${retryRes.status}: ${cleanText(body, 240)}`);
   }
 }
 
@@ -3185,8 +3362,7 @@ function toNullableNumber(value) {
 function buildStoragePath({ visitorId, index, ext }) {
   const day = new Date().toISOString().slice(0, 10);
   const safeVisitorId = visitorId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80) || 'unknown';
-  const suffix = Math.random().toString(36).slice(2, 10);
-  return `${day}/${safeVisitorId}-${Date.now()}-${index}-${suffix}.${ext}`;
+  return `screenshots/${day}/${safeVisitorId}-${Date.now()}-${index}.${ext}`;
 }
 
 export { CHAT_ADVICE_SCHEMA, CHAT_SCENE_LIBRARY, IMAGE_READING_RULES, MODELS, PRIMARY_IMAGE_DETAIL, PRIMARY_MAX_COMPLETION_TOKENS, PRIMARY_OPENAI_TIMEOUT_MS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, REPLY_REFINEMENT_SCHEMA, REFINEMENT_MAX_COMPLETION_TOKENS, buildActiveCuriosityGuide, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildReplyRefinementPrompt, buildStageChatGuide, buildStickerMatchIntent, detectScene, extractFirstJsonObject, getRequestParts, getStickerContext, hasActiveCuriosity, hasHappyEmotion, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, hasStudyStress, inferConversationStage, isRetryableModelError, isVerifiedChatScreenshot, logUsage, mergeRefinedReplies, needsReplyRefinement, normalizeChatGuide, normalizeConversationMode, normalizeConversationStage, normalizeDialogue, normalizeChatEvidence, normalizeStickerSuggestions, parseAdvice, recommendStockStickers, repairReplyCandidates, requestOpenAIAdvice, requestOpenAIReplyRefinement, safeJsonParse, scoreStockSticker };

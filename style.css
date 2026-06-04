@@ -689,35 +689,61 @@ footer {
 .sticker-art {
   position: relative;
   overflow: hidden;
+  aspect-ratio: 1;
   border-radius: 12px;
   background: #fff;
 }
 .sticker-text-label {
   position: absolute;
   left: 50%;
-  bottom: 8px;
+  bottom: max(10px, 7%);
   z-index: 2;
-  max-width: calc(100% - 18px);
-  padding: 3px 8px 4px;
+  max-width: calc(100% - 22px);
+  min-width: 2.4em;
+  padding: 3px 9px 4px;
   transform: translateX(-50%);
   color: var(--text);
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.78);
   border-radius: 999px;
   box-shadow: 0 3px 10px rgba(99,55,39,0.08);
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 800;
   line-height: 1.25;
   letter-spacing: 0;
+  text-align: center;
+  white-space: nowrap;
   word-break: keep-all;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: clip;
+  text-shadow:
+    0 1px 0 rgba(255,255,255,0.92),
+    1px 0 0 rgba(255,255,255,0.92),
+    -1px 0 0 rgba(255,255,255,0.92),
+    0 -1px 0 rgba(255,255,255,0.92);
   pointer-events: none;
+}
+.sticker-text-label.sticker-text-long {
+  font-size: 13px;
+  padding-inline: 7px;
+}
+.sticker-text-label.sticker-text-tight {
+  font-size: 12px;
+  padding-inline: 6px;
+}
+.sticker-text-label.sticker-text-on-sign {
+  bottom: 24%;
+  background: transparent;
+  box-shadow: none;
+  padding: 0 4px;
+  max-width: calc(100% - 48px);
 }
 .sticker-thumb {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
   aspect-ratio: 1;
+  object-fit: contain;
   border: 1px solid var(--border);
   border-radius: 12px;
   cursor: pointer;

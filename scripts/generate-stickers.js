@@ -532,7 +532,8 @@ async function main() {
   }
 
   if (saved.length) {
-    const contactSheetPath = createContactSheet(selected, args.promptFile);
+    const contactSheetItems = prompts.filter((item) => item.filename && existsSync(outputPathFor(item)));
+    const contactSheetPath = createContactSheet(contactSheetItems, args.promptFile);
     const verification = verifyGeneratedImages(selected);
     console.log(`Generated filenames: ${saved.map((item) => item.filename).join(', ')}`);
     if (contactSheetPath) console.log(`Contact sheet: ${relative(root, contactSheetPath)}`);

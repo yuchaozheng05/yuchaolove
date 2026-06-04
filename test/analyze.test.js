@@ -1080,11 +1080,26 @@ test('retains uploaded screenshots in Supabase usage logging', async () => {
       req: { headers: { 'x-forwarded-for': '127.0.0.1', 'user-agent': 'test' } },
       advice: parseAdvice(JSON.stringify(adviceValue())),
       imageParts: [requestBody.messages[0].content[0]],
+      metadata: {
+        visitor_id: 'visitor-test',
+        page_path: '/',
+        background_text: '她今天有点不舒服',
+      },
+      status: 'success',
+      elapsedMs: 1234,
     });
 
     assert.match(requests[0].url, /storage\/v1\/object\/screenshots\//);
     assert.match(requests[1].url, /rest\/v1\/usage_logs/);
-    assert.deepEqual(JSON.parse(requests[1].options.body).image_urls.length, 1);
+    const payload = JSON.parse(requests[1].options.body);
+    assert.deepEqual(payload.image_urls.length, 1);
+    assert.equal(payload.status, 'success');
+    assert.equal(payload.elapsed_ms, 1234);
+    assert.equal(payload.background_text, '她今天有点不舒服');
+    assert.equal(payload.scene, '日常聊天');
+    assert.equal(payload.reply_intent, 'warm_continue');
+    assert.equal(payload.extracted_text.includes('对方:你感受到我的了吗'), true);
+    assert.equal(Array.isArray(payload.sticker_ids), true);
   } finally {
     global.fetch = originalFetch;
     restoreEnvironment('SUPABASE_URL', originalUrl);

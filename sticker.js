@@ -312,17 +312,27 @@ function createStockStickerElement(sticker) {
 }
 
 function createStickerTextElement(sticker) {
-  const text = getStickerDisplayText(sticker);
+  const rawText = getRawStickerDisplayText(sticker);
+  const text = formatStickerDisplayText(rawText);
   if (!text) return null;
   const label = document.createElement('div');
   label.className = 'sticker-text-label';
+  const textLength = Array.from(text).length;
+  label.dataset.textLength = String(textLength);
+  if (textLength >= 5) label.classList.add('sticker-text-long');
+  if (Array.from(rawText || '').length > 6) label.classList.add('sticker-text-tight');
+  if (shouldPlaceStickerTextOnSign(sticker)) label.classList.add('sticker-text-on-sign');
   label.textContent = text;
   return label;
 }
 
 function getStickerDisplayText(sticker) {
+  return formatStickerDisplayText(getRawStickerDisplayText(sticker));
+}
+
+function getRawStickerDisplayText(sticker) {
   const text = String(sticker?.text || '').trim();
-  if (text) return text.slice(0, 10);
+  if (text) return text;
   const emotion = normalizeEmotion(sticker?.emotion);
   const scenarios = normalizeList(sticker?.scenario);
   const tags = normalizeList(sticker?.tags);
@@ -371,6 +381,28 @@ function getStickerDisplayTextForIntent(intent, index = 0) {
   if (/greeting|你好|早/.test(text)) return '你好呀';
   if (/happy|开心/.test(text)) return '开心';
   return '';
+}
+
+function formatStickerDisplayText(text) {
+  const compact = String(text || '')
+    .replace(/\s+/g, '')
+    .replace(/[“”"']/g, '')
+    .trim();
+  if (!compact) return '';
+  return Array.from(compact).slice(0, 6).join('');
+}
+
+function shouldPlaceStickerTextOnSign(sticker) {
+  const fields = [
+    sticker?.id,
+    sticker?.file,
+    sticker?.source_filename,
+    sticker?.emotion,
+    sticker?.scenario,
+    sticker?.text,
+    ...normalizeList(sticker?.tags),
+  ].join(' ');
+  return /card|sign|banner|牌|牌子|举牌|拿牌|holding|thanks|thank|谢谢|apology|sorry|道歉/i.test(fields);
 }
 
 function createStickerArtElement(sticker) {

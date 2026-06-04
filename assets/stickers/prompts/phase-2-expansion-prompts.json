@@ -1,0 +1,1490 @@
+[
+  {
+    "filename": "white_mochi_sick_02.png",
+    "character": "white_mochi",
+    "emotion": "comfort",
+    "scenario": "身体不舒服",
+    "text": "快好起来",
+    "tags": [
+      "身体不舒服",
+      "快好起来",
+      "comfort",
+      "sick"
+    ],
+    "action": "looking worried and caring, offering one tiny warm gesture, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_sick_02.png",
+    "character": "hamster",
+    "emotion": "comfort",
+    "scenario": "身体不舒服",
+    "text": "快好起来",
+    "tags": [
+      "身体不舒服",
+      "快好起来",
+      "comfort",
+      "sick"
+    ],
+    "action": "looking worried and caring, offering one tiny warm gesture, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_sick_02.png",
+    "character": "cat",
+    "emotion": "comfort",
+    "scenario": "身体不舒服",
+    "text": "快好起来",
+    "tags": [
+      "身体不舒服",
+      "快好起来",
+      "comfort",
+      "sick"
+    ],
+    "action": "looking worried and caring, offering one tiny warm gesture, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_tired_02.png",
+    "character": "white_mochi",
+    "emotion": "sleepy",
+    "scenario": "累了",
+    "text": "别硬撑",
+    "tags": [
+      "累了",
+      "别硬撑",
+      "sleepy",
+      "tired"
+    ],
+    "action": "sleepy tired pose, tiny arms resting, caring expression, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_tired_02.png",
+    "character": "hamster",
+    "emotion": "sleepy",
+    "scenario": "累了",
+    "text": "别硬撑",
+    "tags": [
+      "累了",
+      "别硬撑",
+      "sleepy",
+      "tired"
+    ],
+    "action": "sleepy tired pose, tiny arms resting, caring expression, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_tired_02.png",
+    "character": "cat",
+    "emotion": "sleepy",
+    "scenario": "累了",
+    "text": "别硬撑",
+    "tags": [
+      "累了",
+      "别硬撑",
+      "sleepy",
+      "tired"
+    ],
+    "action": "sleepy tired pose, tiny arms resting, caring expression, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_goodnight_extra_02.png",
+    "character": "white_mochi",
+    "emotion": "goodnight",
+    "scenario": "晚安",
+    "text": "晚安啦",
+    "tags": [
+      "晚安",
+      "晚安啦",
+      "goodnight",
+      "goodnight_extra"
+    ],
+    "action": "peaceful goodnight pose with tiny blanket, clean empty top area, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_goodnight_extra_02.png",
+    "character": "hamster",
+    "emotion": "goodnight",
+    "scenario": "晚安",
+    "text": "晚安啦",
+    "tags": [
+      "晚安",
+      "晚安啦",
+      "goodnight",
+      "goodnight_extra"
+    ],
+    "action": "peaceful goodnight pose with tiny blanket, clean empty top area, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_goodnight_extra_02.png",
+    "character": "cat",
+    "emotion": "goodnight",
+    "scenario": "晚安",
+    "text": "晚安啦",
+    "tags": [
+      "晚安",
+      "晚安啦",
+      "goodnight",
+      "goodnight_extra"
+    ],
+    "action": "peaceful goodnight pose with tiny blanket, clean empty top area, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_miss_you_extra_02.png",
+    "character": "white_mochi",
+    "emotion": "miss_you",
+    "scenario": "想你",
+    "text": "想你啦",
+    "tags": [
+      "想你",
+      "想你啦",
+      "miss_you",
+      "miss_you_extra"
+    ],
+    "action": "sweet missing-you pose, tiny paws close to chest, soft blush, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_miss_you_extra_02.png",
+    "character": "hamster",
+    "emotion": "miss_you",
+    "scenario": "想你",
+    "text": "想你啦",
+    "tags": [
+      "想你",
+      "想你啦",
+      "miss_you",
+      "miss_you_extra"
+    ],
+    "action": "sweet missing-you pose, tiny paws close to chest, soft blush, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_miss_you_extra_02.png",
+    "character": "cat",
+    "emotion": "miss_you",
+    "scenario": "想你",
+    "text": "想你啦",
+    "tags": [
+      "想你",
+      "想你啦",
+      "miss_you",
+      "miss_you_extra"
+    ],
+    "action": "sweet missing-you pose, tiny paws close to chest, soft blush, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_hug_02.png",
+    "character": "white_mochi",
+    "emotion": "comfort",
+    "scenario": "抱抱",
+    "text": "抱抱你",
+    "tags": [
+      "抱抱",
+      "抱抱你",
+      "comfort",
+      "hug"
+    ],
+    "action": "opening tiny arms for a warm hug, one character only, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_hug_02.png",
+    "character": "hamster",
+    "emotion": "comfort",
+    "scenario": "抱抱",
+    "text": "抱抱你",
+    "tags": [
+      "抱抱",
+      "抱抱你",
+      "comfort",
+      "hug"
+    ],
+    "action": "opening tiny arms for a warm hug, one character only, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_hug_02.png",
+    "character": "cat",
+    "emotion": "comfort",
+    "scenario": "抱抱",
+    "text": "抱抱你",
+    "tags": [
+      "抱抱",
+      "抱抱你",
+      "comfort",
+      "hug"
+    ],
+    "action": "opening tiny arms for a warm hug, one character only, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_pat_head_02.png",
+    "character": "white_mochi",
+    "emotion": "comfort",
+    "scenario": "摸摸头",
+    "text": "摸摸头",
+    "tags": [
+      "摸摸头",
+      "摸摸头",
+      "comfort",
+      "pat_head"
+    ],
+    "action": "gentle comforting pose, tiny paw raised as if patting head, no second character, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_pat_head_02.png",
+    "character": "hamster",
+    "emotion": "comfort",
+    "scenario": "摸摸头",
+    "text": "摸摸头",
+    "tags": [
+      "摸摸头",
+      "摸摸头",
+      "comfort",
+      "pat_head"
+    ],
+    "action": "gentle comforting pose, tiny paw raised as if patting head, no second character, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_pat_head_02.png",
+    "character": "cat",
+    "emotion": "comfort",
+    "scenario": "摸摸头",
+    "text": "摸摸头",
+    "tags": [
+      "摸摸头",
+      "摸摸头",
+      "comfort",
+      "pat_head"
+    ],
+    "action": "gentle comforting pose, tiny paw raised as if patting head, no second character, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_cheer_02.png",
+    "character": "white_mochi",
+    "emotion": "encourage",
+    "scenario": "加油",
+    "text": "你超棒",
+    "tags": [
+      "加油",
+      "你超棒",
+      "encourage",
+      "cheer"
+    ],
+    "action": "encouraging cheer pose with tiny fists, positive supportive mood, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_cheer_02.png",
+    "character": "hamster",
+    "emotion": "encourage",
+    "scenario": "加油",
+    "text": "你超棒",
+    "tags": [
+      "加油",
+      "你超棒",
+      "encourage",
+      "cheer"
+    ],
+    "action": "encouraging cheer pose with tiny fists, positive supportive mood, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_cheer_02.png",
+    "character": "cat",
+    "emotion": "encourage",
+    "scenario": "加油",
+    "text": "你超棒",
+    "tags": [
+      "加油",
+      "你超棒",
+      "encourage",
+      "cheer"
+    ],
+    "action": "encouraging cheer pose with tiny fists, positive supportive mood, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_eat_02.png",
+    "character": "white_mochi",
+    "emotion": "comfort",
+    "scenario": "吃饭",
+    "text": "吃饭啦",
+    "tags": [
+      "吃饭",
+      "吃饭啦",
+      "comfort",
+      "eat"
+    ],
+    "action": "holding a tiny simple bowl, caring meal reminder mood, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_eat_02.png",
+    "character": "hamster",
+    "emotion": "comfort",
+    "scenario": "吃饭",
+    "text": "吃饭啦",
+    "tags": [
+      "吃饭",
+      "吃饭啦",
+      "comfort",
+      "eat"
+    ],
+    "action": "holding a tiny simple bowl, caring meal reminder mood, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_eat_02.png",
+    "character": "cat",
+    "emotion": "comfort",
+    "scenario": "吃饭",
+    "text": "吃饭啦",
+    "tags": [
+      "吃饭",
+      "吃饭啦",
+      "comfort",
+      "eat"
+    ],
+    "action": "holding a tiny simple bowl, caring meal reminder mood, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_drink_water_02.png",
+    "character": "white_mochi",
+    "emotion": "comfort",
+    "scenario": "喝水",
+    "text": "喝水呀",
+    "tags": [
+      "喝水",
+      "喝水呀",
+      "comfort",
+      "drink_water"
+    ],
+    "action": "holding a tiny cup of warm water, caring gentle expression, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_drink_water_02.png",
+    "character": "hamster",
+    "emotion": "comfort",
+    "scenario": "喝水",
+    "text": "喝水呀",
+    "tags": [
+      "喝水",
+      "喝水呀",
+      "comfort",
+      "drink_water"
+    ],
+    "action": "holding a tiny cup of warm water, caring gentle expression, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_drink_water_02.png",
+    "character": "cat",
+    "emotion": "comfort",
+    "scenario": "喝水",
+    "text": "喝水呀",
+    "tags": [
+      "喝水",
+      "喝水呀",
+      "comfort",
+      "drink_water"
+    ],
+    "action": "holding a tiny cup of warm water, caring gentle expression, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_angry_cute_02.png",
+    "character": "white_mochi",
+    "emotion": "angry",
+    "scenario": "生气",
+    "text": "哼！",
+    "tags": [
+      "生气",
+      "哼！",
+      "angry",
+      "angry_cute"
+    ],
+    "action": "cute angry puffed-cheek pose, tiny clenched arms, playful not scary, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_angry_cute_02.png",
+    "character": "hamster",
+    "emotion": "angry",
+    "scenario": "生气",
+    "text": "哼！",
+    "tags": [
+      "生气",
+      "哼！",
+      "angry",
+      "angry_cute"
+    ],
+    "action": "cute angry puffed-cheek pose, tiny clenched arms, playful not scary, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_angry_cute_02.png",
+    "character": "cat",
+    "emotion": "angry",
+    "scenario": "生气",
+    "text": "哼！",
+    "tags": [
+      "生气",
+      "哼！",
+      "angry",
+      "angry_cute"
+    ],
+    "action": "cute angry puffed-cheek pose, tiny clenched arms, playful not scary, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_wronged_02.png",
+    "character": "white_mochi",
+    "emotion": "sad",
+    "scenario": "委屈",
+    "text": "我在呢",
+    "tags": [
+      "委屈",
+      "我在呢",
+      "sad",
+      "wronged"
+    ],
+    "action": "wronged vulnerable pose, tiny watery eyes, soft comforting mood, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_wronged_02.png",
+    "character": "hamster",
+    "emotion": "sad",
+    "scenario": "委屈",
+    "text": "我在呢",
+    "tags": [
+      "委屈",
+      "我在呢",
+      "sad",
+      "wronged"
+    ],
+    "action": "wronged vulnerable pose, tiny watery eyes, soft comforting mood, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_wronged_02.png",
+    "character": "cat",
+    "emotion": "sad",
+    "scenario": "委屈",
+    "text": "我在呢",
+    "tags": [
+      "委屈",
+      "我在呢",
+      "sad",
+      "wronged"
+    ],
+    "action": "wronged vulnerable pose, tiny watery eyes, soft comforting mood, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_crying_02.png",
+    "character": "white_mochi",
+    "emotion": "cry",
+    "scenario": "哭哭",
+    "text": "不哭啦",
+    "tags": [
+      "哭哭",
+      "不哭啦",
+      "cry",
+      "crying"
+    ],
+    "action": "cute crying pose with two tiny teardrops, healing not dramatic, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_crying_02.png",
+    "character": "hamster",
+    "emotion": "cry",
+    "scenario": "哭哭",
+    "text": "不哭啦",
+    "tags": [
+      "哭哭",
+      "不哭啦",
+      "cry",
+      "crying"
+    ],
+    "action": "cute crying pose with two tiny teardrops, healing not dramatic, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_crying_02.png",
+    "character": "cat",
+    "emotion": "cry",
+    "scenario": "哭哭",
+    "text": "不哭啦",
+    "tags": [
+      "哭哭",
+      "不哭啦",
+      "cry",
+      "crying"
+    ],
+    "action": "cute crying pose with two tiny teardrops, healing not dramatic, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_shy_flirt_02.png",
+    "character": "white_mochi",
+    "emotion": "shy",
+    "scenario": "害羞",
+    "text": "害羞啦",
+    "tags": [
+      "害羞",
+      "害羞啦",
+      "shy",
+      "shy_flirt"
+    ],
+    "action": "bashful shy pose, tiny paws near cheeks, extra blush, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_shy_flirt_02.png",
+    "character": "hamster",
+    "emotion": "shy",
+    "scenario": "害羞",
+    "text": "害羞啦",
+    "tags": [
+      "害羞",
+      "害羞啦",
+      "shy",
+      "shy_flirt"
+    ],
+    "action": "bashful shy pose, tiny paws near cheeks, extra blush, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_shy_flirt_02.png",
+    "character": "cat",
+    "emotion": "shy",
+    "scenario": "害羞",
+    "text": "害羞啦",
+    "tags": [
+      "害羞",
+      "害羞啦",
+      "shy",
+      "shy_flirt"
+    ],
+    "action": "bashful shy pose, tiny paws near cheeks, extra blush, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_happy_cheer_02.png",
+    "character": "white_mochi",
+    "emotion": "happy",
+    "scenario": "开心",
+    "text": "开心！",
+    "tags": [
+      "开心",
+      "开心！",
+      "happy",
+      "happy_cheer"
+    ],
+    "action": "joyful small bounce pose, bright smile, tiny sparkles allowed, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_happy_cheer_02.png",
+    "character": "hamster",
+    "emotion": "happy",
+    "scenario": "开心",
+    "text": "开心！",
+    "tags": [
+      "开心",
+      "开心！",
+      "happy",
+      "happy_cheer"
+    ],
+    "action": "joyful small bounce pose, bright smile, tiny sparkles allowed, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_happy_cheer_02.png",
+    "character": "cat",
+    "emotion": "happy",
+    "scenario": "开心",
+    "text": "开心！",
+    "tags": [
+      "开心",
+      "开心！",
+      "happy",
+      "happy_cheer"
+    ],
+    "action": "joyful small bounce pose, bright smile, tiny sparkles allowed, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_awkward_02.png",
+    "character": "white_mochi",
+    "emotion": "awkward",
+    "scenario": "尴尬",
+    "text": "啊这",
+    "tags": [
+      "尴尬",
+      "啊这",
+      "awkward",
+      "awkward"
+    ],
+    "action": "awkward frozen pose, tiny unsure mouth, simple sweat drop allowed, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_awkward_02.png",
+    "character": "hamster",
+    "emotion": "awkward",
+    "scenario": "尴尬",
+    "text": "啊这",
+    "tags": [
+      "尴尬",
+      "啊这",
+      "awkward",
+      "awkward"
+    ],
+    "action": "awkward frozen pose, tiny unsure mouth, simple sweat drop allowed, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_awkward_02.png",
+    "character": "cat",
+    "emotion": "awkward",
+    "scenario": "尴尬",
+    "text": "啊这",
+    "tags": [
+      "尴尬",
+      "啊这",
+      "awkward",
+      "awkward"
+    ],
+    "action": "awkward frozen pose, tiny unsure mouth, simple sweat drop allowed, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_apology_cute_02.png",
+    "character": "white_mochi",
+    "emotion": "apology",
+    "scenario": "道歉",
+    "text": "对不起",
+    "tags": [
+      "道歉",
+      "对不起",
+      "apology",
+      "apology_cute"
+    ],
+    "action": "apologetic bowing pose, tiny paws together, sincere cute expression, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_apology_cute_02.png",
+    "character": "hamster",
+    "emotion": "apology",
+    "scenario": "道歉",
+    "text": "对不起",
+    "tags": [
+      "道歉",
+      "对不起",
+      "apology",
+      "apology_cute"
+    ],
+    "action": "apologetic bowing pose, tiny paws together, sincere cute expression, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_apology_cute_02.png",
+    "character": "cat",
+    "emotion": "apology",
+    "scenario": "道歉",
+    "text": "对不起",
+    "tags": [
+      "道歉",
+      "对不起",
+      "apology",
+      "apology_cute"
+    ],
+    "action": "apologetic bowing pose, tiny paws together, sincere cute expression, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_thanks_card_02.png",
+    "character": "white_mochi",
+    "emotion": "thanks",
+    "scenario": "感谢",
+    "text": "谢谢你",
+    "tags": [
+      "感谢",
+      "谢谢你",
+      "thanks",
+      "thanks_card"
+    ],
+    "action": "holding a small blank cream card centered at lower body, no text on card",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_thanks_card_02.png",
+    "character": "hamster",
+    "emotion": "thanks",
+    "scenario": "感谢",
+    "text": "谢谢你",
+    "tags": [
+      "感谢",
+      "谢谢你",
+      "thanks",
+      "thanks_card"
+    ],
+    "action": "holding a small blank cream card centered at lower body, no text on card",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_thanks_card_02.png",
+    "character": "cat",
+    "emotion": "thanks",
+    "scenario": "感谢",
+    "text": "谢谢你",
+    "tags": [
+      "感谢",
+      "谢谢你",
+      "thanks",
+      "thanks_card"
+    ],
+    "action": "holding a small blank cream card centered at lower body, no text on card",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_waiting_02.png",
+    "character": "white_mochi",
+    "emotion": "miss_you",
+    "scenario": "等你",
+    "text": "等你呀",
+    "tags": [
+      "等你",
+      "等你呀",
+      "miss_you",
+      "waiting"
+    ],
+    "action": "waiting patiently pose, tiny sitting body, soft expectant eyes, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_waiting_02.png",
+    "character": "hamster",
+    "emotion": "miss_you",
+    "scenario": "等你",
+    "text": "等你呀",
+    "tags": [
+      "等你",
+      "等你呀",
+      "miss_you",
+      "waiting"
+    ],
+    "action": "waiting patiently pose, tiny sitting body, soft expectant eyes, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_waiting_02.png",
+    "character": "cat",
+    "emotion": "miss_you",
+    "scenario": "等你",
+    "text": "等你呀",
+    "tags": [
+      "等你",
+      "等你呀",
+      "miss_you",
+      "waiting"
+    ],
+    "action": "waiting patiently pose, tiny sitting body, soft expectant eyes, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_here_for_you_02.png",
+    "character": "white_mochi",
+    "emotion": "comfort",
+    "scenario": "我在呢",
+    "text": "我在呢",
+    "tags": [
+      "我在呢",
+      "我在呢",
+      "comfort",
+      "here_for_you"
+    ],
+    "action": "steady protective pose, tiny paw on chest, warm dependable mood, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_here_for_you_02.png",
+    "character": "hamster",
+    "emotion": "comfort",
+    "scenario": "我在呢",
+    "text": "我在呢",
+    "tags": [
+      "我在呢",
+      "我在呢",
+      "comfort",
+      "here_for_you"
+    ],
+    "action": "steady protective pose, tiny paw on chest, warm dependable mood, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_here_for_you_02.png",
+    "character": "cat",
+    "emotion": "comfort",
+    "scenario": "我在呢",
+    "text": "我在呢",
+    "tags": [
+      "我在呢",
+      "我在呢",
+      "comfort",
+      "here_for_you"
+    ],
+    "action": "steady protective pose, tiny paw on chest, warm dependable mood, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_dont_push_02.png",
+    "character": "white_mochi",
+    "emotion": "comfort",
+    "scenario": "别硬撑",
+    "text": "别硬撑",
+    "tags": [
+      "别硬撑",
+      "别硬撑",
+      "comfort",
+      "dont_push"
+    ],
+    "action": "concerned care pose, tiny arms forward as if saying stop pushing yourself, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_dont_push_02.png",
+    "character": "hamster",
+    "emotion": "comfort",
+    "scenario": "别硬撑",
+    "text": "别硬撑",
+    "tags": [
+      "别硬撑",
+      "别硬撑",
+      "comfort",
+      "dont_push"
+    ],
+    "action": "concerned care pose, tiny arms forward as if saying stop pushing yourself, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_dont_push_02.png",
+    "character": "cat",
+    "emotion": "comfort",
+    "scenario": "别硬撑",
+    "text": "别硬撑",
+    "tags": [
+      "别硬撑",
+      "别硬撑",
+      "comfort",
+      "dont_push"
+    ],
+    "action": "concerned care pose, tiny arms forward as if saying stop pushing yourself, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_be_good_02.png",
+    "character": "white_mochi",
+    "emotion": "shy",
+    "scenario": "乖",
+    "text": "乖一点",
+    "tags": [
+      "乖",
+      "乖一点",
+      "shy",
+      "be_good"
+    ],
+    "action": "gentle coaxing pose, tiny tilted head, soft smile, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_be_good_02.png",
+    "character": "hamster",
+    "emotion": "shy",
+    "scenario": "乖",
+    "text": "乖一点",
+    "tags": [
+      "乖",
+      "乖一点",
+      "shy",
+      "be_good"
+    ],
+    "action": "gentle coaxing pose, tiny tilted head, soft smile, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_be_good_02.png",
+    "character": "cat",
+    "emotion": "shy",
+    "scenario": "乖",
+    "text": "乖一点",
+    "tags": [
+      "乖",
+      "乖一点",
+      "shy",
+      "be_good"
+    ],
+    "action": "gentle coaxing pose, tiny tilted head, soft smile, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_kiss_02.png",
+    "character": "white_mochi",
+    "emotion": "love",
+    "scenario": "亲亲",
+    "text": "亲亲",
+    "tags": [
+      "亲亲",
+      "亲亲",
+      "love",
+      "kiss"
+    ],
+    "action": "sweet affectionate pose, tiny puckered mouth or tiny heart gesture, one character only, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_kiss_02.png",
+    "character": "hamster",
+    "emotion": "love",
+    "scenario": "亲亲",
+    "text": "亲亲",
+    "tags": [
+      "亲亲",
+      "亲亲",
+      "love",
+      "kiss"
+    ],
+    "action": "sweet affectionate pose, tiny puckered mouth or tiny heart gesture, one character only, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_kiss_02.png",
+    "character": "cat",
+    "emotion": "love",
+    "scenario": "亲亲",
+    "text": "亲亲",
+    "tags": [
+      "亲亲",
+      "亲亲",
+      "love",
+      "kiss"
+    ],
+    "action": "sweet affectionate pose, tiny puckered mouth or tiny heart gesture, one character only, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_coax_02.png",
+    "character": "white_mochi",
+    "emotion": "comfort",
+    "scenario": "哄你",
+    "text": "哄哄你",
+    "tags": [
+      "哄你",
+      "哄哄你",
+      "comfort",
+      "coax"
+    ],
+    "action": "soft coaxing pose, tiny arms open, healing playful expression, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_coax_02.png",
+    "character": "hamster",
+    "emotion": "comfort",
+    "scenario": "哄你",
+    "text": "哄哄你",
+    "tags": [
+      "哄你",
+      "哄哄你",
+      "comfort",
+      "coax"
+    ],
+    "action": "soft coaxing pose, tiny arms open, healing playful expression, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_coax_02.png",
+    "character": "cat",
+    "emotion": "comfort",
+    "scenario": "哄你",
+    "text": "哄哄你",
+    "tags": [
+      "哄你",
+      "哄哄你",
+      "comfort",
+      "coax"
+    ],
+    "action": "soft coaxing pose, tiny arms open, healing playful expression, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_surprised_02.png",
+    "character": "white_mochi",
+    "emotion": "surprised",
+    "scenario": "惊讶",
+    "text": "欸？",
+    "tags": [
+      "惊讶",
+      "欸？",
+      "surprised",
+      "surprised"
+    ],
+    "action": "cute surprised pose, tiny round mouth, simple expression, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_surprised_02.png",
+    "character": "hamster",
+    "emotion": "surprised",
+    "scenario": "惊讶",
+    "text": "欸？",
+    "tags": [
+      "惊讶",
+      "欸？",
+      "surprised",
+      "surprised"
+    ],
+    "action": "cute surprised pose, tiny round mouth, simple expression, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_surprised_02.png",
+    "character": "cat",
+    "emotion": "surprised",
+    "scenario": "惊讶",
+    "text": "欸？",
+    "tags": [
+      "惊讶",
+      "欸？",
+      "surprised",
+      "surprised"
+    ],
+    "action": "cute surprised pose, tiny round mouth, simple expression, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_caring_02.png",
+    "character": "white_mochi",
+    "emotion": "comfort",
+    "scenario": "关心",
+    "text": "我罩着你",
+    "tags": [
+      "关心",
+      "我罩着你",
+      "comfort",
+      "caring"
+    ],
+    "action": "protective caring pose, tiny arms open like guarding, no second character, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_caring_02.png",
+    "character": "hamster",
+    "emotion": "comfort",
+    "scenario": "关心",
+    "text": "我罩着你",
+    "tags": [
+      "关心",
+      "我罩着你",
+      "comfort",
+      "caring"
+    ],
+    "action": "protective caring pose, tiny arms open like guarding, no second character, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_caring_02.png",
+    "character": "cat",
+    "emotion": "comfort",
+    "scenario": "关心",
+    "text": "我罩着你",
+    "tags": [
+      "关心",
+      "我罩着你",
+      "comfort",
+      "caring"
+    ],
+    "action": "protective caring pose, tiny arms open like guarding, no second character, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_hot_drink_02.png",
+    "character": "white_mochi",
+    "emotion": "comfort",
+    "scenario": "热饮",
+    "text": "热热的",
+    "tags": [
+      "热饮",
+      "热热的",
+      "comfort",
+      "hot_drink"
+    ],
+    "action": "holding a tiny warm cup, gentle caring expression, no steam symbols that look like text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_hot_drink_02.png",
+    "character": "hamster",
+    "emotion": "comfort",
+    "scenario": "热饮",
+    "text": "热热的",
+    "tags": [
+      "热饮",
+      "热热的",
+      "comfort",
+      "hot_drink"
+    ],
+    "action": "holding a tiny warm cup, gentle caring expression, no steam symbols that look like text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_hot_drink_02.png",
+    "character": "cat",
+    "emotion": "comfort",
+    "scenario": "热饮",
+    "text": "热热的",
+    "tags": [
+      "热饮",
+      "热热的",
+      "comfort",
+      "hot_drink"
+    ],
+    "action": "holding a tiny warm cup, gentle caring expression, no steam symbols that look like text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_medicine_02.png",
+    "character": "white_mochi",
+    "emotion": "comfort",
+    "scenario": "送药",
+    "text": "给你药",
+    "tags": [
+      "送药",
+      "给你药",
+      "comfort",
+      "medicine"
+    ],
+    "action": "holding a tiny simple medicine pouch with no label, caring action mood, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "hamster_medicine_02.png",
+    "character": "hamster",
+    "emotion": "comfort",
+    "scenario": "送药",
+    "text": "给你药",
+    "tags": [
+      "送药",
+      "给你药",
+      "comfort",
+      "medicine"
+    ],
+    "action": "holding a tiny simple medicine pouch with no label, caring action mood, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "cat_medicine_02.png",
+    "character": "cat",
+    "emotion": "comfort",
+    "scenario": "送药",
+    "text": "给你药",
+    "tags": [
+      "送药",
+      "给你药",
+      "comfort",
+      "medicine"
+    ],
+    "action": "holding a tiny simple medicine pouch with no label, caring action mood, no text",
+    "quality_score": 0.9,
+    "usage_priority": 85
+  },
+  {
+    "filename": "white_mochi_check_in_02.png",
+    "character": "white_mochi",
+    "emotion": "comfort",
+    "scenario": "关心追问",
+    "text": "还好吗",
+    "tags": [
+      "关心追问",
+      "还好吗",
+      "comfort",
+      "check_in"
+    ],
+    "action": "concerned check-in pose, tiny paws forward, soft worried eyes, no text",
+    "quality_score": 0.9,
+    "usage_priority": 86
+  },
+  {
+    "filename": "hamster_check_in_02.png",
+    "character": "hamster",
+    "emotion": "comfort",
+    "scenario": "关心追问",
+    "text": "还好吗",
+    "tags": [
+      "关心追问",
+      "还好吗",
+      "comfort",
+      "check_in"
+    ],
+    "action": "concerned check-in pose, tiny paws forward, soft worried eyes, no text",
+    "quality_score": 0.9,
+    "usage_priority": 86
+  },
+  {
+    "filename": "cat_check_in_02.png",
+    "character": "cat",
+    "emotion": "comfort",
+    "scenario": "关心追问",
+    "text": "还好吗",
+    "tags": [
+      "关心追问",
+      "还好吗",
+      "comfort",
+      "check_in"
+    ],
+    "action": "concerned check-in pose, tiny paws forward, soft worried eyes, no text",
+    "quality_score": 0.9,
+    "usage_priority": 86
+  },
+  {
+    "filename": "white_mochi_blanket_02.png",
+    "character": "white_mochi",
+    "emotion": "goodnight",
+    "scenario": "盖被子",
+    "text": "盖被子",
+    "tags": [
+      "盖被子",
+      "盖被子",
+      "goodnight",
+      "blanket"
+    ],
+    "action": "cozy pose holding a tiny soft blanket, caring bedtime mood, no text",
+    "quality_score": 0.9,
+    "usage_priority": 86
+  },
+  {
+    "filename": "hamster_blanket_02.png",
+    "character": "hamster",
+    "emotion": "goodnight",
+    "scenario": "盖被子",
+    "text": "盖被子",
+    "tags": [
+      "盖被子",
+      "盖被子",
+      "goodnight",
+      "blanket"
+    ],
+    "action": "cozy pose holding a tiny soft blanket, caring bedtime mood, no text",
+    "quality_score": 0.9,
+    "usage_priority": 86
+  },
+  {
+    "filename": "cat_blanket_02.png",
+    "character": "cat",
+    "emotion": "goodnight",
+    "scenario": "盖被子",
+    "text": "盖被子",
+    "tags": [
+      "盖被子",
+      "盖被子",
+      "goodnight",
+      "blanket"
+    ],
+    "action": "cozy pose holding a tiny soft blanket, caring bedtime mood, no text",
+    "quality_score": 0.9,
+    "usage_priority": 86
+  },
+  {
+    "filename": "white_mochi_accompany_02.png",
+    "character": "white_mochi",
+    "emotion": "comfort",
+    "scenario": "陪伴",
+    "text": "陪着你",
+    "tags": [
+      "陪伴",
+      "陪着你",
+      "comfort",
+      "accompany"
+    ],
+    "action": "steady companionship pose, sitting warmly with tiny arms open, one character only, no text",
+    "quality_score": 0.9,
+    "usage_priority": 86
+  },
+  {
+    "filename": "hamster_accompany_02.png",
+    "character": "hamster",
+    "emotion": "comfort",
+    "scenario": "陪伴",
+    "text": "陪着你",
+    "tags": [
+      "陪伴",
+      "陪着你",
+      "comfort",
+      "accompany"
+    ],
+    "action": "steady companionship pose, sitting warmly with tiny arms open, one character only, no text",
+    "quality_score": 0.9,
+    "usage_priority": 86
+  },
+  {
+    "filename": "cat_accompany_02.png",
+    "character": "cat",
+    "emotion": "comfort",
+    "scenario": "陪伴",
+    "text": "陪着你",
+    "tags": [
+      "陪伴",
+      "陪着你",
+      "comfort",
+      "accompany"
+    ],
+    "action": "steady companionship pose, sitting warmly with tiny arms open, one character only, no text",
+    "quality_score": 0.9,
+    "usage_priority": 86
+  },
+  {
+    "filename": "white_mochi_hard_work_02.png",
+    "character": "white_mochi",
+    "emotion": "comfort",
+    "scenario": "压力大",
+    "text": "辛苦啦",
+    "tags": [
+      "压力大",
+      "辛苦啦",
+      "comfort",
+      "hard_work"
+    ],
+    "action": "gentle supportive pose, tiny paws together, soft caring smile, no text",
+    "quality_score": 0.9,
+    "usage_priority": 86
+  },
+  {
+    "filename": "hamster_hard_work_02.png",
+    "character": "hamster",
+    "emotion": "comfort",
+    "scenario": "压力大",
+    "text": "辛苦啦",
+    "tags": [
+      "压力大",
+      "辛苦啦",
+      "comfort",
+      "hard_work"
+    ],
+    "action": "gentle supportive pose, tiny paws together, soft caring smile, no text",
+    "quality_score": 0.9,
+    "usage_priority": 86
+  },
+  {
+    "filename": "cat_hard_work_02.png",
+    "character": "cat",
+    "emotion": "comfort",
+    "scenario": "压力大",
+    "text": "辛苦啦",
+    "tags": [
+      "压力大",
+      "辛苦啦",
+      "comfort",
+      "hard_work"
+    ],
+    "action": "gentle supportive pose, tiny paws together, soft caring smile, no text",
+    "quality_score": 0.9,
+    "usage_priority": 86
+  }
+]

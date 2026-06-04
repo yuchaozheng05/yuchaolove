@@ -1,4 +1,5 @@
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { basename, extname, join, relative } from 'node:path';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -7,8 +8,10 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const promptsDir = join(root, 'assets', 'stickers', 'prompts');
 const stickersDir = join(root, 'assets', 'stickers');
 const imagesDir = join(stickersDir, 'packs', 'style-bible-v1', 'images');
+const thumbsDir = join(stickersDir, 'packs', 'style-bible-v1', 'thumbs');
 const catalogPath = join(root, 'assets', 'stickers', 'catalog.v1.json');
 const imageExtensions = new Set(['.png']);
+const catalogCharacters = new Set(['white_mochi', 'hamster', 'cat']);
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
@@ -55,6 +58,7 @@ function walkImages(dir) {
       const relativePath = relative(stickersDir, fullPath).replaceAll('\\', '/');
       if (relativePath.includes('/thumbs/')) return;
       if (relativePath.startsWith('reference/') || relativePath.includes('/reference/')) return;
+      if (basename(fullPath).startsWith('contact-sheet')) return;
       if (imageExtensions.has(extname(entry).toLowerCase())) {
         files.push({
           filename: basename(fullPath),
@@ -67,6 +71,39 @@ function walkImages(dir) {
   };
   walk(dir);
   return files;
+}
+
+function thumbForImage(image) {
+  if (!image.relativePath.startsWith('packs/style-bible-v1/images/')) return null;
+  const filename = basename(image.filename, extname(image.filename)) + '.png';
+  return {
+    fullPath: join(thumbsDir, filename),
+    file: `/assets/stickers/packs/style-bible-v1/thumbs/${filename}`,
+  };
+}
+
+function ensureThumb(image) {
+  const thumb = thumbForImage(image);
+  if (!thumb) return image;
+  mkdirSync(thumbsDir, { recursive: true });
+  if (!existsSync(thumb.fullPath)) {
+    const code = String.raw`
+from PIL import Image
+import sys
+
+src, dest = sys.argv[1], sys.argv[2]
+img = Image.open(src).convert("RGBA")
+img.thumbnail((256, 256), Image.Resampling.LANCZOS)
+canvas = Image.new("RGBA", (256, 256), (255, 255, 255, 0))
+canvas.alpha_composite(img, ((256 - img.width) // 2, (256 - img.height) // 2))
+canvas.save(dest, "PNG")
+`;
+    const result = spawnSync('python3', ['-c', code, image.fullPath, thumb.fullPath], { encoding: 'utf8' });
+    if (result.status !== 0) {
+      throw new Error((result.stderr || result.stdout || `Failed to create thumb for ${image.filename}`).trim());
+    }
+  }
+  return { ...image, thumb: thumb.file };
 }
 
 function toId(filename) {
@@ -158,6 +195,7 @@ function buildCatalogItem(item) {
   return {
     id: toId(item.filename),
     file: item.file || `/assets/stickers/packs/style-bible-v1/images/${item.filename}`,
+    thumb: item.thumb || '',
     character,
     emotion,
     scenario,
@@ -175,14 +213,17 @@ if (!Array.isArray(prompts) || !prompts.length) {
 }
 
 const promptsByFilename = new Map(prompts.map((item) => [item.filename, item]));
-const images = walkImages(stickersDir);
-const items = images
+const images = walkImages(stickersDir).map(ensureThumb);
+const builtItems = images
   .map((image) => ({
     ...(promptsByFilename.get(image.filename) || {}),
     filename: image.filename,
     file: image.file,
+    thumb: image.thumb,
   }))
-  .map(buildCatalogItem)
+  .map(buildCatalogItem);
+const items = builtItems
+  .filter((item) => catalogCharacters.has(item.character))
   .sort((a, b) => a.id.localeCompare(b.id));
 
 if (!items.length) {
@@ -201,4 +242,4 @@ const catalog = {
 };
 
 writeFileSync(catalogPath, `${JSON.stringify(catalog, null, 2)}\n`);
-console.log(`Sticker catalog built: ${items.length} records from ${images.length} PNG files (${prompts.length} prompts available)`);
+console.log(`Sticker catalog built: ${items.length} records from ${images.length} PNG files (${prompts.length} prompts available, ${builtItems.length - items.length} legacy/non-main skipped)`);

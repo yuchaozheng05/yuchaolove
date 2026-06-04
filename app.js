@@ -169,11 +169,13 @@ ${context ? `补充背景：${context}` : ''}
 }
 
 function buildRequestMetadata(imageCount) {
+  const backgroundText = document.getElementById('contextInput')?.value?.trim() || '';
   return {
     visitor_id: getVisitorId(),
     client_started_at: new Date().toISOString(),
     image_count: imageCount,
     page_path: window.location.pathname || '/',
+    background_text: backgroundText,
     browser_language: navigator.language || '',
     client_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
     screen_width: window.screen?.width || null,
