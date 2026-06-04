@@ -8,6 +8,7 @@ import handler, {
   MODELS,
   PRIMARY_IMAGE_DETAIL,
   PRIMARY_MAX_COMPLETION_TOKENS,
+  PRIMARY_OPENAI_TIMEOUT_MS,
   REPLY_COACH_SYSTEM_PROMPT,
   REPLY_PERSPECTIVE_EXAMPLES,
   REPLY_REFINEMENT_SCHEMA,
@@ -54,6 +55,7 @@ const requestBody = {
 
 test('uses the OpenAI vision model', () => {
   assert.deepEqual(MODELS, ['gpt-4.1-mini']);
+  assert.equal(PRIMARY_OPENAI_TIMEOUT_MS, 25_000);
 });
 
 test('defines a strict schema for richer attraction analysis', () => {
@@ -871,6 +873,7 @@ test('passes multiple screenshots to OpenAI with strict JSON schema', async () =
     assert.match(requestPayload.messages[1].content[1].image_url.url, /^data:image\/png;base64,/);
     assert.equal(requestPayload.messages[1].content[1].image_url.detail, PRIMARY_IMAGE_DETAIL);
     assert.equal(requestPayload.max_completion_tokens, PRIMARY_MAX_COMPLETION_TOKENS);
+    assert.equal(requestPayload.model, 'gpt-4.1-mini');
     assert.equal('max_tokens' in requestPayload, false);
     assert.equal(requestPayload.response_format.type, 'json_schema');
     assert.equal(requestPayload.response_format.json_schema.strict, true);
@@ -893,6 +896,33 @@ test('returns an honest retry result if OpenAI is unavailable', async () => {
     assert.equal(response.statusCode, 200);
     assert.equal(response.body.degraded, true);
     assert.deepEqual(JSON.parse(response.body.content[0].text), buildFreeTierFallbackAdvice());
+  } finally {
+    global.fetch = originalFetch;
+    restoreEnvironment('OPENAI_API_KEY', originalApiKey);
+  }
+});
+
+test('returns a timeout fallback instead of service-busy copy for Vision timeout', async () => {
+  const originalFetch = global.fetch;
+  const originalApiKey = process.env.OPENAI_API_KEY;
+  process.env.OPENAI_API_KEY = 'test-key';
+  global.fetch = async () => jsonResponse(408, { error: { code: 'timeout', message: 'OpenAI request timed out after 25000ms' } });
+
+  try {
+    const response = createResponseRecorder();
+    await handler({ method: 'POST', body: requestBody, headers: {} }, response);
+    const advice = JSON.parse(response.body.content[0].text);
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.body.reason, 'vision-timeout');
+    assert.equal(response.body.debug.vision_called, true);
+    assert.equal(response.body.debug.vision_timeout, true);
+    assert.equal(response.body.debug.fallback_used, true);
+    assert.equal(Number.isFinite(response.body.debug.elapsed_ms), true);
+    assert.equal(advice.attitude_label, '识图超时');
+    assert.equal(advice.is_chat_screenshot, true);
+    assert.equal(advice.needs_retry, true);
+    assert.doesNotMatch(advice.attitude_desc, /服务暂时繁忙|不是聊天截图/);
   } finally {
     global.fetch = originalFetch;
     restoreEnvironment('OPENAI_API_KEY', originalApiKey);

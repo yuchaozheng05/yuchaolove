@@ -105,7 +105,7 @@ function scrollToApp() {
 async function analyze() {
   if (!uploadedImages.length) return;
 
-  setSubmitState(true, '分析中...');
+  setSubmitState(true, '正在分析截图，可能需要几秒…');
   document.getElementById('loadingState').style.display = 'block';
   document.getElementById('results').style.display = 'none';
   hideStickerPanel();

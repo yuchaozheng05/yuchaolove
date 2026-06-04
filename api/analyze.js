@@ -9,7 +9,7 @@ const MAX_TOTAL_IMAGE_BASE64_LENGTH = 4_000_000;
 const PRIMARY_IMAGE_DETAIL = 'auto';
 const PRIMARY_MAX_COMPLETION_TOKENS = 1400;
 const REFINEMENT_MAX_COMPLETION_TOKENS = 560;
-const PRIMARY_OPENAI_TIMEOUT_MS = 10_000;
+const PRIMARY_OPENAI_TIMEOUT_MS = 25_000;
 const REFINEMENT_OPENAI_TIMEOUT_MS = 3_500;
 const EMOTIONAL_DISCLOSURE_PATTERN = /困死|好困|太困|困了|很困|累死|好累|太累|累了|很累|疼|痛|难受|不舒服|烦|焦虑|压力|不想上学|不想去|没写完|睡不着|崩溃|想哭|生病|发烧|胃疼|肚子疼|头疼/;
 const PHYSICAL_DISCOMFORT_PATTERN = /疼|痛|难受|不舒服|生病|发烧|胃疼|肚子疼|头疼/;
@@ -389,6 +389,7 @@ export default async function handler(req, res) {
   try {
     const { imageParts, textPart, metadata } = getRequestParts(req.body);
     const debug = buildVisionDebug(imageParts);
+    const startedAt = Date.now();
     console.info(`[${requestId}] /api/analyze request accepted`, {
       hasOpenAIKey: true,
       imageCount: imageParts.length,
@@ -412,6 +413,7 @@ export default async function handler(req, res) {
           requestId,
         });
         debug.vision_success = true;
+        debug.elapsed_ms = Date.now() - startedAt;
         let advice = parseAdvice(rawText);
         debug.extracted_text = buildDebugExtractedText(advice);
         debug.scene_detected = advice.analysis?.scene || '';
@@ -421,6 +423,7 @@ export default async function handler(req, res) {
         if (needsReplyRefinement(advice)) {
           advice = await refineOrRepairAdvice({ apiKey, model, advice });
         }
+        debug.elapsed_ms = Date.now() - startedAt;
 
         queueUsageLog({ req, advice, imageParts, metadata, model });
 
@@ -432,6 +435,8 @@ export default async function handler(req, res) {
       } catch (error) {
         lastError = error;
         debug.vision_success = false;
+        debug.vision_timeout = error?.providerCode === 'timeout';
+        debug.elapsed_ms = Date.now() - startedAt;
         console.error(`[${requestId}] OpenAI model ${model} failed`, {
           summary: summarizeError(error),
           providerStatus: error?.providerStatus || null,
@@ -450,17 +455,20 @@ export default async function handler(req, res) {
         providerStatus: lastError?.providerStatus || null,
         providerCode: lastError?.providerCode || '',
       });
-      const advice = buildFreeTierFallbackAdvice();
+      const isTimeout = lastError?.providerCode === 'timeout';
+      const advice = isTimeout ? buildVisionTimeoutFallbackAdvice() : buildFreeTierFallbackAdvice();
       const debug = buildVisionDebug(imageParts, {
         vision_called: true,
         vision_success: false,
+        vision_timeout: isTimeout,
         fallback_used: true,
+        elapsed_ms: Date.now() - startedAt,
       });
       queueUsageLog({ req, advice, imageParts, metadata, model: 'fallback', degraded: true });
       return res.status(200).json({
         content: [{ type: 'text', text: JSON.stringify(advice) }],
         degraded: true,
-        reason: 'service-unavailable',
+        reason: isTimeout ? 'vision-timeout' : 'service-unavailable',
         debug,
       });
     }
@@ -561,9 +569,11 @@ function buildVisionDebug(imageParts, overrides = {}) {
     },
     vision_called: false,
     vision_success: false,
+    vision_timeout: false,
     ocr_called: false,
     ocr_success: false,
     fallback_used: false,
+    elapsed_ms: 0,
     extracted_text: '',
     scene_detected: '',
     is_chat_screenshot: false,
@@ -917,6 +927,35 @@ function buildFreeTierFallbackAdvice() {
   };
   const relationshipGoal = normalizeRelationshipGoal({}, relationshipMemory);
   return { attitude_label: '服务暂时繁忙', attitude_desc: '当前分析服务暂时不可用。为了避免给你不准确的建议，本次不会猜测截图内容，请稍后点击"重新分析"。', interest_score: 0, interest_level: '低意愿', interest_signals: [], conversation_mode: '礼貌回应', conversation_stage: '初次认识', analysis: { stage: 'ice_breaking', stage_label: RELATIONSHIP_STAGE_LABELS.ice_breaking, scene: '', scene_id: '', emotion: '', reply_intent: '', intimacy_score: 0 }, relationship_memory_engine: relationshipMemory, relationship_stage: 'ice_breaking', intimacy_score: 0, attraction_score: 0, investment_balance: 'balanced', initiator: 'unclear', reply_risk: 'safe', risk_level: 'safe', next_best_move: '', conversation_future: normalizeConversationFuture({}, { relationshipMemory, scene: null }), relationship_goal: relationshipGoal, coach_advice: normalizeCoachAdvice({}, { relationshipMemory, relationshipGoal, scene: null }), reply_explanation: [], next_5_moves: [], reply_strategy: '', flirt_level: '先别暧昧', is_chat_screenshot: true, non_chat_reply: '', chat_evidence: {}, conversation_summary: '', chat_guide: buildDefaultChatGuide(), next_topics: [], dialogue: [], suggest_stop: false, needs_retry: true, degraded: true, replies: [], sticker_match_intent: null, sticker_suggestions: [] };
+}
+
+function buildVisionTimeoutFallbackAdvice() {
+  const advice = buildFreeTierFallbackAdvice();
+  return {
+    ...advice,
+    attitude_label: '识图超时',
+    attitude_desc: '截图已经收到，但 OpenAI Vision 分析超过 25 秒。这不是“非聊天截图”，只是本次识图超时；请直接点重新分析，或稍后再试。',
+    non_chat_reply: '',
+    is_chat_screenshot: true,
+    needs_retry: true,
+    degraded: true,
+    chat_evidence: {
+      image_kind: 'chat screenshot pending vision',
+      has_message_bubbles: true,
+      has_chat_ui: true,
+      has_two_sided_layout: false,
+    },
+    conversation_summary: '',
+    chat_guide: {
+      current_move: '本次 Vision 识图超时，先不要根据空结果判断关系。',
+      next_steps: [
+        '直接点击重新分析，图片会重新走 Vision。',
+        '如果连续超时，可以先裁剪到只保留聊天区域。',
+        '不要把这次结果当成“不是聊天截图”。',
+      ],
+      avoid: '不要因为超时结论误删图片或改动聊天分析逻辑。',
+    },
+  };
 }
 
 function isRetryableModelError(error) {
@@ -2819,4 +2858,4 @@ function buildStoragePath({ visitorId, index, ext }) {
   return `${day}/${safeVisitorId}-${Date.now()}-${index}-${suffix}.${ext}`;
 }
 
-export { CHAT_ADVICE_SCHEMA, CHAT_SCENE_LIBRARY, IMAGE_READING_RULES, MODELS, PRIMARY_IMAGE_DETAIL, PRIMARY_MAX_COMPLETION_TOKENS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, REPLY_REFINEMENT_SCHEMA, REFINEMENT_MAX_COMPLETION_TOKENS, buildActiveCuriosityGuide, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildReplyRefinementPrompt, buildStageChatGuide, buildStickerMatchIntent, detectScene, extractFirstJsonObject, getRequestParts, getStickerContext, hasActiveCuriosity, hasHappyEmotion, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, hasStudyStress, inferConversationStage, isRetryableModelError, isVerifiedChatScreenshot, logUsage, mergeRefinedReplies, needsReplyRefinement, normalizeChatGuide, normalizeConversationMode, normalizeConversationStage, normalizeDialogue, normalizeChatEvidence, normalizeStickerSuggestions, parseAdvice, recommendStockStickers, repairReplyCandidates, requestOpenAIAdvice, requestOpenAIReplyRefinement, scoreStockSticker };
+export { CHAT_ADVICE_SCHEMA, CHAT_SCENE_LIBRARY, IMAGE_READING_RULES, MODELS, PRIMARY_IMAGE_DETAIL, PRIMARY_MAX_COMPLETION_TOKENS, PRIMARY_OPENAI_TIMEOUT_MS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, REPLY_REFINEMENT_SCHEMA, REFINEMENT_MAX_COMPLETION_TOKENS, buildActiveCuriosityGuide, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildReplyRefinementPrompt, buildStageChatGuide, buildStickerMatchIntent, detectScene, extractFirstJsonObject, getRequestParts, getStickerContext, hasActiveCuriosity, hasHappyEmotion, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, hasStudyStress, inferConversationStage, isRetryableModelError, isVerifiedChatScreenshot, logUsage, mergeRefinedReplies, needsReplyRefinement, normalizeChatGuide, normalizeConversationMode, normalizeConversationStage, normalizeDialogue, normalizeChatEvidence, normalizeStickerSuggestions, parseAdvice, recommendStockStickers, repairReplyCandidates, requestOpenAIAdvice, requestOpenAIReplyRefinement, scoreStockSticker };
