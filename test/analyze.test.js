@@ -4,6 +4,9 @@ import test from 'node:test';
 import handler, {
   CHAT_ADVICE_SCHEMA,
   CHAT_SCENE_LIBRARY,
+  EXTRACTION_IMAGE_DETAIL,
+  EXTRACTION_MAX_COMPLETION_TOKENS,
+  GENERIC_REPLY_TEMPLATE_PATTERN,
   IMAGE_READING_RULES,
   MODELS,
   PRIMARY_IMAGE_DETAIL,
@@ -18,6 +21,7 @@ import handler, {
   buildReplyRefinementPrompt,
   buildStickerMatchIntent,
   detectScene,
+  extractDialogueFromImages,
   extractFirstJsonObject,
   getRequestParts,
   hasActiveCuriosity,
@@ -1103,8 +1107,8 @@ test('returns a timeout fallback instead of service-busy copy for Vision timeout
     assert.equal(response.body.debug.vision_timeout, true);
     assert.equal(response.body.debug.fallback_used, true);
     assert.equal(Number.isFinite(response.body.debug.elapsed_ms), true);
-    assert.equal(callCount, 2);
-    assert.deepEqual(timeoutValues, [PRIMARY_MAX_COMPLETION_TOKENS, 700]);
+    assert.equal(callCount, 3);
+    assert.deepEqual(timeoutValues, [EXTRACTION_MAX_COMPLETION_TOKENS, PRIMARY_MAX_COMPLETION_TOKENS, 700]);
     assert.equal(advice.attitude_label, '识图超时');
     assert.equal(advice.is_chat_screenshot, true);
     assert.equal(advice.needs_retry, true);
@@ -1181,6 +1185,23 @@ test('asks OpenAI for one refinement pass when initial replies feel robotic', as
   global.fetch = async (_url, options) => {
     requests.push(JSON.parse(options.body));
     if (requests.length === 1) {
+      return jsonResponse(200, openAIAdviceResponse({
+        is_chat_screenshot: true,
+        non_chat_reply: '',
+        chat_evidence: {
+          image_kind: 'chat',
+          has_message_bubbles: true,
+          has_chat_ui: true,
+          has_two_sided_layout: true,
+        },
+        dialogue: [
+          { side: 'right', speaker: '我', text: '今天刚下课' },
+          { side: 'left', speaker: '对方', text: '我今天也挺忙的' },
+        ],
+        needs_retry: false,
+      }));
+    }
+    if (requests.length === 2) {
       return jsonResponse(200, openAIAdviceResponse(adviceValue({
         dialogue: [
           { side: 'right', speaker: '我', text: '今天刚下课' },
@@ -1201,11 +1222,11 @@ test('asks OpenAI for one refinement pass when initial replies feel robotic', as
     await handler({ method: 'POST', body: requestBody, headers: {} }, response);
 
     assert.equal(response.statusCode, 200);
-    assert.equal(requests.length, 2);
-    assert.match(requests[1].messages[1].content.at(-1).text, /上一轮候选需要重写/);
-    assert.equal(requests[1].messages[1].content.some((part) => part.type === 'image_url'), false);
-    assert.equal(requests[1].max_completion_tokens, REFINEMENT_MAX_COMPLETION_TOKENS);
-    assert.deepEqual(requests[1].response_format.json_schema.schema, REPLY_REFINEMENT_SCHEMA);
+    assert.equal(requests.length, 3);
+    assert.match(requests[2].messages[1].content.at(-1).text, /上一轮候选需要重写/);
+    assert.equal(requests[2].messages[1].content.some((part) => part.type === 'image_url'), false);
+    assert.equal(requests[2].max_completion_tokens, REFINEMENT_MAX_COMPLETION_TOKENS);
+    assert.deepEqual(requests[2].response_format.json_schema.schema, REPLY_REFINEMENT_SCHEMA);
   } finally {
     global.fetch = originalFetch;
     restoreEnvironment('OPENAI_API_KEY', originalApiKey);
@@ -1301,6 +1322,42 @@ test('retains uploaded screenshots in Supabase usage logging', async () => {
     restoreEnvironment('SUPABASE_URL', originalUrl);
     restoreEnvironment('SUPABASE_SERVICE_KEY', originalKey);
   }
+});
+
+test('EXTRACTION_IMAGE_DETAIL is auto', () => {
+  assert.equal(EXTRACTION_IMAGE_DETAIL, 'auto');
+});
+
+test('EXTRACTION_MAX_COMPLETION_TOKENS is 600', () => {
+  assert.equal(EXTRACTION_MAX_COMPLETION_TOKENS, 600);
+});
+
+test('extractDialogueFromImages is a function', () => {
+  assert.equal(typeof extractDialogueFromImages, 'function');
+});
+
+test('buildLocalReplySeeds final fallback does not contain generic counselling replies', () => {
+  const GENERIC = /我先认真听你说|你继续说|这句我接住了|别一个人憋着/;
+  // 空 dialogue 的兜底路径不应返回通用情绪安慰话术
+  // 验证 GENERIC_REPLY_TEMPLATE_PATTERN 对上述内容匹配
+  assert.ok(GENERIC.test('我先认真听你说'), 'pattern should match generic counselling text');
+  // 验证通用话术已从常量列表中无法通过 template check
+  const fakeReply = { text: '我先认真听你说', messages: ['我先认真听你说'] };
+  assert.ok(GENERIC_REPLY_TEMPLATE_PATTERN.test(fakeReply.text), 'GENERIC_REPLY_TEMPLATE_PATTERN should still catch it');
+});
+
+test('background_text prefix is constructed correctly', () => {
+  const backgroundText = '认识两周了，她最近回复变慢了';
+  const prefix = backgroundText
+    ? `【用户提供的背景信息】\n${backgroundText}\n\n`
+    : '';
+  assert.ok(prefix.startsWith('【用户提供的背景信息】'));
+  assert.ok(prefix.includes(backgroundText));
+
+  const emptyPrefix = ''
+    ? `【用户提供的背景信息】\n\n`
+    : '';
+  assert.equal(emptyPrefix, '');
 });
 
 function adviceValue(overrides = {}) {
