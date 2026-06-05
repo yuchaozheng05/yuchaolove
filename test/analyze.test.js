@@ -82,9 +82,12 @@ test('defines a strict schema for richer attraction analysis', () => {
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('analysis'));
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('relationship_memory_engine'));
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('reply_risk'));
+  assert.ok(CHAT_ADVICE_SCHEMA.required.includes('conversation_future'));
+  assert.ok(CHAT_ADVICE_SCHEMA.required.includes('relationship_goal'));
+  assert.ok(CHAT_ADVICE_SCHEMA.required.includes('coach_advice'));
+  assert.ok(CHAT_ADVICE_SCHEMA.required.includes('reply_explanation'));
+  assert.ok(CHAT_ADVICE_SCHEMA.required.includes('next_5_moves'));
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('chat_guide'));
-  // conversation_future / relationship_goal / coach_advice / reply_explanation / next_5_moves
-  // 已从 required 移除以降低 schema token 消耗，字段定义仍在 properties 里
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('next_topics'));
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('sticker_suggestions'));
   assert.ok(CHAT_ADVICE_SCHEMA.required.includes('flirt_level'));
@@ -99,7 +102,7 @@ test('defines a strict schema for richer attraction analysis', () => {
   assert.deepEqual(CHAT_ADVICE_SCHEMA.properties.relationship_memory_engine.properties.relationship_stage.enum, CHAT_ADVICE_SCHEMA.properties.analysis.properties.stage.enum);
   assert.deepEqual(CHAT_ADVICE_SCHEMA.properties.relationship_memory_engine.properties.investment_balance.enum, ['user_investing_more', 'balanced', 'other_person_investing_more']);
   assert.deepEqual(CHAT_ADVICE_SCHEMA.properties.relationship_memory_engine.properties.risk_level.enum, ['too_needy', 'too_cold', 'too_pushy', 'safe']);
-  assert.equal(CHAT_ADVICE_SCHEMA.properties.next_5_moves.minItems, 0);
+  assert.equal(CHAT_ADVICE_SCHEMA.properties.next_5_moves.minItems, 5);
   assert.equal(CHAT_ADVICE_SCHEMA.properties.next_5_moves.maxItems, 5);
   assert.equal(CHAT_ADVICE_SCHEMA.properties.chat_guide.additionalProperties, false);
   assert.equal(CHAT_ADVICE_SCHEMA.properties.replies.minItems, 3);
