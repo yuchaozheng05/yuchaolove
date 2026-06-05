@@ -14,6 +14,9 @@ const PLAYFUL_FLIRT_PATTERN = /想你|喜欢你|喜欢我|心动|见面|想我|�
 const QUESTION_TEASE_PATTERN = /你在干嘛|干嘛|为啥|为什么|真的假的|质疑|怀疑|可疑|你问|问你|说了啥|听不懂|看出来|猜/;
 const NEW_FRIEND_PATTERN = /好友|friend request|let'?s chat|hi|hello|你好|名字|英文名|备注|摩西|小巧思|认识一下/i;
 const VISITOR_STORAGE_KEY = 'yuchaolove_visitor_id';
+const SESSION_MAP_KEY = 'yuchaolove_sessions';
+const SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const SESSION_MAX_PERSONS = 5;
 
 let uploadedImages = [];
 
@@ -148,6 +151,9 @@ async function analyze() {
     const rawText = data.content?.map((part) => part.text || '').join('') || '';
     const parsed = parseAdvice(rawText);
     renderResults(parsed);
+    if (parsed?.is_chat_screenshot === true && Array.isArray(parsed.replies) && parsed.replies.length) {
+      savePersonSession(parsed);
+    }
   } catch (error) {
     console.error('Analyze failed:', error);
     renderRetryNotice(error.message || '分析超时，请重新分析或换一张更清晰截图。你的截图没有问题。');
@@ -181,6 +187,8 @@ function buildRequestMetadata(imageCount) {
     screen_width: window.screen?.width || null,
     screen_height: window.screen?.height || null,
     device_pixel_ratio: window.devicePixelRatio || 1,
+    target_person_label: getPersonLabel(),
+    session_context: buildSessionContext(),
   };
 }
 
@@ -196,6 +204,106 @@ function getVisitorId() {
     return visitorId;
   } catch {
     return 'visitor-unavailable';
+  }
+}
+
+function getPersonLabel() {
+  try {
+    const input = document.getElementById('targetPersonInput');
+    const label = input?.value?.trim();
+    return label || '对方';
+  } catch {
+    return '对方';
+  }
+}
+
+function loadSessionMap() {
+  try {
+    const raw = localStorage.getItem(SESSION_MAP_KEY);
+    if (!raw) return {};
+    const map = JSON.parse(raw);
+    if (!map || typeof map !== 'object' || Array.isArray(map)) return {};
+    const now = Date.now();
+    const pruned = {};
+    for (const [label, session] of Object.entries(map)) {
+      if (session && session.updated_at && now - session.updated_at < SESSION_MAX_AGE_MS) {
+        pruned[label] = session;
+      }
+    }
+    return pruned;
+  } catch {
+    return {};
+  }
+}
+
+function saveSessionMap(map) {
+  try {
+    const entries = Object.entries(map).sort(
+      (a, b) => (b[1].updated_at || 0) - (a[1].updated_at || 0),
+    );
+    const pruned = Object.fromEntries(entries.slice(0, SESSION_MAX_PERSONS));
+    localStorage.setItem(SESSION_MAP_KEY, JSON.stringify(pruned));
+  } catch {
+    // localStorage 不可用时静默忽略
+  }
+}
+
+function buildSessionContext() {
+  try {
+    const label = getPersonLabel();
+    const map = loadSessionMap();
+    const session = map[label];
+    if (!session || !session.dialogue_summary) return null;
+    const daysAgo = Math.floor((Date.now() - session.updated_at) / (24 * 60 * 60 * 1000));
+    return {
+      session_id: session.session_id,
+      target_person_label: label,
+      dialogue_summary: session.dialogue_summary,
+      relationship_stage: session.relationship_stage || '',
+      last_recommended_replies: Array.isArray(session.last_recommended_replies)
+        ? session.last_recommended_replies
+        : [],
+      days_ago: daysAgo,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function savePersonSession(analysisResult) {
+  try {
+    const label = getPersonLabel();
+    const map = loadSessionMap();
+    const existing = map[label];
+    const sessionId =
+      existing?.session_id ||
+      'sess-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+    const dialogue = Array.isArray(analysisResult.dialogue) ? analysisResult.dialogue : [];
+    const dialogueSummary = dialogue
+      .slice(-8)
+      .map((m) => `${m.speaker}：${m.text}`)
+      .join('；')
+      .slice(0, 300);
+    const replies = Array.isArray(analysisResult.replies)
+      ? analysisResult.replies
+          .slice(0, 3)
+          .map((r) => {
+            const msgs = Array.isArray(r.messages) ? r.messages : [];
+            return msgs.join(' / ') || r.text || '';
+          })
+          .filter(Boolean)
+      : [];
+    map[label] = {
+      session_id: sessionId,
+      updated_at: Date.now(),
+      dialogue_summary: dialogueSummary,
+      relationship_stage:
+        analysisResult.relationship_stage || analysisResult.conversation_stage || '',
+      last_recommended_replies: replies,
+    };
+    saveSessionMap(map);
+  } catch {
+    // 静默忽略
   }
 }
 

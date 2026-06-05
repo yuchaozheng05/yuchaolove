@@ -23,6 +23,7 @@ import handler, {
   REFINEMENT_MAX_COMPLETION_TOKENS,
   buildGroupChatAdvice,
   buildIntentPrefix,
+  buildSessionPrefix,
   buildStageChatGuide,
   buildFreeTierFallbackAdvice,
   buildReplyRefinementPrompt,
@@ -41,6 +42,7 @@ import handler, {
   mergeRefinedReplies,
   needsReplyRefinement,
   normalizeDialogue,
+  normalizeSessionContext,
   normalizeStickerSuggestions,
   parseAdvice,
   repairReplyCandidates,
@@ -68,7 +70,7 @@ const requestBody = {
 
 test('uses the OpenAI vision model', () => {
   assert.deepEqual(MODELS, ['gpt-4.1-mini']);
-  assert.equal(PRIMARY_OPENAI_TIMEOUT_MS, 16_000);
+  assert.equal(PRIMARY_OPENAI_TIMEOUT_MS, 26_000);
 });
 
 test('defines a strict schema for richer attraction analysis', () => {
@@ -1343,8 +1345,8 @@ test('retains uploaded screenshots in Supabase usage logging', async () => {
   }
 });
 
-test('EXTRACTION_IMAGE_DETAIL is auto', () => {
-  assert.equal(EXTRACTION_IMAGE_DETAIL, 'auto');
+test('EXTRACTION_IMAGE_DETAIL stays low', () => {
+  assert.equal(EXTRACTION_IMAGE_DETAIL, 'low');
 });
 
 test('EXTRACTION_MAX_COMPLETION_TOKENS is 600', () => {
@@ -1660,6 +1662,104 @@ test('normalizeDialogue defaults confidence to low for feed without confidence f
   ];
   const result = normalizeDialogue(messages);
   assert.equal(result[0].confidence, 'low');
+});
+
+test('normalizeSessionContext returns null for missing input', () => {
+  assert.equal(normalizeSessionContext(null), null);
+  assert.equal(normalizeSessionContext(undefined), null);
+  assert.equal(normalizeSessionContext({}), null);
+  assert.equal(normalizeSessionContext({ session_id: 'x' }), null);
+  assert.equal(normalizeSessionContext({ dialogue_summary: 'y' }), null);
+});
+
+test('normalizeSessionContext returns cleaned object for valid input', () => {
+  const raw = {
+    session_id: 'sess-abc',
+    target_person_label: '小李',
+    dialogue_summary: '对方：你好；我：嗨',
+    relationship_stage: 'daily_connection',
+    last_recommended_replies: ['回复A', '回复B', '回复C', '回复D'],
+    days_ago: 3,
+  };
+  const result = normalizeSessionContext(raw);
+  assert.ok(result !== null);
+  assert.equal(result.session_id, 'sess-abc');
+  assert.equal(result.target_person_label, '小李');
+  assert.equal(result.dialogue_summary, '对方：你好；我：嗨');
+  assert.equal(result.last_recommended_replies.length, 3);
+  assert.equal(result.days_ago, 3);
+});
+
+test('normalizeSessionContext defaults target_person_label to 对方', () => {
+  const result = normalizeSessionContext({
+    session_id: 'sess-x',
+    dialogue_summary: '测试',
+  });
+  assert.ok(result !== null);
+  assert.equal(result.target_person_label, '对方');
+});
+
+test('normalizeSessionContext clamps days_ago to non-negative', () => {
+  const result = normalizeSessionContext({
+    session_id: 'sess-x',
+    dialogue_summary: '测试',
+    days_ago: -3,
+  });
+  assert.ok(result !== null);
+  assert.equal(result.days_ago, 0);
+});
+
+test('buildSessionPrefix returns empty string for null or missing summary', () => {
+  assert.equal(buildSessionPrefix(null), '');
+  assert.equal(buildSessionPrefix(undefined), '');
+  assert.equal(buildSessionPrefix({}), '');
+  assert.equal(buildSessionPrefix({ dialogue_summary: '' }), '');
+});
+
+test('buildSessionPrefix includes person label in output', () => {
+  const ctx = {
+    session_id: 'sess-x',
+    target_person_label: '小李',
+    dialogue_summary: '对方：在干嘛；我：没啥',
+    relationship_stage: 'daily_connection',
+    last_recommended_replies: ['回复A', '回复B'],
+    days_ago: 2,
+  };
+  const prefix = buildSessionPrefix(ctx);
+  assert.ok(prefix.includes('小李'));
+  assert.ok(prefix.includes('2天前'));
+  assert.ok(prefix.includes('daily_connection'));
+  assert.ok(prefix.includes('对方：在干嘛'));
+  assert.ok(prefix.includes('回复A'));
+  assert.ok(prefix.endsWith('\n\n'));
+});
+
+test('buildSessionPrefix uses correct days text for 0 and 1', () => {
+  const base = {
+    session_id: 'x',
+    target_person_label: '对方',
+    dialogue_summary: '测试',
+    last_recommended_replies: [],
+  };
+  assert.ok(buildSessionPrefix({ ...base, days_ago: 0 }).includes('今天'));
+  assert.ok(buildSessionPrefix({ ...base, days_ago: 1 }).includes('昨天'));
+  assert.ok(buildSessionPrefix({ ...base, days_ago: 10 }).includes('10天前'));
+});
+
+test('buildSessionPrefix for different labels are independent', () => {
+  const makeCtx = (label) => ({
+    session_id: 'x',
+    target_person_label: label,
+    dialogue_summary: '测试摘要',
+    last_recommended_replies: [],
+    days_ago: 1,
+  });
+  const prefix1 = buildSessionPrefix(makeCtx('小李'));
+  const prefix2 = buildSessionPrefix(makeCtx('小王'));
+  assert.ok(prefix1.includes('小李'));
+  assert.ok(!prefix1.includes('小王'));
+  assert.ok(prefix2.includes('小王'));
+  assert.ok(!prefix2.includes('小李'));
 });
 
 function adviceValue(overrides = {}) {
