@@ -8,6 +8,9 @@ import handler, {
   EXTRACTION_MAX_COMPLETION_TOKENS,
   GENERIC_REPLY_TEMPLATE_PATTERN,
   IMAGE_READING_RULES,
+  INTENT_DETECTION_SCHEMA,
+  INTENT_MAX_COMPLETION_TOKENS,
+  INTENT_STRATEGY_MAP,
   MODELS,
   PRIMARY_IMAGE_DETAIL,
   PRIMARY_MAX_COMPLETION_TOKENS,
@@ -16,10 +19,12 @@ import handler, {
   REPLY_PERSPECTIVE_EXAMPLES,
   REPLY_REFINEMENT_SCHEMA,
   REFINEMENT_MAX_COMPLETION_TOKENS,
+  buildIntentPrefix,
   buildStageChatGuide,
   buildFreeTierFallbackAdvice,
   buildReplyRefinementPrompt,
   buildStickerMatchIntent,
+  detectConversationIntent,
   detectScene,
   extractDialogueFromImages,
   extractFirstJsonObject,
@@ -1202,6 +1207,17 @@ test('asks OpenAI for one refinement pass when initial replies feel robotic', as
       }));
     }
     if (requests.length === 2) {
+      return jsonResponse(200, openAIAdviceResponse({
+        primary_intent: 'DAILY_CHAT',
+        speaker_flow: 'balanced',
+        emotional_valence: 'neutral',
+        attention_signal: 0,
+        my_last_reply_warmth: 'neutral',
+        repair_needed: false,
+        intent_confidence: 'medium',
+      }));
+    }
+    if (requests.length === 3) {
       return jsonResponse(200, openAIAdviceResponse(adviceValue({
         dialogue: [
           { side: 'right', speaker: '我', text: '今天刚下课' },
@@ -1222,11 +1238,11 @@ test('asks OpenAI for one refinement pass when initial replies feel robotic', as
     await handler({ method: 'POST', body: requestBody, headers: {} }, response);
 
     assert.equal(response.statusCode, 200);
-    assert.equal(requests.length, 3);
-    assert.match(requests[2].messages[1].content.at(-1).text, /上一轮候选需要重写/);
-    assert.equal(requests[2].messages[1].content.some((part) => part.type === 'image_url'), false);
-    assert.equal(requests[2].max_completion_tokens, REFINEMENT_MAX_COMPLETION_TOKENS);
-    assert.deepEqual(requests[2].response_format.json_schema.schema, REPLY_REFINEMENT_SCHEMA);
+    assert.equal(requests.length, 4);
+    assert.match(requests[3].messages[1].content.at(-1).text, /上一轮候选需要重写/);
+    assert.equal(requests[3].messages[1].content.some((part) => part.type === 'image_url'), false);
+    assert.equal(requests[3].max_completion_tokens, REFINEMENT_MAX_COMPLETION_TOKENS);
+    assert.deepEqual(requests[3].response_format.json_schema.schema, REPLY_REFINEMENT_SCHEMA);
   } finally {
     global.fetch = originalFetch;
     restoreEnvironment('OPENAI_API_KEY', originalApiKey);
@@ -1358,6 +1374,180 @@ test('background_text prefix is constructed correctly', () => {
     ? `【用户提供的背景信息】\n\n`
     : '';
   assert.equal(emptyPrefix, '');
+});
+
+test('intent detection schema and strategy map are available', () => {
+  assert.equal(INTENT_MAX_COMPLETION_TOKENS, 200);
+  assert.ok(INTENT_DETECTION_SCHEMA.required.includes('primary_intent'));
+  assert.ok(INTENT_DETECTION_SCHEMA.properties.primary_intent.enum.includes('SEEKING_ATTENTION'));
+  assert.ok(INTENT_DETECTION_SCHEMA.properties.primary_intent.enum.includes('ANSWERING_QUESTION'));
+  assert.equal(INTENT_STRATEGY_MAP.SEEKING_ATTENTION.tone, '轻松诚恳');
+  assert.match(INTENT_STRATEGY_MAP.ANSWERING_QUESTION.reply_direction, /接住答案/);
+  assert.equal(typeof detectConversationIntent, 'function');
+});
+
+test('buildIntentPrefix injects strategy and repair warning', () => {
+  const prefix = buildIntentPrefix({
+    primary_intent: 'SEEKING_ATTENTION',
+    speaker_flow: 'other_initiates',
+    emotional_valence: 'neutral',
+    attention_signal: 3,
+    my_last_reply_warmth: 'cold',
+    repair_needed: true,
+    intent_confidence: 'high',
+  }, INTENT_STRATEGY_MAP);
+
+  assert.match(prefix, /【对话意图分析】/);
+  assert.match(prefix, /SEEKING_ATTENTION/);
+  assert.match(prefix, /修复优先/);
+  assert.match(prefix, /先修复我方偏冷的回复/);
+  assert.match(prefix, /绝对不要建议给对方空间/);
+});
+
+test('handler runs intent detection after extraction and injects intent into analysis prompt', async () => {
+  const originalFetch = global.fetch;
+  const originalApiKey = process.env.OPENAI_API_KEY;
+  process.env.OPENAI_API_KEY = 'test-key';
+  const requests = [];
+  global.fetch = async (_url, options) => {
+    requests.push(JSON.parse(options.body));
+    if (requests.length === 1) {
+      return jsonResponse(200, openAIAdviceResponse({
+        is_chat_screenshot: true,
+        non_chat_reply: '',
+        chat_evidence: {
+          image_kind: 'chat',
+          has_message_bubbles: true,
+          has_chat_ui: true,
+          has_two_sided_layout: true,
+        },
+        dialogue: [
+          { side: 'left', speaker: '对方', text: '在干嘛' },
+          { side: 'right', speaker: '我', text: 'o' },
+          { side: 'left', speaker: '对方', text: '找你说话' },
+        ],
+        needs_retry: false,
+      }));
+    }
+    if (requests.length === 2) {
+      return jsonResponse(200, openAIAdviceResponse({
+        primary_intent: 'SEEKING_ATTENTION',
+        speaker_flow: 'other_initiates',
+        emotional_valence: 'neutral',
+        attention_signal: 3,
+        my_last_reply_warmth: 'cold',
+        repair_needed: true,
+        intent_confidence: 'high',
+      }));
+    }
+    return jsonResponse(200, openAIAdviceResponse());
+  };
+
+  try {
+    const response = createResponseRecorder();
+    await handler({ method: 'POST', body: requestBody, headers: {} }, response);
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(requests.length, 3);
+    assert.equal(requests[1].messages[1].content.some((part) => part.type === 'image_url'), false);
+    assert.equal(requests[1].max_completion_tokens, INTENT_MAX_COMPLETION_TOKENS);
+    assert.deepEqual(requests[1].response_format.json_schema.schema, INTENT_DETECTION_SCHEMA);
+    assert.equal(requests[2].messages[1].content.some((part) => part.type === 'image_url'), false);
+    const analysisPrompt = requests[2].messages[1].content.at(-1).text;
+    assert.match(analysisPrompt, /【对话意图分析】/);
+    assert.match(analysisPrompt, /SEEKING_ATTENTION/);
+    assert.match(analysisPrompt, /修复优先/);
+    assert.match(analysisPrompt, /【已提取的对话内容】/);
+  } finally {
+    global.fetch = originalFetch;
+    restoreEnvironment('OPENAI_API_KEY', originalApiKey);
+  }
+});
+
+test('INTENT_MAX_COMPLETION_TOKENS is 200', () => {
+  assert.equal(INTENT_MAX_COMPLETION_TOKENS, 200);
+});
+
+test('INTENT_DETECTION_SCHEMA has correct primary_intent enum', () => {
+  const intents = INTENT_DETECTION_SCHEMA.properties.primary_intent.enum;
+  assert.ok(intents.includes('ANSWERING_QUESTION'));
+  assert.ok(intents.includes('SEEKING_ATTENTION'));
+  assert.ok(intents.includes('SHARING_MEDIA'));
+  assert.ok(intents.includes('EMOTIONAL_VENTING'));
+  assert.ok(intents.includes('COLD_REPLY'));
+  assert.equal(intents.length, 12);
+  assert.equal(INTENT_DETECTION_SCHEMA.additionalProperties, false);
+});
+
+test('INTENT_STRATEGY_MAP has entries for all 12 intents', () => {
+  const required = [
+    'ANSWERING_QUESTION', 'SHARING_EXPERIENCE', 'SHARING_INTEREST', 'SHARING_MEDIA',
+    'EMOTIONAL_VENTING', 'SEEKING_ATTENTION', 'PLAYFUL_TEASE', 'COMPLAINT_PROBE',
+    'PLANNING', 'GREETING', 'COLD_REPLY', 'DAILY_CHAT',
+  ];
+  required.forEach((intent) => {
+    assert.ok(INTENT_STRATEGY_MAP[intent], `Missing strategy for ${intent}`);
+    assert.ok(INTENT_STRATEGY_MAP[intent].reply_direction, `Missing reply_direction for ${intent}`);
+    assert.ok(INTENT_STRATEGY_MAP[intent].avoid, `Missing avoid for ${intent}`);
+  });
+});
+
+test('detectConversationIntent is a function', () => {
+  assert.equal(typeof detectConversationIntent, 'function');
+});
+
+test('buildIntentPrefix returns empty string for null intent', () => {
+  const prefix = buildIntentPrefix(null, INTENT_STRATEGY_MAP);
+  assert.equal(prefix, '');
+});
+
+test('buildIntentPrefix for SEEKING_ATTENTION with cold reply includes repair warning', () => {
+  const intent = {
+    primary_intent: 'SEEKING_ATTENTION',
+    speaker_flow: 'other_initiates',
+    emotional_valence: 'neutral',
+    attention_signal: 2,
+    my_last_reply_warmth: 'cold',
+    repair_needed: true,
+    intent_confidence: 'high',
+  };
+  const prefix = buildIntentPrefix(intent, INTENT_STRATEGY_MAP);
+  assert.ok(prefix.includes('SEEKING_ATTENTION'));
+  assert.ok(prefix.includes('修复优先') || prefix.includes('repair'));
+  assert.ok(prefix.includes('cold'));
+  assert.ok(prefix.includes('【本次回复策略】'));
+  assert.ok(prefix.endsWith('\n\n'));
+});
+
+test('buildIntentPrefix for ANSWERING_QUESTION does not include repair warning', () => {
+  const intent = {
+    primary_intent: 'ANSWERING_QUESTION',
+    speaker_flow: 'other_answers_me',
+    emotional_valence: 'positive',
+    attention_signal: 0,
+    my_last_reply_warmth: 'neutral',
+    repair_needed: false,
+    intent_confidence: 'high',
+  };
+  const prefix = buildIntentPrefix(intent, INTENT_STRATEGY_MAP);
+  assert.ok(prefix.includes('ANSWERING_QUESTION'));
+  assert.ok(!prefix.includes('修复优先'));
+  assert.ok(prefix.includes('接住答案'));
+});
+
+test('buildIntentPrefix for SHARING_MEDIA does not recommend emotional counselling', () => {
+  const intent = {
+    primary_intent: 'SHARING_MEDIA',
+    speaker_flow: 'other_shares',
+    emotional_valence: 'positive',
+    attention_signal: 0,
+    my_last_reply_warmth: 'neutral',
+    repair_needed: false,
+    intent_confidence: 'high',
+  };
+  const prefix = buildIntentPrefix(intent, INTENT_STRATEGY_MAP);
+  assert.ok(prefix.includes('SHARING_MEDIA'));
+  assert.ok(!prefix.includes('情绪安慰'));
 });
 
 function adviceValue(overrides = {}) {

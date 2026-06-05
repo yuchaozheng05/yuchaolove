@@ -15,6 +15,8 @@ const REFINEMENT_OPENAI_TIMEOUT_MS = 8_000;
 const EXTRACTION_IMAGE_DETAIL = 'auto';
 const EXTRACTION_MAX_COMPLETION_TOKENS = 600;
 const EXTRACTION_OPENAI_TIMEOUT_MS = 10_000;
+const INTENT_MAX_COMPLETION_TOKENS = 200;
+const INTENT_OPENAI_TIMEOUT_MS = 8_000;
 const EMOTIONAL_DISCLOSURE_PATTERN = /困死|好困|太困|困了|很困|累死|好累|太累|累了|很累|疼|痛|难受|不舒服|烦|焦虑|压力|不想上学|不想去|没写完|睡不着|崩溃|想哭|生病|发烧|胃疼|肚子疼|头疼|头痛|想太多|做不出来|卡住|里面好闷|好闷/;
 const PHYSICAL_DISCOMFORT_PATTERN = /疼|痛|难受|不舒服|生病|发烧|胃疼|肚子疼|头疼|头痛/;
 const STUDY_STRESS_PATTERN = /考试|考完|考砸|复习|作业|没写完|论文|ddl|期中|期末|测验|quiz|midterm|final|题|第一题|做不出来|卡住|想太多|最近的东西/i;
@@ -100,6 +102,37 @@ ${REPLY_PERSPECTIVE_EXAMPLES}`;
 const REPLY_REFINEMENT_SYSTEM_PROMPT = `你是中文聊天回复编辑。你会收到已经识别好的对话和一组不够自然的候选回复。
 只重写 replies，不要重新分析图片，不要编造对话里没有出现的信息。
 候选必须是“我”准备发给“对方”的话，输出 3 到 5 组自然、简短、可以直接发送的回复。每组带 style，用 messages 表示 1 到 3 条微信连续消息，text 等于 messages 用换行拼起来；最多一组候选带问号。`;
+const INTENT_DETECTION_SYSTEM_PROMPT = `你是对话行为分析器。给定一段中文聊天记录，判断对方（speaker=对方）最近消息的对话行为意图。只返回 JSON，不要解释。
+
+primary_intent 判断规则：
+- ANSWERING_QUESTION：对方在回答我（speaker=我）提出的问题。关键信号：我方最近有问句，对方在补充说明或直接回应。
+- SHARING_EXPERIENCE：对方在分享自己的个人经历、过往事件或已发生的事（例如：我之前学过拉丁、21年五月开始跳的）。
+- SHARING_INTEREST：对方在介绍自己的爱好、兴趣、偏好（例如：我喜欢跑步、我一直喜欢这个风格）。
+- SHARING_MEDIA：对方在推荐或分享音乐、视频、内容创作者、偶像（例如：一直是我担rose、从bp出道、太好听了）。
+- EMOTIONAL_VENTING：对方在倾诉情绪、压力、身体不适（困、累、疼、难受、崩溃、头痛等）。
+- SEEKING_ATTENTION：对方在索要关注、查岗、抱怨我回复冷淡（在干嘛、找你说话、不理我、我俩很不熟吗等）。
+- PLAYFUL_TEASE：对方在开玩笑、撩拨、调侃、玩梗。
+- COMPLAINT_PROBE：对方轻微抱怨我方不够积极，在试探关系亲密度（算了不说了、你都不找我、不打扰你了等）。
+- PLANNING：对方在讨论计划、安排、约定或询问行程。
+- GREETING：对方在打招呼，包括早安晚安问候。
+- COLD_REPLY：对方回复简短敷衍，接话意愿低（嗯/哦/哈哈/好）。
+- DAILY_CHAT：轻松日常闲聊，无明显特定意图。
+
+speaker_flow：
+- other_answers_me：对方在回答我方的问题
+- other_shares：对方主动分享信息/经历/内容
+- other_initiates：对方主动发起新话题
+- balanced：双方都在接球
+- user_initiates：我方主导话题
+
+my_last_reply_warmth：判断我（speaker=我）最后一条消息的回复温度：
+- cold：过短、只回一个字或符号（嗯/哦/o/好/有吗）
+- neutral：正常长度的回复
+- warm：认真、有细节、主动延伸的回复
+
+repair_needed：primary_intent 是 SEEKING_ATTENTION 或 COMPLAINT_PROBE，且 my_last_reply_warmth 是 cold 时为 true，否则为 false。
+
+intent_confidence：对判断的把握程度（high/medium/low）。`;
 const CHAT_ADVICE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -391,6 +424,56 @@ const OCR_RETRY_SCHEMA = {
   },
   required: ['is_chat_screenshot', 'non_chat_reply', 'chat_evidence', 'dialogue', 'needs_retry'],
 };
+const INTENT_DETECTION_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    primary_intent: {
+      type: 'string',
+      enum: [
+        'ANSWERING_QUESTION',
+        'SHARING_EXPERIENCE',
+        'SHARING_INTEREST',
+        'SHARING_MEDIA',
+        'EMOTIONAL_VENTING',
+        'SEEKING_ATTENTION',
+        'PLAYFUL_TEASE',
+        'COMPLAINT_PROBE',
+        'PLANNING',
+        'GREETING',
+        'COLD_REPLY',
+        'DAILY_CHAT',
+      ],
+    },
+    speaker_flow: {
+      type: 'string',
+      enum: ['other_answers_me', 'other_shares', 'other_initiates', 'balanced', 'user_initiates'],
+    },
+    emotional_valence: {
+      type: 'string',
+      enum: ['positive', 'neutral', 'negative'],
+    },
+    attention_signal: { type: 'integer', minimum: 0, maximum: 3 },
+    my_last_reply_warmth: {
+      type: 'string',
+      enum: ['cold', 'neutral', 'warm'],
+    },
+    repair_needed: { type: 'boolean' },
+    intent_confidence: {
+      type: 'string',
+      enum: ['high', 'medium', 'low'],
+    },
+  },
+  required: [
+    'primary_intent',
+    'speaker_flow',
+    'emotional_valence',
+    'attention_signal',
+    'my_last_reply_warmth',
+    'repair_needed',
+    'intent_confidence',
+  ],
+};
 const OCR_RETRY_SYSTEM_PROMPT = `你只做聊天截图 OCR。
 判断图片是否为微信/聊天截图。若是，按视觉位置提取可见聊天文字：左侧气泡=对方，右侧气泡=我。忽略时间、头像、昵称、系统提示。
 不要生成回复，不要分析关系，不要总结。只返回 schema JSON。`;
@@ -497,12 +580,38 @@ export default async function handler(req, res) {
           extractedDialogue = null;
         }
 
-        // 阶段二：语义分析 + 回复生成（Analysis Call）
+        // 阶段一点五：意图识别 (Intent Detection Call)
+        let conversationIntent = null;
+        if (extractedDialogue && extractedDialogue.dialogue.length > 0) {
+          try {
+            conversationIntent = await detectConversationIntent({
+              apiKey,
+              model,
+              dialogue: extractedDialogue.dialogue,
+              requestId: `${requestId}-intent`,
+            });
+            console.info(`[${requestId}] Intent Detection succeeded`, {
+              primary_intent: conversationIntent?.primary_intent,
+              speaker_flow: conversationIntent?.speaker_flow,
+              emotional_valence: conversationIntent?.emotional_valence,
+              repair_needed: conversationIntent?.repair_needed,
+              intent_confidence: conversationIntent?.intent_confidence,
+            });
+          } catch (intentError) {
+            console.warn(`[${requestId}] Intent Detection failed, continuing without intent`, {
+              error: summarizeError(intentError),
+            });
+            conversationIntent = null;
+          }
+        }
+
+        // 阶段二：语义分析 + 回复生成 (Analysis Call)
         const backgroundText = cleanText(metadata.background_text, 1000);
         const backgroundPrefix = backgroundText
           ? `【用户提供的背景信息】\n${backgroundText}\n\n`
           : '';
-        const analysisPrompt = backgroundPrefix + textPart.text;
+        const intentPrefix = buildIntentPrefix(conversationIntent, INTENT_STRATEGY_MAP);
+        const analysisPrompt = intentPrefix + backgroundPrefix + textPart.text;
 
         debug.vision_called = true;
         const rawResult = await requestOpenAIAdviceWithVisionRetry({
@@ -886,6 +995,53 @@ async function extractDialogueFromImages({ apiKey, model, imageParts, requestId 
     chat_evidence: value.chat_evidence || {},
     non_chat_reply: cleanText(value.non_chat_reply, 120),
   };
+}
+
+async function detectConversationIntent({ apiKey, model, dialogue, requestId = 'intent' }) {
+  if (!dialogue || dialogue.length === 0) return null;
+  const dialogueText = dialogue
+    .slice(-10)
+    .map((m) => `${m.speaker}：${m.text}`)
+    .join('\n');
+  const rawText = await requestOpenAIAdvice({
+    apiKey,
+    model,
+    imageParts: [],
+    prompt: `以下是聊天记录（最近 ${Math.min(dialogue.length, 10)} 条）：\n\n${dialogueText}\n\n请分析对方（speaker=对方）最近消息的对话行为意图，按 schema 输出。`,
+    requestId,
+    imageDetail: PRIMARY_IMAGE_DETAIL,
+    maxCompletionTokens: INTENT_MAX_COMPLETION_TOKENS,
+    responseSchema: INTENT_DETECTION_SCHEMA,
+    systemPrompt: INTENT_DETECTION_SYSTEM_PROMPT,
+    timeoutMs: INTENT_OPENAI_TIMEOUT_MS,
+  });
+  const raw = typeof rawText === 'string' ? rawText : (rawText?.text || '');
+  return safeJsonParse(raw);
+}
+
+function buildIntentPrefix(intent, strategyMap) {
+  if (!intent || !intent.primary_intent) return '';
+  const strategy = strategyMap[intent.primary_intent] || strategyMap['DAILY_CHAT'] || {};
+  const avoidText = (strategy.avoid || '不要复述原话').replace(/情绪安慰/g, '倾诉模板');
+  const repairWarning = intent.repair_needed
+    ? '⚠️ 修复优先：我方回复偏冷，对方在主动索要关注，必须先承认刚才回得不好再给话题。\n'
+    : '';
+  return [
+    '【对话意图分析】',
+    `对话行为：${intent.primary_intent}`,
+    `说话方向：${intent.speaker_flow}`,
+    `情绪基调：${intent.emotional_valence}`,
+    `我方上条回复温度：${intent.my_last_reply_warmth}`,
+    repairWarning,
+    '【本次回复策略】',
+    `方向：${strategy.reply_direction || '接住最后一句，顺着聊'}`,
+    `语气：${strategy.tone || '自然'}`,
+    `避免：${avoidText}`,
+    '',
+    '',
+  ]
+    .filter((line) => line !== undefined)
+    .join('\n');
 }
 
 async function requestOpenAIAdviceWithVisionRetry(args) {
@@ -2186,6 +2342,7 @@ function buildActiveCuriosityGuide() {
 
 const SCENE_LIBRARY_PATH = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'chat', 'scene-library.json');
 const RELATIONSHIP_ENGINE_PATH = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'chat', 'relationship-engine.v1.json');
+const INTENT_STRATEGY_MAP_PATH = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'chat', 'intent-strategy-map.json');
 const STICKER_LIBRARY_PATH = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'stickers', 'sticker-library.json');
 const STICKER_CATALOG_PATH = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'stickers', 'catalog.v1.json');
 const RELATIONSHIP_STAGES = new Set(['ice_breaking', 'daily_connection', 'emotional_bonding', 'push_pull_flirting', 'offline_invitation', 'relationship_confirmation']);
@@ -2207,6 +2364,7 @@ const LEGACY_STAGE_TO_RELATIONSHIP_STAGE = {
 };
 const CHAT_SCENE_LIBRARY = loadSceneLibrary();
 const RELATIONSHIP_ENGINE_CONFIG = loadRelationshipEngineConfig();
+const INTENT_STRATEGY_MAP = loadIntentStrategyMap();
 const STICKER_LIBRARY = loadStickerLibrary();
 const STOCK_STICKER_CATALOG = loadStickerCatalog();
 const STICKER_RECOMMENDATION_COUNT = 6;
@@ -2442,6 +2600,15 @@ function loadSceneLibrary() {
   } catch (error) {
     console.warn(`Scene library failed to load: ${error.message}`);
     return { version: '0.0.0', relationship_stages: RELATIONSHIP_STAGE_LABELS, scenes: [] };
+  }
+}
+
+function loadIntentStrategyMap() {
+  try {
+    return JSON.parse(readFileSync(INTENT_STRATEGY_MAP_PATH, 'utf8'));
+  } catch (error) {
+    console.warn(`Intent strategy map failed to load: ${error.message}`);
+    return {};
   }
 }
 
@@ -4723,4 +4890,4 @@ function buildStoragePath({ visitorId, index, ext }) {
   return `screenshots/${day}/${safeVisitorId}-${Date.now()}-${index}.${ext}`;
 }
 
-export { CHAT_ADVICE_SCHEMA, CHAT_SCENE_LIBRARY, EXTRACTION_IMAGE_DETAIL, EXTRACTION_MAX_COMPLETION_TOKENS, GENERIC_REPLY_TEMPLATE_PATTERN, IMAGE_READING_RULES, MODELS, PRIMARY_IMAGE_DETAIL, PRIMARY_MAX_COMPLETION_TOKENS, PRIMARY_OPENAI_TIMEOUT_MS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, REPLY_REFINEMENT_SCHEMA, REFINEMENT_MAX_COMPLETION_TOKENS, analyzeConversationDirection, buildActiveCuriosityGuide, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildGroundedFallbackReplies, buildReplyRefinementPrompt, buildStageChatGuide, buildStickerMatchIntent, detectScene, extractConcreteFacts, extractDialogueFromImages, extractFirstJsonObject, getReplyGroundingReport, getRequestParts, getStickerContext, hasActiveCuriosity, hasHappyEmotion, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, hasStudyStress, inferConversationStage, isRetryableModelError, isVerifiedChatScreenshot, logUsage, mergeRefinedReplies, needsReplyRefinement, normalizeChatGuide, normalizeConversationMode, normalizeConversationStage, normalizeDialogue, normalizeChatEvidence, normalizeStickerSuggestions, parseAdvice, recommendStockStickers, repairReplyCandidates, requestOpenAIAdvice, requestOpenAIReplyRefinement, safeJsonParse, scoreStockSticker };
+export { CHAT_ADVICE_SCHEMA, CHAT_SCENE_LIBRARY, EXTRACTION_IMAGE_DETAIL, EXTRACTION_MAX_COMPLETION_TOKENS, GENERIC_REPLY_TEMPLATE_PATTERN, IMAGE_READING_RULES, INTENT_DETECTION_SCHEMA, INTENT_DETECTION_SYSTEM_PROMPT, INTENT_MAX_COMPLETION_TOKENS, INTENT_STRATEGY_MAP, MODELS, PRIMARY_IMAGE_DETAIL, PRIMARY_MAX_COMPLETION_TOKENS, PRIMARY_OPENAI_TIMEOUT_MS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, REPLY_REFINEMENT_SCHEMA, REFINEMENT_MAX_COMPLETION_TOKENS, analyzeConversationDirection, buildActiveCuriosityGuide, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildGroundedFallbackReplies, buildIntentPrefix, buildReplyRefinementPrompt, buildStageChatGuide, buildStickerMatchIntent, detectConversationIntent, detectScene, extractConcreteFacts, extractDialogueFromImages, extractFirstJsonObject, getReplyGroundingReport, getRequestParts, getStickerContext, hasActiveCuriosity, hasHappyEmotion, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, hasStudyStress, inferConversationStage, isRetryableModelError, isVerifiedChatScreenshot, logUsage, mergeRefinedReplies, needsReplyRefinement, normalizeChatGuide, normalizeConversationMode, normalizeConversationStage, normalizeDialogue, normalizeChatEvidence, normalizeStickerSuggestions, parseAdvice, recommendStockStickers, repairReplyCandidates, requestOpenAIAdvice, requestOpenAIReplyRefinement, safeJsonParse, scoreStockSticker };

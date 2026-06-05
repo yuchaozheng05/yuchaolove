@@ -1,0 +1,62 @@
+{
+  "ANSWERING_QUESTION": {
+    "reply_direction": "接住答案，顺着一个细节自然延伸，可以补一个好奇的追问",
+    "tone": "轻松好奇",
+    "avoid": "不要情绪安慰，不要转移话题，不要假装没听到对方的回答"
+  },
+  "SHARING_EXPERIENCE": {
+    "reply_direction": "认真接住分享的核心细节，问一个具体的点，让对方感觉被听到",
+    "tone": "真诚有兴趣",
+    "avoid": "不要泛泛说好厉害，不要立刻转到自己的经历，不要情绪安慰"
+  },
+  "SHARING_INTEREST": {
+    "reply_direction": "接住对方分享的兴趣，给真实反应，顺着聊一两句",
+    "tone": "轻松自然",
+    "avoid": "不要说我先认真听你说，不要当成情绪倾诉处理"
+  },
+  "SHARING_MEDIA": {
+    "reply_direction": "接住推荐的内容，给真实好奇或共鸣，可以顺着聊为什么喜欢",
+    "tone": "轻松",
+    "avoid": "不要情绪安慰，不要转话题，不要只说好厉害"
+  },
+  "EMOTIONAL_VENTING": {
+    "reply_direction": "情绪优先，先接住不舒服或压力，给一个具体行动建议，不要说教",
+    "tone": "温柔关心",
+    "avoid": "不要说教，不要复述对方原话，不要趁机暧昧，不要只说多喝热水"
+  },
+  "SEEKING_ATTENTION": {
+    "reply_direction": "先修复我方偏冷的回复，承认刚才回得不够认真，主动给一个话题让对方有台阶继续聊",
+    "tone": "轻松诚恳",
+    "avoid": "绝对不要建议给对方空间，不要说对方信号弱，不要继续只回一个字"
+  },
+  "PLAYFUL_TEASE": {
+    "reply_direction": "接梗，轻松回球，可以反将一军，保持玩笑氛围",
+    "tone": "幽默轻松",
+    "avoid": "不要太正经，不要情绪安慰，不要把玩笑当成倾诉处理"
+  },
+  "COMPLAINT_PROBE": {
+    "reply_direction": "先给确认感，承认最近回复不够认真，主动补一句真诚的话",
+    "tone": "诚恳温和",
+    "avoid": "不要防御，不要解释太多，不要建议给对方空间"
+  },
+  "PLANNING": {
+    "reply_direction": "认真参与讨论，给具体意见或建议，推进计划",
+    "tone": "认真实用",
+    "avoid": "不要敷衍，不要无关暧昧，不要转话题"
+  },
+  "GREETING": {
+    "reply_direction": "自然回应问候，可以顺势聊今天的状态或期待的事",
+    "tone": "轻松温暖",
+    "avoid": "不要太正式，不要太敷衍，不要情绪安慰"
+  },
+  "COLD_REPLY": {
+    "reply_direction": "降低推进强度，给一个轻松收尾，留空间给对方",
+    "tone": "轻松",
+    "avoid": "不要继续连续追问，不要表现急迫，不要强行升温"
+  },
+  "DAILY_CHAT": {
+    "reply_direction": "接住最后一句，补一个具体细节，观察对方是否继续接球",
+    "tone": "轻松自然",
+    "avoid": "不要一次连续追问太多，不要情绪安慰"
+  }
+}
