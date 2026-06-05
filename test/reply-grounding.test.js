@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  analyzeConversationDirection,
   detectScene,
   extractConcreteFacts,
   getReplyGroundingReport,
@@ -44,7 +45,11 @@ function buildAdviceValue(dialogueTexts, replies = GENERIC_REPLIES) {
       next_steps: [],
       avoid: '',
     },
-    dialogue: dialogueTexts.map((text) => ({ side: 'left', speaker: '对方', text })),
+    dialogue: dialogueTexts.map((entry) => (
+      typeof entry === 'string'
+        ? { side: 'left', speaker: '对方', text: entry }
+        : entry
+    )),
     suggest_stop: false,
     needs_retry: false,
     replies,
@@ -52,8 +57,69 @@ function buildAdviceValue(dialogueTexts, replies = GENERIC_REPLIES) {
   };
 }
 
+function buildMixedAdviceValue(dialogue, replies = [
+  { messages: ['节奏提醒：对方现在接话信号比较弱，先别硬聊'] },
+  { messages: ['先不要继续发消息', '给对方一点空间'] },
+  { messages: ['不要复述对方原话', '晚点换一个轻松日常再开'] },
+]) {
+  return {
+    attitude_label: '冷淡回复',
+    attitude_desc: '对方现在接话信号比较弱，先别硬聊。',
+    interest_score: 35,
+    interest_level: '低意愿',
+    interest_signals: ['短回复'],
+    conversation_mode: '冷淡敷衍',
+    conversation_stage: '建议停手',
+    reply_strategy: '先不要继续发消息。',
+    flirt_level: '先别暧昧',
+    is_chat_screenshot: true,
+    non_chat_reply: '',
+    chat_evidence: {
+      image_kind: 'chat',
+      has_message_bubbles: true,
+      has_chat_ui: true,
+      has_two_sided_layout: true,
+    },
+    conversation_summary: '',
+    chat_guide: {
+      current_move: '先停一下，把空间留给对方。',
+      next_steps: ['暂停推进。', '晚点换一个轻松日常再开。'],
+      avoid: '不要一次性连续追问。',
+    },
+    dialogue,
+    suggest_stop: true,
+    needs_retry: false,
+    analysis: {
+      stage: 'ice_breaking',
+      scene: '冷淡回复',
+      emotion: 'awkward',
+      reply_intent: 'deescalate_gracefully',
+      intimacy_score: 35,
+    },
+    relationship_memory_engine: {
+      relationship_stage: 'ice_breaking',
+      intimacy_score: 35,
+      attraction_score: 35,
+      investment_balance: 'user_investing_more',
+      initiator: 'user',
+      risk_level: 'too_needy',
+      next_best_move: '先不要继续发消息。',
+    },
+    replies,
+    sticker_suggestions: [
+      { text: '收到', emotion: 'awkward', scenario: 'safe_exit', relationship_stage: 'post_conflict', keywords: ['先撤'] },
+    ],
+  };
+}
+
 function runGroundedCase(dialogueTexts) {
   const advice = parseAdvice(JSON.stringify(buildAdviceValue(dialogueTexts)));
+  return needsReplyRefinement(advice) ? repairReplyCandidates(advice) : advice;
+}
+
+function runMixedDirectionCase(dialogue) {
+  const normalized = normalizeDialogue(dialogue);
+  const advice = parseAdvice(JSON.stringify(buildMixedAdviceValue(normalized)));
   return needsReplyRefinement(advice) ? repairReplyCandidates(advice) : advice;
 }
 
@@ -209,9 +275,15 @@ const CASES = [
   },
   {
     name: 'Case 16 cold replies',
-    input: ['嗯', '哦', '哈哈'],
+    input: [
+      { side: 'right', speaker: '我', text: '你在干嘛' },
+      { side: 'left', speaker: '对方', text: '嗯' },
+      { side: 'right', speaker: '我', text: '怎么不回我' },
+      { side: 'right', speaker: '我', text: '你是不是不想聊' },
+      { side: 'left', speaker: '对方', text: '不知道' },
+    ],
     scene: /冷淡回复/,
-    must: /嗯哦哈哈|不继续追问|接话兴致不高|放轻/,
+    must: /不继续追问|接话兴致不高|放轻|先收一下/,
     next: /暂停|晚点|轻松/,
     stickers: /收到|啊这|尴尬|awkward/,
   },
@@ -282,5 +354,104 @@ test('20 core reply grounding regression cases stay tied to screenshot facts', (
     assert.match(stickerText, fixture.stickers, `${fixture.name}: sticker tags/text should match scene`);
     assert.equal(seenReplyBodies.has(replyText), false, `${fixture.name}: replies should not duplicate another scene`);
     seenReplyBodies.add(replyText);
+  }
+});
+
+const DIRECTION_CASES = [
+  {
+    name: 'case_attention_seeking_user_too_cold',
+    dialogue: [
+      { side: 'right', text: '好的' },
+      { side: 'left', text: '在干嘛' },
+      { side: 'left', text: '在干嘛' },
+      { side: 'right', text: '不知道' },
+      { side: 'left', text: '在干嘛' },
+      { side: 'right', text: '你要干啥' },
+      { side: 'left', text: '不知道' },
+      { side: 'left', text: '找你说话' },
+      { side: 'right', text: 'o' },
+      { side: 'left', text: '我俩很不熟吗' },
+    ],
+    scene: /attention_seeking|playful_complaint|wants_connection|user_too_cold/,
+    must: /回太冷|补回来|不熟|找你说话|不该只回一个 o|脑子卡住|别扣我分/,
+  },
+  {
+    name: 'Case A other asks why user ignored her',
+    dialogue: [
+      { side: 'left', text: '你怎么不理我' },
+      { side: 'left', text: '我找你说话呢' },
+      { side: 'right', text: '刚看到' },
+    ],
+    scene: /attention_seeking|wants_connection|user_too_cold/,
+    must: /没有打扰|不是不想理|认真陪你聊|刚刚是我回得太冷/,
+  },
+  {
+    name: 'Case B playful complaint user does not initiate',
+    dialogue: [
+      { side: 'left', text: '你最近都不找我' },
+      { side: 'right', text: '有吗' },
+      { side: 'left', text: '有啊' },
+    ],
+    scene: /playful_complaint|wants_connection/,
+    must: /撤回|主动一点|不是不找你|现在补一次|别给我扣分/,
+  },
+  {
+    name: 'Case C other retreats and needs reassurance',
+    dialogue: [
+      { side: 'left', text: '你是不是很忙' },
+      { side: 'left', text: '那我不打扰你了' },
+    ],
+    scene: /needs_reassurance|wants_connection/,
+    must: /没有打扰|不是不想理|认真陪你聊|挺开心/,
+  },
+  {
+    name: 'Case D user short replies hurt other',
+    dialogue: [
+      { side: 'right', text: '嗯' },
+      { side: 'right', text: '哦' },
+      { side: 'left', text: '你就回我这个？' },
+    ],
+    scene: /hurt_by_cold_reply|repair_needed|user_too_cold/,
+    must: /我错了|不该那么敷衍|注意力拉回来|只回一个字/,
+  },
+  {
+    name: 'Case E other says user is not replying seriously',
+    dialogue: [
+      { side: 'left', text: '算了' },
+      { side: 'left', text: '不说了' },
+      { side: 'right', text: '？' },
+      { side: 'left', text: '你都不认真回' },
+    ],
+    scene: /hurt_by_cold_reply|repair_needed/,
+    must: /我错了|认真回你|别先不说了|认真听你讲/,
+  },
+];
+
+test('conversation direction analysis distinguishes other attention seeking from other low interest', () => {
+  for (const fixture of DIRECTION_CASES) {
+    const normalized = normalizeDialogue(fixture.dialogue);
+    const signals = analyzeConversationDirection(normalized);
+    const advice = runMixedDirectionCase(fixture.dialogue);
+    const replyText = flattenReplies(advice);
+    const stickerText = flattenStickers(advice);
+    const guideText = [
+      advice.attitude_desc,
+      advice.reply_strategy,
+      advice.chat_guide?.current_move,
+      advice.chat_guide?.avoid,
+      ...(advice.chat_guide?.next_steps || []),
+      ...(advice.next_topics || []),
+    ].join('\n');
+
+    assert.equal(signals.other_low_engagement, false, `${fixture.name}: other side should not be low engagement`);
+    assert.ok(signals.other_actively_seeks_connection || signals.repair_needed, `${fixture.name}: should detect connection intent`);
+    assert.match(advice.analysis.scene, fixture.scene, `${fixture.name}: scene should be attention/repair`);
+    assert.doesNotMatch(advice.analysis.scene, /冷淡回复|low_interest|give_space|stop_pursuing/, `${fixture.name}: scene must not be cold/stop`);
+    assert.match(advice.attitude_desc, /主动找你聊天|我方|回复比较短|回复偏冷/, `${fixture.name}: analysis should explain direction`);
+    assert.match(replyText, fixture.must, `${fixture.name}: replies should repair and catch the complaint`);
+    assert.doesNotMatch(`${replyText}\n${guideText}`, /不要继续发消息|给对方空间|对方.{0,8}信号.{0,6}弱|先别硬聊|停止推进/, `${fixture.name}: should not recommend giving space`);
+    assert.equal(advice.suggest_stop, false, `${fixture.name}: should not suggest stop`);
+    assert.equal(advice.sticker_suggestions.length, 6, `${fixture.name}: should return 6 stickers`);
+    assert.match(stickerText, /apology|comfort|hug|flirting|asking_attention|道歉|抱抱|我在呢|贴贴|哄|委屈|害羞|喜欢/, `${fixture.name}: stickers should match repair/apology/comfort`);
   }
 });

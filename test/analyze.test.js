@@ -445,7 +445,7 @@ test('keeps a real two-sided chat when the model contradicts visual evidence', (
   assert.equal(advice.suggest_stop, true);
 });
 
-test('detects three consecutive short replies as a cold conversation', () => {
+test('detects user-driven pursuit with sparse short opponent replies as a cold conversation', () => {
   assert.equal(
     hasRepeatedColdReplies(normalizeDialogue([
       { side: 'left', text: '不是' },
@@ -455,6 +455,38 @@ test('detects three consecutive short replies as a cold conversation', () => {
       { side: 'left', text: '玩手机' },
     ])),
     true,
+  );
+
+  assert.equal(
+    hasRepeatedColdReplies(normalizeDialogue([
+      { side: 'right', text: '你在干嘛' },
+      { side: 'right', text: '你今天忙吗' },
+      { side: 'right', text: '怎么不说话' },
+      { side: 'left', text: '嗯' },
+    ])),
+    true,
+  );
+});
+
+test('does not treat isolated short opponent text as cold without user pursuit', () => {
+  assert.equal(
+    hasRepeatedColdReplies(normalizeDialogue([
+      { side: 'left', text: '嗯' },
+      { side: 'left', text: '哦' },
+    ])),
+    false,
+  );
+
+  assert.equal(
+    hasRepeatedColdReplies(normalizeDialogue([
+      { side: 'right', text: '好的' },
+      { side: 'left', text: '在干嘛' },
+      { side: 'right', text: '不知道' },
+      { side: 'left', text: '找你说话' },
+      { side: 'right', text: 'o' },
+      { side: 'left', text: '我俩很不熟吗' },
+    ])),
+    false,
   );
 });
 
