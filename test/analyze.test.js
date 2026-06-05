@@ -6,6 +6,8 @@ import handler, {
   CHAT_SCENE_LIBRARY,
   EXTRACTION_IMAGE_DETAIL,
   EXTRACTION_MAX_COMPLETION_TOKENS,
+  EXTRACTION_SCHEMA,
+  EXTRACTION_SYSTEM_PROMPT,
   GENERIC_REPLY_TEMPLATE_PATTERN,
   IMAGE_READING_RULES,
   INTENT_DETECTION_SCHEMA,
@@ -19,6 +21,7 @@ import handler, {
   REPLY_PERSPECTIVE_EXAMPLES,
   REPLY_REFINEMENT_SCHEMA,
   REFINEMENT_MAX_COMPLETION_TOKENS,
+  buildGroupChatAdvice,
   buildIntentPrefix,
   buildStageChatGuide,
   buildFreeTierFallbackAdvice,
@@ -301,8 +304,8 @@ test('maps speaker identity from bubble side instead of model guesses', () => {
       { side: 'center', speaker: '对方', text: 'Yesterday 20:56' },
     ]),
     [
-      { side: 'left', speaker: '对方', text: '不忙' },
-      { side: 'right', speaker: '我', text: '你空闲喜欢做什么？' },
+      { side: 'left', speaker: '对方', text: '不忙', confidence: 'high' },
+      { side: 'right', speaker: '我', text: '你空闲喜欢做什么？', confidence: 'high' },
     ],
   );
 });
@@ -327,7 +330,7 @@ test('drops a single-column message when its sender is not visible', () => {
       { side: 'feed', speaker: '无法判断', text: '这句话不能猜发送者' },
       { side: 'feed', speaker: '对方', text: '这句话有明确发送者' },
     ]),
-    [{ side: 'feed', speaker: '对方', text: '这句话有明确发送者' }],
+    [{ side: 'feed', speaker: '对方', text: '这句话有明确发送者', confidence: 'low' }],
   );
 });
 
@@ -1464,6 +1467,47 @@ test('handler runs intent detection after extraction and injects intent into ana
   }
 });
 
+test('handler returns group chat advice immediately after extraction', async () => {
+  const originalFetch = global.fetch;
+  const originalApiKey = process.env.OPENAI_API_KEY;
+  process.env.OPENAI_API_KEY = 'test-key';
+  const requests = [];
+  global.fetch = async (_url, options) => {
+    requests.push(JSON.parse(options.body));
+    return jsonResponse(200, openAIAdviceResponse({
+      is_chat_screenshot: true,
+      is_group_chat: true,
+      non_chat_reply: '',
+      chat_evidence: {
+        image_kind: 'chat',
+        has_message_bubbles: true,
+        has_chat_ui: true,
+        has_two_sided_layout: false,
+      },
+      dialogue: [
+        { side: 'left', speaker: '对方', text: '群聊消息', confidence: 'high' },
+      ],
+      needs_retry: false,
+    }));
+  };
+
+  try {
+    const response = createResponseRecorder();
+    await handler({ method: 'POST', body: requestBody, headers: {} }, response);
+    const advice = JSON.parse(response.body.content[0].text);
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(requests.length, 1);
+    assert.equal(response.body.debug.is_group_chat, true);
+    assert.equal(advice.is_group_chat, true);
+    assert.equal(advice.needs_retry, false);
+    assert.deepEqual(advice.replies, []);
+  } finally {
+    global.fetch = originalFetch;
+    restoreEnvironment('OPENAI_API_KEY', originalApiKey);
+  }
+});
+
 test('INTENT_MAX_COMPLETION_TOKENS is 200', () => {
   assert.equal(INTENT_MAX_COMPLETION_TOKENS, 200);
 });
@@ -1548,6 +1592,74 @@ test('buildIntentPrefix for SHARING_MEDIA does not recommend emotional counselli
   const prefix = buildIntentPrefix(intent, INTENT_STRATEGY_MAP);
   assert.ok(prefix.includes('SHARING_MEDIA'));
   assert.ok(!prefix.includes('情绪安慰'));
+});
+
+test('EXTRACTION_SCHEMA has confidence field in dialogue items', () => {
+  const confidenceEnum = EXTRACTION_SCHEMA.properties.dialogue.items.properties.confidence.enum;
+  assert.deepEqual(confidenceEnum, ['high', 'medium', 'low']);
+  assert.ok(EXTRACTION_SCHEMA.properties.dialogue.items.required.includes('confidence'));
+  assert.ok(EXTRACTION_SCHEMA.properties.is_group_chat !== undefined);
+  assert.ok(EXTRACTION_SCHEMA.required.includes('is_group_chat'));
+  assert.equal(EXTRACTION_SCHEMA.additionalProperties, false);
+});
+
+test('EXTRACTION_SYSTEM_PROMPT instructs confidence levels', () => {
+  assert.ok(EXTRACTION_SYSTEM_PROMPT.includes('confidence'));
+  assert.ok(EXTRACTION_SYSTEM_PROMPT.includes('high'));
+  assert.ok(EXTRACTION_SYSTEM_PROMPT.includes('medium'));
+  assert.ok(EXTRACTION_SYSTEM_PROMPT.includes('low'));
+  assert.ok(EXTRACTION_SYSTEM_PROMPT.includes('is_group_chat'));
+  assert.ok(EXTRACTION_SYSTEM_PROMPT.includes('needs_retry'));
+});
+
+test('EXTRACTION_SYSTEM_PROMPT says single column should not trigger needs_retry', () => {
+  assert.ok(
+    EXTRACTION_SYSTEM_PROMPT.includes('单列') ||
+    EXTRACTION_SYSTEM_PROMPT.includes('needs_retry=true'),
+  );
+});
+
+test('buildGroupChatAdvice returns correct structure', () => {
+  const advice = buildGroupChatAdvice();
+  assert.equal(advice.is_group_chat, true);
+  assert.equal(advice.is_chat_screenshot, true);
+  assert.equal(advice.needs_retry, false);
+  assert.ok(advice.attitude_label.includes('群聊'));
+  assert.ok(advice.attitude_desc.includes('私信'));
+  assert.deepEqual(advice.replies, []);
+  assert.ok(advice.relationship_goal !== undefined);
+  assert.ok(advice.coach_advice !== undefined);
+});
+
+test('normalizeDialogue preserves confidence field', () => {
+  const messages = [
+    { side: 'left', speaker: '对方', text: '你好', confidence: 'high' },
+    { side: 'right', speaker: '我', text: '嗨', confidence: 'medium' },
+    { side: 'left', speaker: '对方', text: '在吗', confidence: 'low' },
+  ];
+  const result = normalizeDialogue(messages);
+  assert.equal(result.length, 3);
+  assert.equal(result[0].confidence, 'high');
+  assert.equal(result[1].confidence, 'medium');
+  assert.equal(result[2].confidence, 'low');
+});
+
+test('normalizeDialogue defaults confidence to high for left/right without confidence field', () => {
+  const messages = [
+    { side: 'left', speaker: '对方', text: '测试' },
+    { side: 'right', speaker: '我', text: '好' },
+  ];
+  const result = normalizeDialogue(messages);
+  assert.equal(result[0].confidence, 'high');
+  assert.equal(result[1].confidence, 'high');
+});
+
+test('normalizeDialogue defaults confidence to low for feed without confidence field', () => {
+  const messages = [
+    { side: 'feed', speaker: '对方', text: '单列消息' },
+  ];
+  const result = normalizeDialogue(messages);
+  assert.equal(result[0].confidence, 'low');
 });
 
 function adviceValue(overrides = {}) {

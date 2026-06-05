@@ -424,6 +424,49 @@ const OCR_RETRY_SCHEMA = {
   },
   required: ['is_chat_screenshot', 'non_chat_reply', 'chat_evidence', 'dialogue', 'needs_retry'],
 };
+const EXTRACTION_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    is_chat_screenshot: { type: 'boolean' },
+    is_group_chat: { type: 'boolean' },
+    non_chat_reply: { type: 'string' },
+    chat_evidence: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        image_kind: { type: 'string' },
+        has_message_bubbles: { type: 'boolean' },
+        has_chat_ui: { type: 'boolean' },
+        has_two_sided_layout: { type: 'boolean' },
+      },
+      required: ['image_kind', 'has_message_bubbles', 'has_chat_ui', 'has_two_sided_layout'],
+    },
+    dialogue: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          side: { type: 'string', enum: ['left', 'right', 'feed'] },
+          speaker: { type: 'string' },
+          text: { type: 'string' },
+          confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
+        },
+        required: ['side', 'speaker', 'text', 'confidence'],
+      },
+    },
+    needs_retry: { type: 'boolean' },
+  },
+  required: [
+    'is_chat_screenshot',
+    'is_group_chat',
+    'non_chat_reply',
+    'chat_evidence',
+    'dialogue',
+    'needs_retry',
+  ],
+};
 const INTENT_DETECTION_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -477,6 +520,26 @@ const INTENT_DETECTION_SCHEMA = {
 const OCR_RETRY_SYSTEM_PROMPT = `你只做聊天截图 OCR。
 判断图片是否为微信/聊天截图。若是，按视觉位置提取可见聊天文字：左侧气泡=对方，右侧气泡=我。忽略时间、头像、昵称、系统提示。
 不要生成回复，不要分析关系，不要总结。只返回 schema JSON。`;
+const EXTRACTION_SYSTEM_PROMPT = `你只做聊天截图 OCR 和发言人识别。
+
+判断规则：
+1. 首先判断是否为微信/聊天截图（is_chat_screenshot）。
+2. 如果是聊天截图，按视觉位置提取可见聊天文字：
+   - 右侧气泡 = 我（side: right）
+   - 左侧气泡 = 对方（side: left）
+   - 无法判断方向时 = side: feed，并标记 confidence: low
+3. 每条消息必须标记 confidence：
+   - high：明确的左右气泡，文字清晰
+   - medium：气泡位置基本清楚，但文字有轻微模糊或截断
+   - low：单列消息流、无法判断哪条是谁发的、或文字严重模糊
+4. 群聊检测（is_group_chat）：如果截图中出现 3 个或以上不同的昵称/头像，
+   设 is_group_chat: true。双人聊天设 false。
+5. needs_retry 只在以下情况设为 true：
+   - is_chat_screenshot 为 true，但完全提取不到任何文字（dialogue 为空）
+   - 图片严重损坏或无法读取
+   - 单列截图但不确定发言人，不要设 needs_retry=true，而是设 confidence: low
+6. 忽略时间、日期、系统提示、头像、昵称。截图模糊时不要编造内容。
+7. 不要生成回复，不要分析关系，不要总结。只返回 schema JSON。`;
 const REPLY_REFINEMENT_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -578,6 +641,26 @@ export default async function handler(req, res) {
             error: summarizeError(extractionError),
           });
           extractedDialogue = null;
+        }
+
+        // 群聊截图：不进行分析，直接返回友好提示。
+        if (extractedDialogue && extractedDialogue.is_group_chat) {
+          const groupChatAdvice = buildGroupChatAdvice();
+          queueUsageLog({
+            req,
+            advice: groupChatAdvice,
+            imageParts,
+            metadata,
+            model,
+            status: 'success',
+            errorMessage: '',
+            elapsedMs: Date.now() - startedAt,
+          });
+          return res.status(200).json({
+            content: [{ type: 'text', text: JSON.stringify(groupChatAdvice) }],
+            model,
+            debug: { ...debug, is_group_chat: true },
+          });
         }
 
         // 阶段一点五：意图识别 (Intent Detection Call)
@@ -981,17 +1064,24 @@ async function extractDialogueFromImages({ apiKey, model, imageParts, requestId 
     requestId,
     imageDetail: EXTRACTION_IMAGE_DETAIL,
     maxCompletionTokens: EXTRACTION_MAX_COMPLETION_TOKENS,
-    responseSchema: OCR_RETRY_SCHEMA,
-    systemPrompt: OCR_RETRY_SYSTEM_PROMPT,
+    responseSchema: EXTRACTION_SCHEMA,
+    systemPrompt: EXTRACTION_SYSTEM_PROMPT,
     timeoutMs: EXTRACTION_OPENAI_TIMEOUT_MS,
   });
   const raw = typeof rawText === 'string' ? rawText : (rawText?.text || '');
   const value = safeJsonParse(raw);
   const dialogue = normalizeDialogue(value.dialogue);
+  const isGroupChat = value.is_group_chat === true;
+  // needs_retry 只在真正无法提取任何文字时触发。
+  // 单列截图（confidence: low）不触发 needs_retry。
+  const hasAnyText = dialogue.length > 0;
+  const needsRetry = value.needs_retry === true
+    || (value.is_chat_screenshot === true && !hasAnyText);
   return {
     dialogue,
     is_chat_screenshot: value.is_chat_screenshot === true,
-    needs_retry: value.needs_retry === true || (value.is_chat_screenshot === true && dialogue.length === 0),
+    is_group_chat: isGroupChat,
+    needs_retry: needsRetry,
     chat_evidence: value.chat_evidence || {},
     non_chat_reply: cleanText(value.non_chat_reply, 120),
   };
@@ -2330,6 +2420,66 @@ function buildStageChatGuide(stage) {
 
 function buildDefaultChatGuide() {
   return buildStageChatGuide('轻松破冰');
+}
+
+function buildGroupChatAdvice() {
+  const relationshipMemory = {
+    relationship_stage: 'ice_breaking',
+    intimacy_score: 0,
+    attraction_score: 0,
+    investment_balance: 'balanced',
+    initiator: 'unclear',
+    risk_level: 'safe',
+    next_best_move: '',
+  };
+  const relationshipGoal = normalizeRelationshipGoal({}, relationshipMemory);
+  return {
+    attitude_label: '这是群聊截图',
+    attitude_desc: '目前 yuchaolove 只支持双人聊天截图。请截取你和对方的私信对话后重新上传。',
+    interest_score: 0,
+    interest_level: '低意愿',
+    interest_signals: [],
+    conversation_mode: '礼貌回应',
+    conversation_stage: '初次认识',
+    analysis: {
+      stage: 'ice_breaking',
+      stage_label: '破冰期',
+      scene: '',
+      scene_id: '',
+      emotion: '',
+      reply_intent: '',
+      intimacy_score: 0,
+    },
+    relationship_memory_engine: relationshipMemory,
+    relationship_stage: 'ice_breaking',
+    intimacy_score: 0,
+    attraction_score: 0,
+    investment_balance: 'balanced',
+    initiator: 'unclear',
+    reply_risk: 'safe',
+    risk_level: 'safe',
+    next_best_move: '',
+    conversation_future: { next_reply_likely: '', second_reply_likely: '', third_reply_likely: '' },
+    relationship_goal: relationshipGoal,
+    coach_advice: { summary: '请上传私信截图', do: [], avoid: [] },
+    reply_explanation: [],
+    next_5_moves: ['请截取你和对方的私信截图重新上传。', '', '', '', ''],
+    reply_strategy: '',
+    flirt_level: '先别暧昧',
+    is_chat_screenshot: true,
+    is_group_chat: true,
+    non_chat_reply: '这是群聊截图，请上传私信截图。',
+    chat_evidence: {},
+    conversation_summary: '',
+    chat_guide: buildDefaultChatGuide(),
+    next_topics: [],
+    dialogue: [],
+    suggest_stop: false,
+    needs_retry: false,
+    replies: [],
+    sticker_match_intent: null,
+    sticker_suggestions: [],
+  };
 }
 
 function buildEmotionalDisclosureGuide() {
@@ -4171,9 +4321,15 @@ function normalizeDialogue(messages) {
     if (!side || !text || isHelperText(text)) return null;
     if (side === 'feed') {
       const speaker = message?.speaker === '对方' || message?.speaker === '我' ? message.speaker : '';
-      return speaker ? { side, speaker, text } : null;
+      const confidence = ['high', 'medium', 'low'].includes(message?.confidence)
+        ? message.confidence
+        : 'low';
+      return speaker ? { side, speaker, text, confidence } : null;
     }
-    return { side, speaker: side === 'left' ? '对方' : '我', text };
+    const confidence = ['high', 'medium', 'low'].includes(message?.confidence)
+      ? message.confidence
+      : 'high';
+    return { side, speaker: side === 'left' ? '对方' : '我', text, confidence };
   }).filter(Boolean).slice(-20);
 }
 
@@ -4890,4 +5046,4 @@ function buildStoragePath({ visitorId, index, ext }) {
   return `screenshots/${day}/${safeVisitorId}-${Date.now()}-${index}.${ext}`;
 }
 
-export { CHAT_ADVICE_SCHEMA, CHAT_SCENE_LIBRARY, EXTRACTION_IMAGE_DETAIL, EXTRACTION_MAX_COMPLETION_TOKENS, GENERIC_REPLY_TEMPLATE_PATTERN, IMAGE_READING_RULES, INTENT_DETECTION_SCHEMA, INTENT_DETECTION_SYSTEM_PROMPT, INTENT_MAX_COMPLETION_TOKENS, INTENT_STRATEGY_MAP, MODELS, PRIMARY_IMAGE_DETAIL, PRIMARY_MAX_COMPLETION_TOKENS, PRIMARY_OPENAI_TIMEOUT_MS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, REPLY_REFINEMENT_SCHEMA, REFINEMENT_MAX_COMPLETION_TOKENS, analyzeConversationDirection, buildActiveCuriosityGuide, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildGroundedFallbackReplies, buildIntentPrefix, buildReplyRefinementPrompt, buildStageChatGuide, buildStickerMatchIntent, detectConversationIntent, detectScene, extractConcreteFacts, extractDialogueFromImages, extractFirstJsonObject, getReplyGroundingReport, getRequestParts, getStickerContext, hasActiveCuriosity, hasHappyEmotion, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, hasStudyStress, inferConversationStage, isRetryableModelError, isVerifiedChatScreenshot, logUsage, mergeRefinedReplies, needsReplyRefinement, normalizeChatGuide, normalizeConversationMode, normalizeConversationStage, normalizeDialogue, normalizeChatEvidence, normalizeStickerSuggestions, parseAdvice, recommendStockStickers, repairReplyCandidates, requestOpenAIAdvice, requestOpenAIReplyRefinement, safeJsonParse, scoreStockSticker };
+export { CHAT_ADVICE_SCHEMA, CHAT_SCENE_LIBRARY, EXTRACTION_IMAGE_DETAIL, EXTRACTION_MAX_COMPLETION_TOKENS, EXTRACTION_SCHEMA, EXTRACTION_SYSTEM_PROMPT, GENERIC_REPLY_TEMPLATE_PATTERN, IMAGE_READING_RULES, INTENT_DETECTION_SCHEMA, INTENT_DETECTION_SYSTEM_PROMPT, INTENT_MAX_COMPLETION_TOKENS, INTENT_STRATEGY_MAP, MODELS, PRIMARY_IMAGE_DETAIL, PRIMARY_MAX_COMPLETION_TOKENS, PRIMARY_OPENAI_TIMEOUT_MS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, REPLY_REFINEMENT_SCHEMA, REFINEMENT_MAX_COMPLETION_TOKENS, analyzeConversationDirection, buildActiveCuriosityGuide, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildGroupChatAdvice, buildGroundedFallbackReplies, buildIntentPrefix, buildReplyRefinementPrompt, buildStageChatGuide, buildStickerMatchIntent, detectConversationIntent, detectScene, extractConcreteFacts, extractDialogueFromImages, extractFirstJsonObject, getReplyGroundingReport, getRequestParts, getStickerContext, hasActiveCuriosity, hasHappyEmotion, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, hasStudyStress, inferConversationStage, isRetryableModelError, isVerifiedChatScreenshot, logUsage, mergeRefinedReplies, needsReplyRefinement, normalizeChatGuide, normalizeConversationMode, normalizeConversationStage, normalizeDialogue, normalizeChatEvidence, normalizeStickerSuggestions, parseAdvice, recommendStockStickers, repairReplyCandidates, requestOpenAIAdvice, requestOpenAIReplyRefinement, safeJsonParse, scoreStockSticker };
