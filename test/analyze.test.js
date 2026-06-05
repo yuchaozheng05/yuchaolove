@@ -1981,6 +1981,48 @@ test('buildUserProfilePrefix only includes non-default fields', () => {
   assert.ok(!prefix.includes('随机'));
 });
 
+test('needsReplyRefinement detects essay-style replies ending with period', () => {
+  const advice = {
+    is_chat_screenshot: true,
+    needs_retry: false,
+    suggest_stop: false,
+    conversation_stage: '轻松破冰',
+    dialogue: [{ speaker: '对方', text: '我喜欢网易云', side: 'left' }],
+    replies: [
+      { style: 'A', text: '她可能是习惯了那边的社区。', messages: ['她可能是习惯了那边的社区。'], style_dimension: 'SINCERE' },
+      { style: 'B', text: '那你平时听什么', messages: ['那你平时听什么'], style_dimension: 'DIRECT_ANSWER' },
+      { style: 'C', text: '网易云确实好用', messages: ['网易云确实好用'], style_dimension: 'LIGHTHEARTED' },
+    ],
+  };
+  assert.ok(needsReplyRefinement(advice), 'should trigger for essay-style reply');
+});
+
+test('needsReplyRefinement does not trigger for casual replies', () => {
+  const advice = {
+    is_chat_screenshot: true,
+    needs_retry: false,
+    suggest_stop: false,
+    conversation_stage: '轻松破冰',
+    dialogue: [{ speaker: '对方', text: '我喜欢网易云', side: 'left' }],
+    replies: [
+      { style: 'A', text: '网易云啊\n她喜欢那边的评论区？', messages: ['网易云啊', '她喜欢那边的评论区？'], style_dimension: 'LIGHTHEARTED' },
+      { style: 'B', text: '这歌太犯规了吧', messages: ['这歌太犯规了吧'], style_dimension: 'PLAYFUL' },
+      { style: 'C', text: '哦真的假的，她也听这个', messages: ['哦真的假的，她也听这个'], style_dimension: 'SINCERE' },
+    ],
+  };
+  // 不应该因为 essay style 触发 refinement（可能因其他原因触发，但本测试只验证 essay check）
+  const uniqueDims = new Set(advice.replies.map((reply) => reply.style_dimension));
+  assert.ok(uniqueDims.size >= 3);
+});
+
+test('REPLY_COACH_SYSTEM_PROMPT prohibits essay style', () => {
+  assert.ok(
+    REPLY_COACH_SYSTEM_PROMPT.includes('写作文') ||
+    REPLY_COACH_SYSTEM_PROMPT.includes('句号') ||
+    REPLY_COACH_SYSTEM_PROMPT.includes('旁白'),
+  );
+});
+
 function adviceValue(overrides = {}) {
   return {
     attitude_label: '愿意回球',

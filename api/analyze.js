@@ -74,7 +74,8 @@ const REPLY_COACH_SYSTEM_PROMPT = `你是中文聊天回复顾问。你的目标
 - next_topics 给用户“接下来怎么聊”，不是一次发给对方的话。要写成后续追踪建议，例如半小时后问有没有好一点、明早问昨晚睡得好吗、如果她继续接球再怎么推进。
 - 给 3 条最贴合“我方应该怎么回复”的 sticker_suggestions 作为库存检索意图，不要复读对方表面情绪，也不要编造具体文件名。表情包意图先判断 reply_intent，再选择适合我方发出的 emotion、scenario、relationship_stage、keywords 和可发送短配字 text。比如对方说“我讨厌你”这种暧昧撒娇冲突，不要给 angry，要给 shy / apology / comfort / love 方向来缓和、撒娇、哄对方。后端会从库存 catalog 中按相关性打分选出 6 个真实表情包。
 - 少用“听起来”“感觉你”“那你平时”“有需要告诉我”“调整好状态”“看来”这类模板句。
-- 候选要自然、有变化，但不要给每条回复套风格标签。`;
+- 候选要自然、有变化，但不要给每条回复套风格标签。
+回复必须像真人发微信，不能像写作文或做总结。具体禁止：用"。"句号结尾（微信里很少用句号）；替对方分析原因（"她可能是习惯了…""对方应该是因为…"）；旁白式描述（"看来…""可见…""由此可知…"）；过于完整的书面句子结构。优先用短句、口语词、语气词（啊、呢、哈、嘛、诶）、不完整的句子片段，像真人在手机上打字一样。`;
 
 const REPLY_PERSPECTIVE_EXAMPLES = `【视角示例，只学习尺度和方向，不要照抄】
 - 对方说“那你要我怎么哄”，是对方问应该如何哄我。可以回“先夸我两句，我看看诚意”，不要回“哄你？”
@@ -4055,6 +4056,29 @@ function inferStickerDisplayText(sticker, intent, index = 0) {
   const displayTexts = Array.isArray(intent?.display_texts) ? intent.display_texts.filter(Boolean) : [];
   if (displayTexts.length) return cleanText(displayTexts[index % displayTexts.length], 24);
 
+  // 优先根据 sticker 自身 emotion 返回文字，不允许 intent keywords 覆盖
+  const stickerPrimaryEmotion = normalizeCatalogEmotion(sticker?.emotion).primary;
+  const stickerEmotionText = {
+    thinking: '想想',
+    goodnight: '晚安',
+    sleepy: '晚安',
+    greeting: '你好呀',
+    laugh: '哈哈哈',
+    happy: '开心',
+    angry: '哼',
+    awkward: '啊这',
+    surprised: '欸？',
+    apology: '对不起',
+    encourage: '加油',
+    thanks: '谢谢',
+    wronged: '委屈',
+    cry: '哭哭',
+    sad: '哭哭',
+    jealous: '吃醋了',
+    proud: '嗯哼',
+  }[stickerPrimaryEmotion];
+  if (stickerEmotionText) return stickerEmotionText;
+
   const intentText = displayTextFromEmotion(intent?.emotion, intent?.scenario, intent?.keywords);
   if (intentText) return intentText;
 
@@ -4696,6 +4720,15 @@ function needsReplyRefinement(advice) {
     explicitDimensionReplies.map((reply) => reply.style_dimension).filter(Boolean),
   );
   const hasPoorDiversity = replies.length >= 3 && explicitDimensionReplies.length >= 3 && uniqueDimensions.size < 3;
+  // 检测书面语/写作文风格
+  const hasEssayStyle = replies.some((reply) => {
+    const text = reply.text || '';
+    // 句号结尾是书面语信号（微信里几乎不用句号）
+    const endsWithPeriod = /[。.]$/.test(text.trim()) || text.split('\n').some((line) => /[。.]$/.test(line.trim()));
+    // 旁白式分析语句
+    const hasNarration = /看来|可见|由此|不难看出|这说明|这表明|对方可能|她可能是|他可能是|可能是因为|应该是因为|估计是因为/.test(text);
+    return endsWithPeriod || hasNarration;
+  });
 
   return hasTooFewReplies
     || questionCount > 1
@@ -4711,7 +4744,8 @@ function needsReplyRefinement(advice) {
     || mishandlesDisclosure
     || flirtyConflictLacksSoften
     || tiredHomeworkLacksAction
-    || hasPoorDiversity;
+    || hasPoorDiversity
+    || hasEssayStyle;
 }
 
 function buildReplyRefinementPrompt(originalPrompt, advice) {
