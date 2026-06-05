@@ -17,11 +17,13 @@ const VISITOR_STORAGE_KEY = 'yuchaolove_visitor_id';
 const SESSION_MAP_KEY = 'yuchaolove_sessions';
 const SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const SESSION_MAX_PERSONS = 5;
+const PROFILE_STORAGE_KEY = 'yuchaolove_profile';
 
 let uploadedImages = [];
 let lastAnalysisResult = null;
 
 document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+initProfileForm();
 
 async function handleFileUpload(event) {
   const files = Array.from(event.target.files || []);
@@ -248,6 +250,7 @@ function buildRequestMetadata(imageCount) {
     device_pixel_ratio: window.devicePixelRatio || 1,
     target_person_label: getPersonLabel(),
     session_context: buildSessionContext(),
+    user_profile: buildUserProfile(),
   };
 }
 
@@ -305,6 +308,70 @@ function saveSessionMap(map) {
   } catch {
     // localStorage 不可用时静默忽略
   }
+}
+
+function loadProfile() {
+  try {
+    const raw = localStorage.getItem(PROFILE_STORAGE_KEY);
+    if (!raw) return null;
+    const profile = JSON.parse(raw);
+    return profile && typeof profile === 'object' ? profile : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveProfile(profile) {
+  try {
+    if (profile) localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+  } catch {
+    // localStorage 不可用时静默忽略
+  }
+}
+
+function buildUserProfile() {
+  try {
+    const gender = document.getElementById('profileGender')?.value || '不想说';
+    const targetGender = document.getElementById('profileTargetGender')?.value || '不想说';
+    const replyStyle = document.getElementById('profileReplyStyle')?.value || '随机';
+    const profile = { gender, target_gender: targetGender, reply_style: replyStyle };
+    saveProfile(profile);
+    return profile;
+  } catch {
+    return loadProfile();
+  }
+}
+
+function toggleProfilePanel() {
+  try {
+    const panel = document.getElementById('profilePanel');
+    const icon = document.getElementById('profileToggleIcon');
+    if (!panel) return;
+    const isHidden = panel.style.display === 'none';
+    panel.style.display = isHidden ? 'block' : 'none';
+    if (icon) icon.textContent = isHidden ? '▾' : '▸';
+  } catch {
+    // 静默忽略
+  }
+}
+
+function initProfileForm() {
+  try {
+    const profile = loadProfile();
+    if (!profile) return;
+    const genderEl = document.getElementById('profileGender');
+    const targetEl = document.getElementById('profileTargetGender');
+    const styleEl = document.getElementById('profileReplyStyle');
+    if (genderEl && profile.gender) genderEl.value = profile.gender;
+    if (targetEl && profile.target_gender) targetEl.value = profile.target_gender;
+    if (styleEl && profile.reply_style) styleEl.value = profile.reply_style;
+  } catch {
+    // 静默忽略
+  }
+}
+
+function syncProfile() {
+  buildUserProfile();
 }
 
 function buildSessionContext() {

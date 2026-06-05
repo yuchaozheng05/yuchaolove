@@ -21,6 +21,7 @@ import handler, {
   REPLY_PERSPECTIVE_EXAMPLES,
   REPLY_REFINEMENT_SCHEMA,
   REFINEMENT_MAX_COMPLETION_TOKENS,
+  STYLE_DIMENSION_NOTE,
   buildGroupChatAdvice,
   buildIntentPrefix,
   buildRegeneratePrefix,
@@ -29,6 +30,7 @@ import handler, {
   buildFreeTierFallbackAdvice,
   buildReplyRefinementPrompt,
   buildStickerMatchIntent,
+  buildUserProfilePrefix,
   detectConversationIntent,
   detectScene,
   extractDialogueFromImages,
@@ -44,8 +46,10 @@ import handler, {
   needsReplyRefinement,
   normalizeDialogue,
   normalizeClientMetadata,
+  normalizeReplyCandidate,
   normalizeSessionContext,
   normalizeStickerSuggestions,
+  normalizeUserProfile,
   parseAdvice,
   repairReplyCandidates,
   requestOpenAIAdvice,
@@ -112,7 +116,7 @@ test('defines a strict schema for richer attraction analysis', () => {
   assert.equal(CHAT_ADVICE_SCHEMA.properties.replies.items.additionalProperties, false);
   assert.equal(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.minItems, 3);
   assert.equal(CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.maxItems, 3);
-  assert.deepEqual(Object.keys(CHAT_ADVICE_SCHEMA.properties.replies.items.properties), ['style', 'text', 'messages']);
+  assert.deepEqual(Object.keys(CHAT_ADVICE_SCHEMA.properties.replies.items.properties), ['style', 'text', 'messages', 'style_dimension']);
   assert.ok(CHAT_ADVICE_SCHEMA.properties.replies.items.required.includes('style'));
   assert.ok(CHAT_ADVICE_SCHEMA.properties.replies.items.required.includes('messages'));
   const stickerIntentSchema = CHAT_ADVICE_SCHEMA.properties.sticker_suggestions.items;
@@ -260,7 +264,7 @@ test('parses willingness signals, flirt level, and clean untagged replies', () =
   assert.equal(advice.conversation_stage, '暧昧升温');
   assert.equal(advice.flirt_level, '轻微暧昧');
   assert.deepEqual(advice.interest_signals, ['主动回问', '接住共同梗']);
-  assert.deepEqual(advice.replies[0], { text: '感受到了，嘴硬但还挺会关心人', messages: ['感受到了，嘴硬但还挺会关心人'] });
+  assert.deepEqual(advice.replies[0], { text: '感受到了，嘴硬但还挺会关心人', messages: ['感受到了，嘴硬但还挺会关心人'], style_dimension: 'SINCERE' });
   assert.equal(advice.sticker_match_intent.reply_intent, 'flirty_continue');
   assert.equal(advice.sticker_match_intent.emotion, 'shy');
   assert.ok(advice.sticker_match_intent.secondary_emotions.includes('love'));
@@ -279,9 +283,9 @@ test('merges lightweight text-only reply refinements into the original advice', 
   }));
 
   assert.deepEqual(merged.replies, [
-    { text: '回复一', messages: ['回复一'] },
-    { text: '回复二', messages: ['回复二'] },
-    { text: '回复三', messages: ['回复三'] },
+    { text: '回复一', messages: ['回复一'], style_dimension: 'SINCERE' },
+    { text: '回复二', messages: ['回复二'], style_dimension: 'SINCERE' },
+    { text: '回复三', messages: ['回复三'], style_dimension: 'SINCERE' },
   ]);
   assert.equal(merged.attitude_label, advice.attitude_label);
 });
@@ -727,7 +731,7 @@ test('upgrades active curiosity and repairs invented personal details', () => {
   assert.equal(advice.interest_score, 62);
   assert.match(advice.chat_guide.next_steps[2], /邀约/);
   assert.equal(needsReplyRefinement(advice), true);
-  assert.deepEqual(repaired.replies[0], { text: '有，我平时比较喜欢___', messages: ['有，我平时比较喜欢___'] });
+  assert.deepEqual(repaired.replies[0], { text: '有，我平时比较喜欢___', messages: ['有，我平时比较喜欢___'], style_dimension: 'SINCERE' });
 });
 
 test('flags robotic or perspective-reversed reply candidates for refinement', () => {
@@ -1016,7 +1020,7 @@ test('repairs stubborn clarification replies with sendable short messages', () =
   const repaired = repairReplyCandidates(advice);
 
   assert.equal(needsReplyRefinement(repaired), false);
-  assert.deepEqual(repaired.replies[0], { text: '我瞎猜的，那我撤回', messages: ['我瞎猜的，那我撤回'] });
+  assert.deepEqual(repaired.replies[0], { text: '我瞎猜的，那我撤回', messages: ['我瞎猜的，那我撤回'], style_dimension: 'DIRECT_ANSWER' });
   assert.equal(repaired.replies.length, 4);
 });
 
@@ -1279,7 +1283,7 @@ test('uses a safe short fallback when OpenAI refinement stays too long', async (
     const advice = JSON.parse(response.body.content[0].text);
 
     assert.equal(response.statusCode, 200);
-    assert.deepEqual(advice.replies[0], { text: '我瞎猜的，那我撤回', messages: ['我瞎猜的，那我撤回'] });
+    assert.deepEqual(advice.replies[0], { text: '我瞎猜的，那我撤回', messages: ['我瞎猜的，那我撤回'], style_dimension: 'DIRECT_ANSWER' });
     assert.equal(needsReplyRefinement(advice), false);
   } finally {
     global.fetch = originalFetch;
@@ -1820,6 +1824,161 @@ test('getRequestParts allows regenerate requests without image parts', () => {
   assert.equal(parts.imageParts.length, 0);
   assert.equal(parts.metadata.regenerate, true);
   assert.equal(parts.metadata.regenerate_dialogue.length, 2);
+});
+
+test('CHAT_ADVICE_SCHEMA replies items include style_dimension', () => {
+  const itemProps = CHAT_ADVICE_SCHEMA.properties.replies.items.properties;
+  const itemRequired = CHAT_ADVICE_SCHEMA.properties.replies.items.required;
+  assert.ok(itemProps.style_dimension !== undefined, 'style_dimension should be in properties');
+  assert.ok(itemRequired.includes('style_dimension'), 'style_dimension should be in required');
+  const dims = itemProps.style_dimension.enum;
+  assert.ok(Array.isArray(dims));
+  assert.ok(dims.includes('LIGHTHEARTED'));
+  assert.ok(dims.includes('SINCERE'));
+  assert.ok(dims.includes('WARM_CARING'));
+  assert.ok(dims.includes('PLAYFUL'));
+  assert.ok(dims.includes('FLIRTY'));
+  assert.ok(dims.includes('DIRECT_ANSWER'));
+  assert.equal(dims.length, 6);
+});
+
+test('REPLY_REFINEMENT_SCHEMA replies items include style_dimension', () => {
+  const itemRequired = REPLY_REFINEMENT_SCHEMA.properties.replies.items.required;
+  assert.ok(itemRequired.includes('style_dimension'));
+});
+
+test('normalizeReplyCandidate preserves valid style_dimension', () => {
+  const reply = {
+    style: '轻松',
+    text: '测试回复',
+    messages: ['测试回复'],
+    style_dimension: 'PLAYFUL',
+  };
+  const result = normalizeReplyCandidate(reply, 140);
+  assert.equal(result.style_dimension, 'PLAYFUL');
+});
+
+test('normalizeReplyCandidate defaults invalid style_dimension to SINCERE', () => {
+  const reply = {
+    style: '轻松',
+    text: '测试回复',
+    messages: ['测试回复'],
+    style_dimension: 'INVALID_VALUE',
+  };
+  const result = normalizeReplyCandidate(reply, 140);
+  assert.equal(result.style_dimension, 'SINCERE');
+});
+
+test('normalizeReplyCandidate defaults missing style_dimension to SINCERE', () => {
+  const reply = {
+    style: '轻松',
+    text: '测试回复',
+    messages: ['测试回复'],
+  };
+  const result = normalizeReplyCandidate(reply, 140);
+  assert.equal(result.style_dimension, 'SINCERE');
+});
+
+test('needsReplyRefinement triggers for poor diversity', () => {
+  const advice = {
+    is_chat_screenshot: true,
+    needs_retry: false,
+    suggest_stop: false,
+    conversation_stage: '轻松破冰',
+    dialogue: [{ speaker: '对方', text: '你好', side: 'left' }],
+    replies: [
+      { style: 'A', text: '回复1', messages: ['回复1'], style_dimension: 'SINCERE' },
+      { style: 'B', text: '回复2', messages: ['回复2'], style_dimension: 'SINCERE' },
+      { style: 'C', text: '回复3', messages: ['回复3'], style_dimension: 'SINCERE' },
+    ],
+  };
+  assert.ok(needsReplyRefinement(advice), 'should trigger refinement for poor diversity');
+});
+
+test('needsReplyRefinement passes for diverse replies', () => {
+  const advice = {
+    is_chat_screenshot: true,
+    needs_retry: false,
+    suggest_stop: false,
+    conversation_stage: '轻松破冰',
+    dialogue: [{ speaker: '对方', text: '你好', side: 'left' }],
+    replies: [
+      { style: 'A', text: '回复1', messages: ['回复1'], style_dimension: 'LIGHTHEARTED' },
+      { style: 'B', text: '回复2', messages: ['回复2'], style_dimension: 'SINCERE' },
+      { style: 'C', text: '回复3', messages: ['回复3'], style_dimension: 'WARM_CARING' },
+    ],
+  };
+  const result = needsReplyRefinement(advice);
+  const uniqueDims = new Set(advice.replies.map((reply) => reply.style_dimension));
+  assert.equal(typeof result, 'boolean');
+  assert.ok(uniqueDims.size >= 3, 'should have 3+ unique dimensions');
+});
+
+test('STYLE_DIMENSION_NOTE is defined and contains key enum values', () => {
+  assert.ok(typeof STYLE_DIMENSION_NOTE === 'string');
+  assert.ok(STYLE_DIMENSION_NOTE.includes('LIGHTHEARTED'));
+  assert.ok(STYLE_DIMENSION_NOTE.includes('SINCERE'));
+  assert.ok(STYLE_DIMENSION_NOTE.includes('FLIRTY'));
+  assert.ok(STYLE_DIMENSION_NOTE.length > 50);
+});
+
+test('normalizeUserProfile returns null for missing or invalid input', () => {
+  assert.equal(normalizeUserProfile(null), null);
+  assert.equal(normalizeUserProfile(undefined), null);
+  assert.equal(normalizeUserProfile({}), null);
+  assert.equal(normalizeUserProfile({ gender: '不想说', target_gender: '不想说', reply_style: '随机' }), null);
+});
+
+test('normalizeUserProfile returns cleaned profile for valid input', () => {
+  const raw = { gender: '男', target_gender: '女生', reply_style: '幽默' };
+  const result = normalizeUserProfile(raw);
+  assert.ok(result !== null);
+  assert.equal(result.gender, '男');
+  assert.equal(result.target_gender, '女生');
+  assert.equal(result.reply_style, '幽默');
+});
+
+test('normalizeUserProfile rejects invalid enum values', () => {
+  const raw = { gender: 'alien', target_gender: '火星人', reply_style: 'sarcastic' };
+  const result = normalizeUserProfile(raw);
+  assert.equal(result, null);
+});
+
+test('normalizeUserProfile allows partial profile', () => {
+  const raw = { gender: '女' };
+  const result = normalizeUserProfile(raw);
+  assert.ok(result !== null);
+  assert.equal(result.gender, '女');
+  assert.equal(result.target_gender, '不想说');
+  assert.equal(result.reply_style, '随机');
+});
+
+test('buildUserProfilePrefix returns empty string for null', () => {
+  assert.equal(buildUserProfilePrefix(null), '');
+  assert.equal(buildUserProfilePrefix(undefined), '');
+});
+
+test('buildUserProfilePrefix returns empty string when all fields are default', () => {
+  const profile = { gender: '不想说', target_gender: '不想说', reply_style: '随机' };
+  assert.equal(buildUserProfilePrefix(profile), '');
+});
+
+test('buildUserProfilePrefix includes non-default fields', () => {
+  const profile = { gender: '男', target_gender: '女生', reply_style: '直接' };
+  const prefix = buildUserProfilePrefix(profile);
+  assert.ok(prefix.includes('男'));
+  assert.ok(prefix.includes('女生'));
+  assert.ok(prefix.includes('直接'));
+  assert.ok(prefix.includes('用户偏好'));
+  assert.ok(prefix.endsWith('\n\n'));
+});
+
+test('buildUserProfilePrefix only includes non-default fields', () => {
+  const profile = { gender: '不想说', target_gender: '女生', reply_style: '随机' };
+  const prefix = buildUserProfilePrefix(profile);
+  assert.ok(prefix.includes('女生'));
+  assert.ok(!prefix.includes('不想说'));
+  assert.ok(!prefix.includes('随机'));
 });
 
 function adviceValue(overrides = {}) {

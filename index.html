@@ -159,6 +159,45 @@
         />
       </div>
       <div class="option-group">
+        <div
+          class="option-label"
+          style="cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;"
+          onclick="toggleProfilePanel()"
+        >
+          <span>你的偏好（可选）</span>
+          <span id="profileToggleIcon" style="font-size:11px;opacity:0.6;">▸</span>
+        </div>
+        <div id="profilePanel" style="display:none;margin-top:10px;">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:80px;">
+              <div style="font-size:12px;opacity:0.55;margin-bottom:4px;">你是</div>
+              <select id="profileGender" onchange="syncProfile()" style="width:100%;padding:6px 10px;border:1px solid rgba(180,130,100,0.3);border-radius:8px;background:transparent;font-size:13px;color:inherit;outline:none;">
+                <option value="不想说">不想说</option>
+                <option value="男">男生</option>
+                <option value="女">女生</option>
+              </select>
+            </div>
+            <div style="flex:1;min-width:80px;">
+              <div style="font-size:12px;opacity:0.55;margin-bottom:4px;">追的是</div>
+              <select id="profileTargetGender" onchange="syncProfile()" style="width:100%;padding:6px 10px;border:1px solid rgba(180,130,100,0.3);border-radius:8px;background:transparent;font-size:13px;color:inherit;outline:none;">
+                <option value="不想说">不想说</option>
+                <option value="女生">女生</option>
+                <option value="男生">男生</option>
+              </select>
+            </div>
+            <div style="flex:1;min-width:100px;">
+              <div style="font-size:12px;opacity:0.55;margin-bottom:4px;">回复风格</div>
+              <select id="profileReplyStyle" onchange="syncProfile()" style="width:100%;padding:6px 10px;border:1px solid rgba(180,130,100,0.3);border-radius:8px;background:transparent;font-size:13px;color:inherit;outline:none;">
+                <option value="随机">不限</option>
+                <option value="直接">直接</option>
+                <option value="含蓄">含蓄</option>
+                <option value="幽默">幽默</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="option-group">
         <div class="option-label">添加背景（可选）</div>
         <textarea id="contextInput" placeholder="例如：认识两周了，她最近回复慢了一些…" rows="2"></textarea>
       </div>

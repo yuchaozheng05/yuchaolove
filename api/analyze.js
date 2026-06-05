@@ -102,6 +102,17 @@ ${REPLY_PERSPECTIVE_EXAMPLES}`;
 const REPLY_REFINEMENT_SYSTEM_PROMPT = `你是中文聊天回复编辑。你会收到已经识别好的对话和一组不够自然的候选回复。
 只重写 replies，不要重新分析图片，不要编造对话里没有出现的信息。
 候选必须是“我”准备发给“对方”的话，输出 3 到 5 组自然、简短、可以直接发送的回复。每组带 style，用 messages 表示 1 到 3 条微信连续消息，text 等于 messages 用换行拼起来；最多一组候选带问号。`;
+const STYLE_DIMENSION_NOTE = `【style_dimension 多样性要求】
+每次生成 replies 时，3 到 5 条候选必须至少覆盖 3 种不同的 style_dimension。
+- LIGHTHEARTED：轻松玩笑，接梗，语气活泼
+- SINCERE：认真回应，诚恳，有细节
+- WARM_CARING：温柔关心，体贴，有陪伴感
+- PLAYFUL：调侃拉扯，反将一军，制造张力
+- FLIRTY：暧昧升温，含蓄心动，留钩子
+- DIRECT_ANSWER：直接回答对方的问题或接住对方的分享，不绕弯子
+不要让所有候选都是同一种风格。style_dimension 必须如实填写，不要随便填。
+
+`;
 const INTENT_DETECTION_SYSTEM_PROMPT = `你是对话行为分析器。给定一段中文聊天记录，判断对方（speaker=对方）最近消息的对话行为意图。只返回 JSON，不要解释。
 
 primary_intent 判断规则：
@@ -334,8 +345,12 @@ const CHAT_ADVICE_SCHEMA = {
             maxItems: 3,
             items: { type: 'string' },
           },
+          style_dimension: {
+            type: 'string',
+            enum: ['LIGHTHEARTED', 'SINCERE', 'WARM_CARING', 'PLAYFUL', 'FLIRTY', 'DIRECT_ANSWER'],
+          },
         },
-        required: ['style', 'text', 'messages'],
+        required: ['style', 'text', 'messages', 'style_dimension'],
       },
     },
     sticker_suggestions: {
@@ -560,8 +575,12 @@ const REPLY_REFINEMENT_SCHEMA = {
             maxItems: 3,
             items: { type: 'string' },
           },
+          style_dimension: {
+            type: 'string',
+            enum: ['LIGHTHEARTED', 'SINCERE', 'WARM_CARING', 'PLAYFUL', 'FLIRTY', 'DIRECT_ANSWER'],
+          },
         },
-        required: ['style', 'text', 'messages'],
+        required: ['style', 'text', 'messages', 'style_dimension'],
       },
     },
   },
@@ -718,7 +737,8 @@ export default async function handler(req, res) {
           : '';
         const intentPrefix = buildIntentPrefix(conversationIntent, INTENT_STRATEGY_MAP);
         const sessionPrefix = buildSessionPrefix(metadata.session_context);
-        const analysisPrompt = regeneratePrefix + sessionPrefix + intentPrefix + backgroundPrefix + textPart.text;
+        const userProfilePrefix = buildUserProfilePrefix(metadata.user_profile);
+        const analysisPrompt = userProfilePrefix + STYLE_DIMENSION_NOTE + regeneratePrefix + sessionPrefix + intentPrefix + backgroundPrefix + textPart.text;
 
         debug.vision_called = !isRegenerateMode;
         const rawResult = await requestOpenAIAdviceWithVisionRetry({
@@ -1069,6 +1089,28 @@ function buildDebugExtractedText(advice) {
   return cleanText(dialogueText || advice?.conversation_summary || '', 500);
 }
 
+function normalizeUserProfile(value) {
+  if (!value || typeof value !== 'object') return null;
+  const validGenders = ['男', '女', '不想说'];
+  const validTargetGenders = ['男生', '女生', '不想说'];
+  const validStyles = ['直接', '含蓄', '幽默', '随机'];
+  const gender = validGenders.includes(value.gender) ? value.gender : null;
+  const targetGender = validTargetGenders.includes(value.target_gender) ? value.target_gender : null;
+  const replyStyle = validStyles.includes(value.reply_style) ? value.reply_style : null;
+  if (!gender && !targetGender && !replyStyle) return null;
+  const normalized = {
+    gender: gender || '不想说',
+    target_gender: targetGender || '不想说',
+    reply_style: replyStyle || '随机',
+  };
+  if (normalized.gender === '不想说'
+    && normalized.target_gender === '不想说'
+    && normalized.reply_style === '随机') {
+    return null;
+  }
+  return normalized;
+}
+
 function normalizeSessionContext(value) {
   if (!value || typeof value !== 'object') return null;
   const sessionId = cleanText(value.session_id, 80);
@@ -1123,6 +1165,7 @@ function normalizeClientMetadata(metadata) {
           .filter((m) => m.text)
           .slice(0, 12)
       : [],
+    user_profile: normalizeUserProfile(metadata.user_profile),
   };
 }
 
@@ -1239,6 +1282,22 @@ function buildSessionPrefix(sessionContext) {
   ]
     .filter((line) => line !== undefined)
     .join('\n');
+}
+
+function buildUserProfilePrefix(userProfile) {
+  if (!userProfile) return '';
+  const parts = [];
+  if (userProfile.gender && userProfile.gender !== '不想说') {
+    parts.push(`用户性别：${userProfile.gender}`);
+  }
+  if (userProfile.target_gender && userProfile.target_gender !== '不想说') {
+    parts.push(`追求方向：${userProfile.target_gender}`);
+  }
+  if (userProfile.reply_style && userProfile.reply_style !== '随机') {
+    parts.push(`偏好回复风格：${userProfile.reply_style}（在合适的场景下优先生成${userProfile.reply_style}风格的候选）`);
+  }
+  if (parts.length === 0) return '';
+  return ['【用户偏好】', ...parts, '', ''].join('\n');
 }
 
 function buildRegeneratePrefix(previousReplies) {
@@ -2396,11 +2455,20 @@ function normalizeReplyCandidate(reply, maxLength = 140) {
   };
   const style = cleanText(reply?.style, 18);
   if (style) candidate.style = style;
+  const validDimensions = new Set(['LIGHTHEARTED', 'SINCERE', 'WARM_CARING', 'PLAYFUL', 'FLIRTY', 'DIRECT_ANSWER']);
+  const hasExplicitStyleDimension = validDimensions.has(reply?.style_dimension);
+  const styleDimension = hasExplicitStyleDimension ? reply.style_dimension : 'SINCERE';
+  candidate.style_dimension = styleDimension;
+  Object.defineProperty(candidate, '_style_dimension_inferred', {
+    value: !hasExplicitStyleDimension,
+    enumerable: false,
+  });
   return candidate;
 }
 
-function makeReplyCandidate(messages) {
-  return normalizeReplyCandidate({ messages }) || { text: '', messages: [] };
+function makeReplyCandidate(messages, styleDimension = null) {
+  const payload = styleDimension ? { messages, style_dimension: styleDimension } : { messages };
+  return normalizeReplyCandidate(payload) || { text: '', messages: [], style_dimension: styleDimension || 'SINCERE' };
 }
 
 function isDirectionRepairScene(sceneName = '') {
@@ -4623,6 +4691,11 @@ function needsReplyRefinement(advice) {
   const tiredHomeworkContext = /困死|好困|困了|不想写|作业|没写完/.test(recentText);
   const tiredHomeworkLacksAction = tiredHomeworkContext
     && !replies.some((reply) => /眯十分钟|先睡|先放|拆出来|最急|硬撑|休息.{0,6}再写|陪你.{0,8}拆/.test(reply.text));
+  const explicitDimensionReplies = replies.filter((reply) => reply?._style_dimension_inferred !== true);
+  const uniqueDimensions = new Set(
+    explicitDimensionReplies.map((reply) => reply.style_dimension).filter(Boolean),
+  );
+  const hasPoorDiversity = replies.length >= 3 && explicitDimensionReplies.length >= 3 && uniqueDimensions.size < 3;
 
   return hasTooFewReplies
     || questionCount > 1
@@ -4637,7 +4710,8 @@ function needsReplyRefinement(advice) {
     || directionLacksRepair
     || mishandlesDisclosure
     || flirtyConflictLacksSoften
-    || tiredHomeworkLacksAction;
+    || tiredHomeworkLacksAction
+    || hasPoorDiversity;
 }
 
 function buildReplyRefinementPrompt(originalPrompt, advice) {
@@ -4774,10 +4848,10 @@ function repairReplyCandidates(advice) {
     return {
       ...advice,
       replies: [
-        makeReplyCandidate(['我瞎猜的，那我撤回']),
-        makeReplyCandidate(['那我判断错了', '你还是愿意理我的']),
-        makeReplyCandidate(['好吧，是我下结论太早了']),
-        makeReplyCandidate(['我先收回刚刚那句', '是我想多了']),
+        makeReplyCandidate(['我瞎猜的，那我撤回'], 'DIRECT_ANSWER'),
+        makeReplyCandidate(['那我判断错了', '你还是愿意理我的'], 'PLAYFUL'),
+        makeReplyCandidate(['好吧，是我下结论太早了'], 'SINCERE'),
+        makeReplyCandidate(['我先收回刚刚那句', '是我想多了'], 'WARM_CARING'),
       ],
     };
   }
@@ -5169,4 +5243,4 @@ function buildStoragePath({ visitorId, index, ext }) {
   return `screenshots/${day}/${safeVisitorId}-${Date.now()}-${index}.${ext}`;
 }
 
-export { CHAT_ADVICE_SCHEMA, CHAT_SCENE_LIBRARY, EXTRACTION_IMAGE_DETAIL, EXTRACTION_MAX_COMPLETION_TOKENS, EXTRACTION_SCHEMA, EXTRACTION_SYSTEM_PROMPT, GENERIC_REPLY_TEMPLATE_PATTERN, IMAGE_READING_RULES, INTENT_DETECTION_SCHEMA, INTENT_DETECTION_SYSTEM_PROMPT, INTENT_MAX_COMPLETION_TOKENS, INTENT_STRATEGY_MAP, MODELS, PRIMARY_IMAGE_DETAIL, PRIMARY_MAX_COMPLETION_TOKENS, PRIMARY_OPENAI_TIMEOUT_MS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, REPLY_REFINEMENT_SCHEMA, REFINEMENT_MAX_COMPLETION_TOKENS, analyzeConversationDirection, buildActiveCuriosityGuide, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildGroupChatAdvice, buildGroundedFallbackReplies, buildIntentPrefix, buildRegeneratePrefix, buildReplyRefinementPrompt, buildSessionPrefix, buildStageChatGuide, buildStickerMatchIntent, detectConversationIntent, detectScene, extractConcreteFacts, extractDialogueFromImages, extractFirstJsonObject, getReplyGroundingReport, getRequestParts, getStickerContext, hasActiveCuriosity, hasHappyEmotion, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, hasStudyStress, inferConversationStage, isRetryableModelError, isVerifiedChatScreenshot, logUsage, mergeRefinedReplies, needsReplyRefinement, normalizeChatGuide, normalizeClientMetadata, normalizeConversationMode, normalizeConversationStage, normalizeDialogue, normalizeChatEvidence, normalizeSessionContext, normalizeStickerSuggestions, parseAdvice, recommendStockStickers, repairReplyCandidates, requestOpenAIAdvice, requestOpenAIReplyRefinement, safeJsonParse, scoreStockSticker };
+export { CHAT_ADVICE_SCHEMA, CHAT_SCENE_LIBRARY, EXTRACTION_IMAGE_DETAIL, EXTRACTION_MAX_COMPLETION_TOKENS, EXTRACTION_SCHEMA, EXTRACTION_SYSTEM_PROMPT, GENERIC_REPLY_TEMPLATE_PATTERN, IMAGE_READING_RULES, INTENT_DETECTION_SCHEMA, INTENT_DETECTION_SYSTEM_PROMPT, INTENT_MAX_COMPLETION_TOKENS, INTENT_STRATEGY_MAP, MODELS, PRIMARY_IMAGE_DETAIL, PRIMARY_MAX_COMPLETION_TOKENS, PRIMARY_OPENAI_TIMEOUT_MS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, REPLY_REFINEMENT_SCHEMA, REFINEMENT_MAX_COMPLETION_TOKENS, STYLE_DIMENSION_NOTE, analyzeConversationDirection, buildActiveCuriosityGuide, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildGroupChatAdvice, buildGroundedFallbackReplies, buildIntentPrefix, buildRegeneratePrefix, buildReplyRefinementPrompt, buildSessionPrefix, buildStageChatGuide, buildStickerMatchIntent, buildUserProfilePrefix, detectConversationIntent, detectScene, extractConcreteFacts, extractDialogueFromImages, extractFirstJsonObject, getReplyGroundingReport, getRequestParts, getStickerContext, hasActiveCuriosity, hasHappyEmotion, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, hasStudyStress, inferConversationStage, isRetryableModelError, isVerifiedChatScreenshot, logUsage, mergeRefinedReplies, needsReplyRefinement, normalizeChatGuide, normalizeClientMetadata, normalizeConversationMode, normalizeConversationStage, normalizeDialogue, normalizeChatEvidence, normalizeReplyCandidate, normalizeSessionContext, normalizeStickerSuggestions, normalizeUserProfile, parseAdvice, recommendStockStickers, repairReplyCandidates, requestOpenAIAdvice, requestOpenAIReplyRefinement, safeJsonParse, scoreStockSticker };
