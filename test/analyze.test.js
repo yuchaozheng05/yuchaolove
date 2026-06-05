@@ -1257,7 +1257,15 @@ test('retains uploaded screenshots in Supabase usage logging', async () => {
 
   try {
     await logUsage({
-      req: { headers: { 'x-forwarded-for': '127.0.0.1', 'user-agent': 'test' } },
+      req: {
+        headers: {
+          'x-forwarded-for': '127.0.0.1, 10.0.0.1',
+          'user-agent': 'test-browser',
+          'x-vercel-ip-country': 'US',
+          'x-vercel-ip-country-region': 'CA',
+          'x-vercel-ip-city': 'Los%20Angeles',
+        },
+      },
       advice: parseAdvice(JSON.stringify(adviceValue())),
       imageParts: [requestBody.messages[0].content[0]],
       metadata: {
@@ -1273,6 +1281,14 @@ test('retains uploaded screenshots in Supabase usage logging', async () => {
     assert.match(requests[1].url, /rest\/v1\/usage_logs/);
     const payload = JSON.parse(requests[1].options.body);
     assert.deepEqual(payload.image_urls.length, 1);
+    assert.match(payload.storage_paths[0], /^screenshots\/\d{4}-\d{2}-\d{2}\/visitor-test-\d+-0\.png$/);
+    assert.equal(payload.ip, '127.0.0.1');
+    assert.equal(payload.user_agent, 'test-browser');
+    assert.equal(payload.country, 'US');
+    assert.equal(payload.region, 'CA');
+    assert.equal(payload.city, 'Los Angeles');
+    assert.equal(payload.location_label, 'Los Angeles, CA, US');
+    assert.equal(payload.page_path, '/');
     assert.equal(payload.status, 'success');
     assert.equal(payload.elapsed_ms, 1234);
     assert.equal(payload.background_text, '她今天有点不舒服');

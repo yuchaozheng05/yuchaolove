@@ -455,3 +455,60 @@ test('conversation direction analysis distinguishes other attention seeking from
     assert.match(stickerText, /apology|comfort|hug|flirting|asking_attention|道歉|抱抱|我在呢|贴贴|哄|委屈|害羞|喜欢/, `${fixture.name}: stickers should match repair/apology/comfort`);
   }
 });
+
+test('direction repair replies follow the first chat-guide move instead of stale stop advice', () => {
+  const dialogue = normalizeDialogue([
+    { side: 'right', text: '你要干啥' },
+    { side: 'right', text: 'o' },
+    { side: 'left', text: '我俩很不熟吗' },
+    { side: 'right', text: '应该吧' },
+    { side: 'left', text: '好的吧' },
+    { side: 'left', text: '行吧' },
+    { side: 'left', text: '怎么变熟点' },
+  ]);
+  const advice = parseAdvice(JSON.stringify(buildMixedAdviceValue(dialogue)));
+  const replyText = flattenReplies(advice);
+  const guideText = [
+    advice.chat_guide?.current_move,
+    ...(advice.chat_guide?.next_steps || []),
+  ].join('\n');
+
+  assert.match(guideText, /先补救|承认刚才.*太冷|回得太冷/, 'guide should identify repair as the first move');
+  assert.match(replyText, /不只回一个字|回太冷|太冷了|补回来|变熟|好好回你|认真陪你聊/, 'replies should execute the first guide move');
+  assert.doesNotMatch(replyText, /节奏提醒|先别硬聊|先不要继续发消息|给对方一点空间|把空间留给对方/, 'stale stop advice must not render as replies');
+  assert.equal(advice.suggest_stop, false);
+  assert.equal(needsReplyRefinement(advice), false);
+});
+
+test('common light scenes replace generic listening templates with sendable replies', () => {
+  const fixtures = [
+    {
+      name: 'goodnight',
+      input: ['晚安'],
+      reply: /晚安|睡|梦|明早/,
+      sticker: /晚安|盖被子|goodnight|comfort/,
+    },
+    {
+      name: 'miss you',
+      input: ['想你了'],
+      reply: /想你|犯规|多说两句|开心/,
+      sticker: /想你|贴|爱|love|shy/,
+    },
+    {
+      name: 'thanks',
+      input: ['谢谢你'],
+      reply: /不客气|谢谢|不用谢|别跟我太客气/,
+      sticker: /谢谢|开心|收到|happy|thanks/,
+    },
+  ];
+
+  for (const fixture of fixtures) {
+    const advice = runGroundedCase(fixture.input);
+    const replyText = flattenReplies(advice);
+    const stickerText = flattenStickers(advice);
+    assert.match(replyText, fixture.reply, `${fixture.name}: should be sendable`);
+    assert.doesNotMatch(replyText, GENERIC_FORBIDDEN_PATTERN, `${fixture.name}: generic template leaked`);
+    assert.equal(advice.sticker_suggestions.length, 6, `${fixture.name}: should keep 6 stickers`);
+    assert.match(stickerText, fixture.sticker, `${fixture.name}: stickers should match scene`);
+  }
+});

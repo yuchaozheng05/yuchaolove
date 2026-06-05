@@ -207,22 +207,26 @@ function parseAdvice(rawText) {
   const verifiedDialogue = isChatScreenshot ? dialogue : [];
   const emotionalDisclosure = isChatScreenshot && hasRecentEmotionalDisclosure(verifiedDialogue);
   const activeCuriosity = isChatScreenshot && !emotionalDisclosure && hasActiveCuriosity(verifiedDialogue);
-  const suggestStop = isChatScreenshot && !emotionalDisclosure && (Boolean(data.suggest_stop) || hasRepeatedColdReplies(verifiedDialogue));
-  const conversationStage = inferConversationStage(data.conversation_stage, { emotionalDisclosure, activeCuriosity, suggestStop });
+  const analysis = normalizeCoachAnalysis(data.analysis);
+  const directionRepairScene = /attention_seeking|wants_connection|playful_complaint|user_too_cold|needs_reassurance|hurt_by_cold_reply/.test(analysis.scene || '');
+  const suggestStop = isChatScreenshot && !directionRepairScene && Boolean(data.suggest_stop);
+  const conversationStage = cleanText(data.conversation_stage, 32)
+    || inferConversationStage(data.conversation_stage, { emotionalDisclosure, activeCuriosity, suggestStop });
+  const fallbackGuide = emotionalDisclosure
+    ? buildEmotionalDisclosureGuide()
+    : activeCuriosity
+      ? buildActiveCuriosityGuide()
+      : buildStageChatGuide(conversationStage);
   return {
-    attitude_label: isChatScreenshot ? (emotionalDisclosure ? '愿意倾诉' : activeCuriosity ? '主动了解' : cleanAttitudeLabel(data.attitude_label) || '态度待判断') : '这不是聊天截图',
-    attitude_desc: emotionalDisclosure
-      ? '对方在连续表达自己的疲惫、不舒服或压力，也愿意补充细节。这是在向你倾诉，不是敷衍，但不能直接换算成好感分数。目前更适合先接住情绪，不急着升温。'
-      : activeCuriosity
-        ? '对方连续主动问你的情况，也会顺着前一个答案继续展开。她至少愿意了解你，先认真回答一个具体点，再看她会不会继续接球。'
-        : (isChatScreenshot ? cleanText(data.attitude_desc, 180) : '')
-          || (isChatScreenshot ? '请结合对方后续行动继续观察。' : '我还没看到可以分析的聊天内容。'),
-    interest_score: isChatScreenshot ? (emotionalDisclosure ? Math.min(45, clampScore(data.interest_score)) : activeCuriosity ? Math.max(62, clampScore(data.interest_score)) : clampScore(data.interest_score)) : 0,
-    interest_level: isChatScreenshot ? (emotionalDisclosure ? '愿意倾诉' : activeCuriosity ? '愿意接话' : normalizeInterestLevel(data.interest_level)) : '低意愿',
-    interest_signals: isChatScreenshot ? (emotionalDisclosure ? buildEmotionalDisclosureSignals(verifiedDialogue) : activeCuriosity ? buildActiveCuriositySignals() : normalizeSignals(data.interest_signals)) : [],
-    conversation_mode: isChatScreenshot ? (emotionalDisclosure ? '情绪倾诉' : activeCuriosity ? '主动了解' : normalizeConversationMode(data.conversation_mode)) : '礼貌回应',
+    attitude_label: isChatScreenshot ? cleanAttitudeLabel(data.attitude_label) || (directionRepairScene ? '主动求关注' : emotionalDisclosure ? '愿意倾诉' : activeCuriosity ? '主动了解' : '态度待判断') : '这不是聊天截图',
+    attitude_desc: (isChatScreenshot ? cleanText(data.attitude_desc, 180) : '')
+      || (isChatScreenshot ? '请结合对方后续行动继续观察。' : '我还没看到可以分析的聊天内容。'),
+    interest_score: isChatScreenshot ? clampScore(data.interest_score) : 0,
+    interest_level: isChatScreenshot ? normalizeInterestLevel(data.interest_level) : '低意愿',
+    interest_signals: isChatScreenshot ? normalizeSignals(data.interest_signals) : [],
+    conversation_mode: isChatScreenshot ? normalizeConversationMode(data.conversation_mode) : '礼貌回应',
     conversation_stage: isChatScreenshot ? conversationStage : '初次认识',
-    analysis: normalizeCoachAnalysis(data.analysis),
+    analysis,
     relationship_memory_engine: data.relationship_memory_engine || null,
     relationship_stage: cleanText(data.relationship_stage || data.relationship_memory_engine?.relationship_stage, 48),
     intimacy_score: clampScore(data.intimacy_score ?? data.relationship_memory_engine?.intimacy_score),
@@ -237,18 +241,15 @@ function parseAdvice(rawText) {
     coach_advice: data.coach_advice || null,
     reply_explanation: Array.isArray(data.reply_explanation) ? data.reply_explanation : [],
     next_5_moves: Array.isArray(data.next_5_moves) ? data.next_5_moves : [],
-    reply_strategy: isChatScreenshot ? (emotionalDisclosure ? '先回应她现在的不舒服，给她一点喘息空间，等她愿意继续说再慢慢接话。' : activeCuriosity ? '先认真回答她最后的问题，给一个真实细节，再顺着她的反应慢慢展开。' : cleanText(data.reply_strategy, 100)) : '',
-    flirt_level: isChatScreenshot ? (emotionalDisclosure ? '先别暧昧' : normalizeFlirtLevel(data.flirt_level)) : '先别暧昧',
+    reply_strategy: isChatScreenshot ? cleanText(data.reply_strategy, 100) : '',
+    flirt_level: isChatScreenshot ? normalizeFlirtLevel(data.flirt_level) : '先别暧昧',
     is_chat_screenshot: isChatScreenshot,
     non_chat_reply: cleanText(data.non_chat_reply, 120) || getDefaultNonChatReply(),
     chat_evidence: chatEvidence,
     conversation_summary: isChatScreenshot
       ? buildDialogueSummary(verifiedDialogue) || cleanText(data.conversation_summary, 260)
       : '',
-    chat_guide: isChatScreenshot ? mergeNextTopicsIntoGuide(
-      emotionalDisclosure ? buildEmotionalDisclosureGuide() : activeCuriosity ? buildActiveCuriosityGuide() : normalizeChatGuide(data.chat_guide, buildStageChatGuide(conversationStage)),
-      data.next_topics,
-    ) : buildDefaultChatGuide(),
+    chat_guide: isChatScreenshot ? mergeNextTopicsIntoGuide(normalizeChatGuide(data.chat_guide, fallbackGuide), data.next_topics) : buildDefaultChatGuide(),
     next_topics: normalizeNextTopics(data.next_topics),
     dialogue: verifiedDialogue,
     suggest_stop: suggestStop,
