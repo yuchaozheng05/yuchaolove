@@ -19,6 +19,7 @@ const SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const SESSION_MAX_PERSONS = 5;
 
 let uploadedImages = [];
+let lastAnalysisResult = null;
 
 document.getElementById('fileInput').addEventListener('change', handleFileUpload);
 
@@ -151,12 +152,70 @@ async function analyze() {
     const rawText = data.content?.map((part) => part.text || '').join('') || '';
     const parsed = parseAdvice(rawText);
     renderResults(parsed);
+    lastAnalysisResult = parsed;
     if (parsed?.is_chat_screenshot === true && Array.isArray(parsed.replies) && parsed.replies.length) {
       savePersonSession(parsed);
     }
   } catch (error) {
     console.error('Analyze failed:', error);
     renderRetryNotice(error.message || '分析超时，请重新分析或换一张更清晰截图。你的截图没有问题。');
+  } finally {
+    document.getElementById('loadingState').style.display = 'none';
+    setSubmitState(false, '重新分析');
+  }
+}
+
+async function regenerateReplies() {
+  if (!lastAnalysisResult || !Array.isArray(lastAnalysisResult.dialogue) || lastAnalysisResult.dialogue.length === 0) {
+    analyze();
+    return;
+  }
+
+  setSubmitState(true, '正在换一批回复...');
+  document.getElementById('loadingState').style.display = 'block';
+
+  const previousReplies = Array.isArray(lastAnalysisResult.replies)
+    ? lastAnalysisResult.replies
+        .map((reply) => (Array.isArray(reply.messages) ? reply.messages.join(' / ') : reply.text || ''))
+        .filter(Boolean)
+        .slice(0, 5)
+    : [];
+
+  const metadata = {
+    ...buildRequestMetadata(0),
+    regenerate: true,
+    previous_replies: previousReplies,
+    regenerate_dialogue: lastAnalysisResult.dialogue.slice(-12),
+  };
+
+  try {
+    const response = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        metadata,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'text', text: buildPrompt(lastAnalysisResult.dialogue.length) },
+          ],
+        }],
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok || data.error) throw new Error(data.error || `HTTP ${response.status}`);
+    const text = data?.content?.map((part) => part.text || '').join('') || '';
+    if (!text) throw new Error('empty response');
+
+    const parsed = parseAdvice(text);
+    const replies = Array.isArray(parsed.replies) ? parsed.replies : [];
+    renderReplies(replies);
+    lastAnalysisResult = { ...lastAnalysisResult, replies };
+    savePersonSession(lastAnalysisResult);
+  } catch (error) {
+    console.error('Regenerate failed:', error);
+    analyze();
   } finally {
     document.getElementById('loadingState').style.display = 'none';
     setSubmitState(false, '重新分析');
@@ -263,6 +322,8 @@ function buildSessionContext() {
       last_recommended_replies: Array.isArray(session.last_recommended_replies)
         ? session.last_recommended_replies
         : [],
+      sent_reply: cleanText(session.sent_reply, 200),
+      sent_at: Number.isFinite(Number(session.sent_at)) ? Number(session.sent_at) : null,
       days_ago: daysAgo,
     };
   } catch {
@@ -300,10 +361,32 @@ function savePersonSession(analysisResult) {
       relationship_stage:
         analysisResult.relationship_stage || analysisResult.conversation_stage || '',
       last_recommended_replies: replies,
+      sent_reply: existing?.sent_reply || '',
+      sent_at: existing?.sent_at || null,
     };
     saveSessionMap(map);
   } catch {
     // 静默忽略
+  }
+}
+
+function markReplySent(replyText, buttonEl) {
+  try {
+    const map = loadSessionMap();
+    const label = getPersonLabel();
+    if (map[label]) {
+      map[label].sent_reply = replyText.slice(0, 200);
+      map[label].sent_at = Date.now();
+      saveSessionMap(map);
+    }
+  } catch {
+    // 静默忽略
+  }
+
+  if (buttonEl) {
+    buttonEl.textContent = '✓ 已记录';
+    buttonEl.disabled = true;
+    buttonEl.style.opacity = '0.6';
   }
 }
 
@@ -465,6 +548,18 @@ function renderResults(data) {
   }
 }
 
+function renderReplies(replies) {
+  const list = document.getElementById('replyList');
+  list.replaceChildren();
+  if (!Array.isArray(replies) || replies.length === 0) {
+    list.appendChild(createSystemCard('换一批失败', '这次没有生成可用回复，重新分析一下会更稳。', '#c96b52'));
+    return;
+  }
+  replies.forEach((reply, index) => {
+    list.appendChild(createReplyCard(reply, index));
+  });
+}
+
 function renderRetryNotice(message) {
   renderResults({
     attitude_label: '暂时无法分析',
@@ -541,8 +636,18 @@ function createReplyCard(reply, index) {
   copy.className = 'reply-copy';
   copy.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2 2v1"/></svg>点击复制';
 
+  const sentBtn = document.createElement('button');
+  sentBtn.className = 'sent-btn';
+  sentBtn.textContent = '✓ 我发了这条';
+  sentBtn.style.cssText = 'margin-top:8px;padding:4px 10px;font-size:12px;border:1px solid rgba(180,130,100,0.4);border-radius:6px;background:transparent;color:rgba(150,100,80,0.8);cursor:pointer;';
+  sentBtn.onclick = (event) => {
+    event.stopPropagation();
+    markReplySent(copyValue, sentBtn);
+  };
+
   card.appendChild(text);
   card.appendChild(copy);
+  card.appendChild(sentBtn);
   card.addEventListener('click', () => {
     copyText(copyValue);
     card.classList.add('copied');

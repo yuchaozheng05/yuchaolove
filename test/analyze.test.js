@@ -23,6 +23,7 @@ import handler, {
   REFINEMENT_MAX_COMPLETION_TOKENS,
   buildGroupChatAdvice,
   buildIntentPrefix,
+  buildRegeneratePrefix,
   buildSessionPrefix,
   buildStageChatGuide,
   buildFreeTierFallbackAdvice,
@@ -42,6 +43,7 @@ import handler, {
   mergeRefinedReplies,
   needsReplyRefinement,
   normalizeDialogue,
+  normalizeClientMetadata,
   normalizeSessionContext,
   normalizeStickerSuggestions,
   parseAdvice,
@@ -1760,6 +1762,64 @@ test('buildSessionPrefix for different labels are independent', () => {
   assert.ok(!prefix1.includes('小王'));
   assert.ok(prefix2.includes('小王'));
   assert.ok(!prefix2.includes('小李'));
+});
+
+test('buildRegeneratePrefix returns empty string for empty array', () => {
+  assert.equal(buildRegeneratePrefix([]), '');
+  assert.equal(buildRegeneratePrefix(null), '');
+  assert.equal(buildRegeneratePrefix(undefined), '');
+});
+
+test('buildRegeneratePrefix includes previous replies and style instruction', () => {
+  const previous = ['你继续说\n我在', '没事的，先喝点水'];
+  const prefix = buildRegeneratePrefix(previous);
+  assert.ok(prefix.includes('换一批不同风格'));
+  assert.ok(prefix.includes('你继续说'));
+  assert.ok(prefix.includes('没事的'));
+  assert.ok(prefix.includes('不同风格'));
+  assert.ok(prefix.endsWith('\n\n'));
+});
+
+test('normalizeClientMetadata handles regenerate fields', () => {
+  const meta = normalizeClientMetadata({
+    visitor_id: 'v1',
+    regenerate: true,
+    previous_replies: ['回复A', '回复B'],
+    regenerate_dialogue: [
+      { side: 'left', speaker: '对方', text: '你好' },
+      { side: 'right', speaker: '我', text: '嗨' },
+    ],
+  });
+  assert.equal(meta.regenerate, true);
+  assert.equal(meta.previous_replies.length, 2);
+  assert.equal(meta.regenerate_dialogue.length, 2);
+  assert.equal(meta.regenerate_dialogue[0].text, '你好');
+});
+
+test('normalizeClientMetadata defaults regenerate to false', () => {
+  const meta = normalizeClientMetadata({ visitor_id: 'v1' });
+  assert.equal(meta.regenerate, false);
+  assert.deepEqual(meta.previous_replies, []);
+  assert.deepEqual(meta.regenerate_dialogue, []);
+});
+
+test('getRequestParts allows regenerate requests without image parts', () => {
+  const parts = getRequestParts({
+    metadata: {
+      regenerate: true,
+      regenerate_dialogue: [
+        { side: 'left', speaker: '对方', text: '在干嘛' },
+        { side: 'right', speaker: '我', text: '刚忙完' },
+      ],
+    },
+    messages: [{
+      role: 'user',
+      content: [{ type: 'text', text: '换一批回复' }],
+    }],
+  });
+  assert.equal(parts.imageParts.length, 0);
+  assert.equal(parts.metadata.regenerate, true);
+  assert.equal(parts.metadata.regenerate_dialogue.length, 2);
 });
 
 function adviceValue(overrides = {}) {

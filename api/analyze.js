@@ -622,25 +622,44 @@ export default async function handler(req, res) {
 
     for (const model of MODELS) {
       try {
+        const isRegenerateMode = metadata.regenerate && metadata.regenerate_dialogue.length > 0;
         // 阶段一：提取对话（Extraction Call）
         let extractedDialogue = null;
-        try {
-          extractedDialogue = await extractDialogueFromImages({
-            apiKey,
-            model,
-            imageParts,
-            requestId: `${requestId}-extract`,
+        if (isRegenerateMode) {
+          const regenerateDialogue = normalizeDialogue(
+            metadata.regenerate_dialogue.map((message) => ({ ...message, confidence: 'high' })),
+          );
+          extractedDialogue = {
+            dialogue: regenerateDialogue,
+            is_chat_screenshot: true,
+            is_group_chat: false,
+            needs_retry: false,
+            chat_evidence: {},
+            non_chat_reply: '',
+          };
+          console.info(`[${requestId}] Regenerate mode: skipping OCR and Intent Detection`, {
+            dialogue_count: regenerateDialogue.length,
+            previous_replies_count: metadata.previous_replies.length,
           });
-          console.info(`[${requestId}] Extraction Call succeeded`, {
-            dialogue_count: extractedDialogue.dialogue.length,
-            is_chat_screenshot: extractedDialogue.is_chat_screenshot,
-            needs_retry: extractedDialogue.needs_retry,
-          });
-        } catch (extractionError) {
-          console.warn(`[${requestId}] Extraction Call failed, falling back to single-call mode`, {
-            error: summarizeError(extractionError),
-          });
-          extractedDialogue = null;
+        } else {
+          try {
+            extractedDialogue = await extractDialogueFromImages({
+              apiKey,
+              model,
+              imageParts,
+              requestId: `${requestId}-extract`,
+            });
+            console.info(`[${requestId}] Extraction Call succeeded`, {
+              dialogue_count: extractedDialogue.dialogue.length,
+              is_chat_screenshot: extractedDialogue.is_chat_screenshot,
+              needs_retry: extractedDialogue.needs_retry,
+            });
+          } catch (extractionError) {
+            console.warn(`[${requestId}] Extraction Call failed, falling back to single-call mode`, {
+              error: summarizeError(extractionError),
+            });
+            extractedDialogue = null;
+          }
         }
 
         // 群聊截图：不进行分析，直接返回友好提示。
@@ -666,7 +685,7 @@ export default async function handler(req, res) {
 
         // 阶段一点五：意图识别 (Intent Detection Call)
         let conversationIntent = null;
-        if (extractedDialogue && extractedDialogue.dialogue.length > 0) {
+        if (!isRegenerateMode && extractedDialogue && extractedDialogue.dialogue.length > 0) {
           try {
             conversationIntent = await detectConversationIntent({
               apiKey,
@@ -694,11 +713,14 @@ export default async function handler(req, res) {
         const backgroundPrefix = backgroundText
           ? `【用户提供的背景信息】\n${backgroundText}\n\n`
           : '';
+        const regeneratePrefix = metadata.regenerate
+          ? buildRegeneratePrefix(metadata.previous_replies)
+          : '';
         const intentPrefix = buildIntentPrefix(conversationIntent, INTENT_STRATEGY_MAP);
         const sessionPrefix = buildSessionPrefix(metadata.session_context);
-        const analysisPrompt = sessionPrefix + intentPrefix + backgroundPrefix + textPart.text;
+        const analysisPrompt = regeneratePrefix + sessionPrefix + intentPrefix + backgroundPrefix + textPart.text;
 
-        debug.vision_called = true;
+        debug.vision_called = !isRegenerateMode;
         const rawResult = await requestOpenAIAdviceWithVisionRetry({
           apiKey,
           model,
@@ -706,6 +728,7 @@ export default async function handler(req, res) {
           prompt: analysisPrompt,
           requestId,
           extractedDialogue: extractedDialogue || undefined,
+          temperature: metadata.regenerate ? 0.75 : 0.55,
         });
         const rawText = typeof rawResult === 'string' ? rawResult : rawResult.text;
         if (rawResult?.ocrFallback) {
@@ -877,8 +900,10 @@ function getRequestParts(body) {
 
   const imageParts = dedupeImageParts(content.filter((part) => part.type === 'image'));
   const textPart = content.find((part) => part.type === 'text');
+  const metadata = normalizeClientMetadata(payload?.metadata);
+  const allowTextOnlyRegenerate = metadata.regenerate && metadata.regenerate_dialogue.length > 0;
 
-  if (!imageParts.length || imageParts.length > MAX_IMAGE_COUNT) {
+  if ((!allowTextOnlyRegenerate && !imageParts.length) || imageParts.length > MAX_IMAGE_COUNT) {
     throw createPublicError(400, `请上传 1 到 ${MAX_IMAGE_COUNT} 张聊天截图。`);
   }
   if (imageParts.some((part) => !ALLOWED_MEDIA_TYPES.has(part?.source?.media_type))) {
@@ -895,7 +920,7 @@ function getRequestParts(body) {
     throw createPublicError(400, '分析说明缺失，请刷新页面后重试。');
   }
 
-  return { imageParts, textPart, metadata: normalizeClientMetadata(payload?.metadata) };
+  return { imageParts, textPart, metadata };
 }
 
 function dedupeImageParts(imageParts) {
@@ -1060,6 +1085,8 @@ function normalizeSessionContext(value) {
           .filter(Boolean)
           .slice(0, 3)
       : [],
+    sent_reply: cleanText(value.sent_reply, 200),
+    sent_at: Number.isFinite(Number(value.sent_at)) ? Number(value.sent_at) : null,
     days_ago: Number.isFinite(Number(value.days_ago))
       ? Math.max(0, Math.round(Number(value.days_ago)))
       : 0,
@@ -1082,6 +1109,20 @@ function normalizeClientMetadata(metadata) {
     device_pixel_ratio: Number.isFinite(Number(metadata.device_pixel_ratio)) ? Number(metadata.device_pixel_ratio) : undefined,
     session_context: normalizeSessionContext(metadata.session_context),
     target_person_label: cleanText(metadata.target_person_label, 20),
+    regenerate: metadata.regenerate === true,
+    previous_replies: Array.isArray(metadata.previous_replies)
+      ? metadata.previous_replies.map((r) => cleanText(r, 120)).filter(Boolean).slice(0, 5)
+      : [],
+    regenerate_dialogue: Array.isArray(metadata.regenerate_dialogue)
+      ? metadata.regenerate_dialogue
+          .map((m) => ({
+            side: ['left', 'right', 'feed'].includes(m?.side) ? m.side : 'left',
+            speaker: cleanText(m?.speaker, 10) || '对方',
+            text: cleanText(m?.text, 100),
+          }))
+          .filter((m) => m.text)
+          .slice(0, 12)
+      : [],
   };
 }
 
@@ -1183,17 +1224,33 @@ function buildSessionPrefix(sessionContext) {
           .map((r) => `- ${r}`)
           .join('\n')}\n`
       : '';
+  const sentText = sessionContext.sent_reply
+    ? `用户上次实际发送：${sessionContext.sent_reply}\n`
+    : '';
   return [
     `【与"${label}"的上次对话背景】`,
     `上次分析：${daysText}`,
     stageText,
     `对话摘要：${sessionContext.dialogue_summary}`,
+    sentText,
     repliesText,
     '',
     '',
   ]
     .filter((line) => line !== undefined)
     .join('\n');
+}
+
+function buildRegeneratePrefix(previousReplies) {
+  if (!Array.isArray(previousReplies) || previousReplies.length === 0) return '';
+  return [
+    '【本次任务：换一批不同风格的回复】',
+    '上次已经推荐过以下回复，本次请生成完全不同风格的候选，不要重复相同句子或句式：',
+    ...previousReplies.map((reply) => `- ${reply}`),
+    '要求：至少覆盖 3 种不同风格（例如：轻松玩笑 / 认真回应 / 带情绪 / 反问 / 暧昧），每组候选节奏和用词都要有明显区别。',
+    '',
+    '',
+  ].join('\n');
 }
 
 async function requestOpenAIAdviceWithVisionRetry(args) {
@@ -1233,6 +1290,7 @@ async function requestOpenAIAdvice({
   systemPrompt = PRIMARY_SYSTEM_PROMPT,
   timeoutMs = PRIMARY_OPENAI_TIMEOUT_MS,
   extractedDialogue = null,
+  temperature = 0.55,
 }) {
   const requestStartedAt = Date.now();
   const imageMessages = imageParts.flatMap((imagePart, index) => [
@@ -1322,7 +1380,7 @@ async function requestOpenAIAdvice({
           { role: 'system', content: systemPrompt },
           { role: 'user', content: [...effectiveImageMessages, { type: 'text', text: extractionPrefix + prompt }] },
         ],
-        temperature: 0.55,
+        temperature,
         max_completion_tokens: maxCompletionTokens,
         response_format: {
           type: 'json_schema',
@@ -5111,4 +5169,4 @@ function buildStoragePath({ visitorId, index, ext }) {
   return `screenshots/${day}/${safeVisitorId}-${Date.now()}-${index}.${ext}`;
 }
 
-export { CHAT_ADVICE_SCHEMA, CHAT_SCENE_LIBRARY, EXTRACTION_IMAGE_DETAIL, EXTRACTION_MAX_COMPLETION_TOKENS, EXTRACTION_SCHEMA, EXTRACTION_SYSTEM_PROMPT, GENERIC_REPLY_TEMPLATE_PATTERN, IMAGE_READING_RULES, INTENT_DETECTION_SCHEMA, INTENT_DETECTION_SYSTEM_PROMPT, INTENT_MAX_COMPLETION_TOKENS, INTENT_STRATEGY_MAP, MODELS, PRIMARY_IMAGE_DETAIL, PRIMARY_MAX_COMPLETION_TOKENS, PRIMARY_OPENAI_TIMEOUT_MS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, REPLY_REFINEMENT_SCHEMA, REFINEMENT_MAX_COMPLETION_TOKENS, analyzeConversationDirection, buildActiveCuriosityGuide, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildGroupChatAdvice, buildGroundedFallbackReplies, buildIntentPrefix, buildReplyRefinementPrompt, buildSessionPrefix, buildStageChatGuide, buildStickerMatchIntent, detectConversationIntent, detectScene, extractConcreteFacts, extractDialogueFromImages, extractFirstJsonObject, getReplyGroundingReport, getRequestParts, getStickerContext, hasActiveCuriosity, hasHappyEmotion, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, hasStudyStress, inferConversationStage, isRetryableModelError, isVerifiedChatScreenshot, logUsage, mergeRefinedReplies, needsReplyRefinement, normalizeChatGuide, normalizeConversationMode, normalizeConversationStage, normalizeDialogue, normalizeChatEvidence, normalizeSessionContext, normalizeStickerSuggestions, parseAdvice, recommendStockStickers, repairReplyCandidates, requestOpenAIAdvice, requestOpenAIReplyRefinement, safeJsonParse, scoreStockSticker };
+export { CHAT_ADVICE_SCHEMA, CHAT_SCENE_LIBRARY, EXTRACTION_IMAGE_DETAIL, EXTRACTION_MAX_COMPLETION_TOKENS, EXTRACTION_SCHEMA, EXTRACTION_SYSTEM_PROMPT, GENERIC_REPLY_TEMPLATE_PATTERN, IMAGE_READING_RULES, INTENT_DETECTION_SCHEMA, INTENT_DETECTION_SYSTEM_PROMPT, INTENT_MAX_COMPLETION_TOKENS, INTENT_STRATEGY_MAP, MODELS, PRIMARY_IMAGE_DETAIL, PRIMARY_MAX_COMPLETION_TOKENS, PRIMARY_OPENAI_TIMEOUT_MS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, REPLY_REFINEMENT_SCHEMA, REFINEMENT_MAX_COMPLETION_TOKENS, analyzeConversationDirection, buildActiveCuriosityGuide, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildGroupChatAdvice, buildGroundedFallbackReplies, buildIntentPrefix, buildRegeneratePrefix, buildReplyRefinementPrompt, buildSessionPrefix, buildStageChatGuide, buildStickerMatchIntent, detectConversationIntent, detectScene, extractConcreteFacts, extractDialogueFromImages, extractFirstJsonObject, getReplyGroundingReport, getRequestParts, getStickerContext, hasActiveCuriosity, hasHappyEmotion, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, hasStudyStress, inferConversationStage, isRetryableModelError, isVerifiedChatScreenshot, logUsage, mergeRefinedReplies, needsReplyRefinement, normalizeChatGuide, normalizeClientMetadata, normalizeConversationMode, normalizeConversationStage, normalizeDialogue, normalizeChatEvidence, normalizeSessionContext, normalizeStickerSuggestions, parseAdvice, recommendStockStickers, repairReplyCandidates, requestOpenAIAdvice, requestOpenAIReplyRefinement, safeJsonParse, scoreStockSticker };
