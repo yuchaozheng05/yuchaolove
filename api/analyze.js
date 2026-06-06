@@ -7,16 +7,16 @@ const ALLOWED_MEDIA_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_IMAGE_COUNT = 6;
 const MAX_TOTAL_IMAGE_BASE64_LENGTH = 4_000_000;
 const PRIMARY_IMAGE_DETAIL = 'low';
-const PRIMARY_MAX_COMPLETION_TOKENS = 2200;
+const PRIMARY_MAX_COMPLETION_TOKENS = 1800;
 const REFINEMENT_MAX_COMPLETION_TOKENS = 560;
-const PRIMARY_OPENAI_TIMEOUT_MS = 26_000;
-const VISION_RETRY_OPENAI_TIMEOUT_MS = 18_000;
-const REFINEMENT_OPENAI_TIMEOUT_MS = 8_000;
+const PRIMARY_OPENAI_TIMEOUT_MS = 55_000;
+const VISION_RETRY_OPENAI_TIMEOUT_MS = 55_000;
+const REFINEMENT_OPENAI_TIMEOUT_MS = 20_000;
 const EXTRACTION_IMAGE_DETAIL = 'low';
 const EXTRACTION_MAX_COMPLETION_TOKENS = 600;
-const EXTRACTION_OPENAI_TIMEOUT_MS = 14_000;
+const EXTRACTION_OPENAI_TIMEOUT_MS = 25_000;
 const INTENT_MAX_COMPLETION_TOKENS = 200;
-const INTENT_OPENAI_TIMEOUT_MS = 7_000;
+const INTENT_OPENAI_TIMEOUT_MS = 15_000;
 const EMOTIONAL_DISCLOSURE_PATTERN = /困死|好困|太困|困了|很困|累死|好累|太累|累了|很累|疼|痛|难受|不舒服|烦|焦虑|压力|不想上学|不想去|没写完|睡不着|崩溃|想哭|生病|发烧|胃疼|肚子疼|头疼|头痛|想太多|做不出来|卡住|里面好闷|好闷/;
 const PHYSICAL_DISCOMFORT_PATTERN = /疼|痛|难受|不舒服|生病|发烧|胃疼|肚子疼|头疼|头痛/;
 const STUDY_STRESS_PATTERN = /考试|考完|考砸|复习|作业|没写完|论文|ddl|期中|期末|测验|quiz|midterm|final|题|第一题|做不出来|卡住|想太多|最近的东西/i;
@@ -112,6 +112,16 @@ const STYLE_DIMENSION_NOTE = `【style_dimension 多样性要求】
 - FLIRTY：暧昧升温，含蓄心动，留钩子
 - DIRECT_ANSWER：直接回答对方的问题或接住对方的分享，不绕弯子
 不要让所有候选都是同一种风格。style_dimension 必须如实填写，不要随便填。
+
+`;
+const COMPACT_RESPONSE_NOTE = `【输出长度控制】
+为了避免结构化 JSON 被截断，所有字段都要短。
+- replies 优先生成 3 组，确实需要时再给 4-5 组
+- 每条 message 控制在 28 个中文字符以内
+- attitude_desc、reply_strategy、coach_advice.summary、relationship_goal 字段只写一句短话
+- next_topics、next_5_moves 每条都写短句，不要写长段解释
+- dialogue 只保留截图里最近且最关键的可见消息，不要复述整张长截图
+- sticker_suggestions 只给 3 个短检索意图，不要展开解释
 
 `;
 const INTENT_DETECTION_SYSTEM_PROMPT = `你是对话行为分析器。给定一段中文聊天记录，判断对方（speaker=对方）最近消息的对话行为意图。只返回 JSON，不要解释。
@@ -739,7 +749,7 @@ export default async function handler(req, res) {
         const intentPrefix = buildIntentPrefix(conversationIntent, INTENT_STRATEGY_MAP);
         const sessionPrefix = buildSessionPrefix(metadata.session_context);
         const userProfilePrefix = buildUserProfilePrefix(metadata.user_profile);
-        const analysisPrompt = userProfilePrefix + STYLE_DIMENSION_NOTE + regeneratePrefix + sessionPrefix + intentPrefix + backgroundPrefix + textPart.text;
+        const analysisPrompt = userProfilePrefix + STYLE_DIMENSION_NOTE + COMPACT_RESPONSE_NOTE + regeneratePrefix + sessionPrefix + intentPrefix + backgroundPrefix + textPart.text;
 
         debug.vision_called = !isRegenerateMode;
         const rawResult = await requestOpenAIAdviceWithVisionRetry({
@@ -773,7 +783,8 @@ export default async function handler(req, res) {
             elapsed_ms: Date.now() - startedAt,
           });
           debug.json_parse_failed = true;
-          debug.raw_output = rawText.slice(0, 2000);
+          debug.raw_output = '';
+          debug.fallback_used = true;
           advice = buildJsonParseFallbackAdvice(rawText);
         }
         debug.extracted_text = buildDebugExtractedText(advice);
@@ -1749,17 +1760,7 @@ function repairCommonJsonIssues(rawText = '') {
   return String(rawText || '').replace(/,\s*([}\]])/g, '$1').trim();
 }
 
-function extractFirstJsonBlock(rawText, { objectOnly = false } = {}) {
-  const cleaned = stripJsonFences(rawText);
-  let start = -1;
-  for (let index = 0; index < cleaned.length; index += 1) {
-    if (cleaned[index] === '{' || (!objectOnly && cleaned[index] === '[')) {
-      start = index;
-      break;
-    }
-  }
-  if (start < 0) throw new Error('OpenAI returned invalid JSON');
-
+function readCompleteJsonBlockFrom(cleaned, start) {
   const opening = cleaned[start];
   const stack = [opening];
   let inString = false;
@@ -1782,10 +1783,25 @@ function extractFirstJsonBlock(rawText, { objectOnly = false } = {}) {
       stack.push(character);
     } else if (character === '}' || character === ']') {
       const expectedOpening = character === '}' ? '{' : '[';
-      if (stack.at(-1) !== expectedOpening) break;
+      if (stack.at(-1) !== expectedOpening) return null;
       stack.pop();
       if (stack.length === 0) return cleaned.slice(start, index + 1);
     }
+  }
+
+  return null;
+}
+
+function extractFirstJsonBlock(rawText, { objectOnly = false } = {}) {
+  const cleaned = stripJsonFences(rawText);
+  for (let start = 0; start < cleaned.length; start += 1) {
+    const character = cleaned[start];
+    if (character !== '{' && (objectOnly || character !== '[')) continue;
+    const block = readCompleteJsonBlockFrom(cleaned, start);
+    if (block) return block;
+    // If the first apparent JSON root is truncated, do not parse nested fragments
+    // inside it as a successful top-level response.
+    throw new Error('OpenAI returned invalid JSON');
   }
 
   throw new Error('OpenAI returned invalid JSON');
@@ -2304,8 +2320,8 @@ function buildJsonParseFallbackAdvice(rawOutput = '') {
   };
   const relationshipGoal = normalizeRelationshipGoal({}, relationshipMemory);
   return {
-    attitude_label: '解析失败',
-    attitude_desc: 'OpenAI 已经返回内容，但 JSON 不完整或格式异常。本次不会降级成服务繁忙，也不会误判为不是聊天截图。',
+    attitude_label: '解析异常',
+    attitude_desc: '这次模型返回格式不完整，页面没有采用半截结果。请点“重新分析”，我会重新生成一版。',
     interest_score: 0,
     interest_level: '低意愿',
     interest_signals: [],
@@ -2328,7 +2344,7 @@ function buildJsonParseFallbackAdvice(rawOutput = '') {
     initiator: 'unclear',
     reply_risk: 'safe',
     risk_level: 'safe',
-    next_best_move: '',
+    next_best_move: '点击重新分析，重新生成完整结果',
     conversation_future: normalizeConversationFuture({}, { relationshipMemory, scene: null }),
     relationship_goal: relationshipGoal,
     coach_advice: normalizeCoachAdvice({}, { relationshipMemory, relationshipGoal, scene: null }),
@@ -2339,9 +2355,13 @@ function buildJsonParseFallbackAdvice(rawOutput = '') {
     is_chat_screenshot: true,
     non_chat_reply: '',
     chat_evidence: {},
-    conversation_summary: cleanText(rawOutput, 260),
-    chat_guide: buildDefaultChatGuide(),
-    next_topics: [],
+    conversation_summary: '',
+    chat_guide: {
+      current_move: '点击重新分析，重新生成完整结果',
+      next_steps: ['如果截图较长，可以裁剪聊天区域后再试。', '如果图片模糊，换一张更清晰的截图。'],
+      avoid: '不要使用这次半截结果。',
+    },
+    next_topics: ['重新分析一次，或换一张更清晰/更短的截图。'],
     dialogue: [],
     suggest_stop: false,
     needs_retry: true,
@@ -2707,8 +2727,8 @@ const INTENT_STRATEGY_MAP = loadIntentStrategyMap();
 const STICKER_LIBRARY = loadStickerLibrary();
 const STOCK_STICKER_CATALOG = loadStickerCatalog();
 const STICKER_RECOMMENDATION_COUNT = 6;
-const STICKER_EMOTIONS = new Set(['greeting', 'happy', 'laugh', 'shy', 'flirt', 'love', 'missing', 'miss_you', 'sad', 'cry', 'wronged', 'comfort', 'comforting', 'encourage', 'thanks', 'goodnight', 'angry', 'awkward', 'speechless', 'excited', 'proud', 'jealous', 'surprised', 'thinking', 'sleepy', 'apology']);
-const STICKER_SCENARIOS = new Set(['greeting', 'studying', 'working', 'tired', 'good_morning', 'good_night', 'missing_you', 'apology', 'encouragement', 'celebration', 'teasing', 'flirting', 'confession', 'thanks', 'waiting', 'reply_late', 'asking_attention', 'agree', 'refuse', 'speechless', 'angry_complaint', 'jealousy', 'hug', 'comfort', 'cute_acting', 'bye', 'safe_exit']);
+const STICKER_EMOTIONS = new Set(['greeting', 'happy', 'laugh', 'shy', 'flirt', 'love', 'missing', 'miss_you', 'sad', 'cry', 'wronged', 'comfort', 'comforting', 'encourage', 'thanks', 'goodnight', 'angry', 'awkward', 'speechless', 'excited', 'proud', 'jealous', 'jealous_cute', 'surprised', 'thinking', 'sleepy', 'apology', 'waiting', 'acting_cute', 'tsundere', 'heart_flutter', 'morning', 'question', 'sulky']);
+const STICKER_SCENARIOS = new Set(['greeting', 'studying', 'working', 'tired', 'good_morning', 'good_night', 'missing_you', 'apology', 'encouragement', 'celebration', 'teasing', 'flirting', 'confession', 'thanks', 'waiting', 'waiting_reply', 'reply_late', 'asking_attention', 'agree', 'refuse', 'speechless', 'angry_complaint', 'jealousy', 'hug', 'comfort', 'cute_acting', 'acting_cute', 'morning_greeting', 'late_night_chat', 'getting_home', 'heart_flutter', 'sulking', 'bye', 'safe_exit']);
 const STICKER_RELATIONSHIP_STAGES = new Set(['stranger', 'acquaintance', 'talking_stage', 'flirting', 'relationship', 'post_conflict']);
 const STICKER_SCORE_WEIGHTS = {
   primaryEmotion: 40,
@@ -2724,7 +2744,7 @@ const STICKER_SCORE_WEIGHTS = {
   usagePriority: 0.1,
   avoidTagPenalty: -45,
 };
-const STICKER_CHARACTER_ORDER = ['white_mochi', 'hamster', 'cat', 'shiba'];
+const STICKER_CHARACTER_ORDER = ['white_mochi', 'hamster', 'cat', 'bunny', 'shiba'];
 const STICKER_MAX_PER_CHARACTER_SOFT = 2;
 const STICKER_CANONICAL_EMOTIONS = {
   comforting: 'comfort',
@@ -2735,6 +2755,9 @@ const STICKER_CANONICAL_EMOTIONS = {
   speechless: 'awkward',
   wronged: 'sad',
   tired: 'sleepy',
+  morning: 'greeting',
+  question: 'thinking',
+  sulky: 'sad',
 };
 const STICKER_EMOTION_ALIASES = {
   greeting: ['greeting', 'happy', 'shy'],
@@ -2755,6 +2778,14 @@ const STICKER_EMOTION_ALIASES = {
   thanks: ['thanks', 'happy', 'shy'],
   thinking: ['thinking', 'awkward', 'surprised'],
   angry: ['angry', 'awkward'],
+  jealous: ['jealous', 'jealous_cute', 'shy', 'love', 'comfort'],
+  jealous_cute: ['jealous_cute', 'jealous', 'shy', 'love'],
+  waiting: ['waiting', 'shy', 'miss_you', 'love'],
+  acting_cute: ['acting_cute', 'shy', 'comfort', 'love'],
+  tsundere: ['tsundere', 'shy', 'awkward', 'love'],
+  heart_flutter: ['heart_flutter', 'love', 'shy'],
+  question: ['question', 'thinking', 'awkward', 'surprised'],
+  sulky: ['sulky', 'sad', 'cry', 'comfort'],
 };
 const STICKER_SCENARIO_ALIASES = {
   good_night: ['good_night', 'goodnight', 'tired', 'comfort'],
@@ -2769,6 +2800,16 @@ const STICKER_SCENARIO_ALIASES = {
   speechless: ['speechless', 'teasing', 'awkward'],
   apology: ['apology', 'comfort', 'flirting'],
   thanks: ['thanks', 'agree', 'teasing'],
+  waiting: ['waiting', 'waiting_reply', 'missing_you', 'flirting'],
+  waiting_reply: ['waiting_reply', 'waiting', 'missing_you', 'flirting'],
+  jealousy: ['jealousy', 'flirting', 'comfort'],
+  acting_cute: ['acting_cute', 'cute_acting', 'hug', 'flirting'],
+  cute_acting: ['cute_acting', 'acting_cute', 'hug', 'flirting'],
+  morning_greeting: ['morning_greeting', 'good_morning', 'greeting'],
+  late_night_chat: ['late_night_chat', 'good_night', 'missing_you', 'flirting'],
+  getting_home: ['getting_home', 'greeting', 'comfort'],
+  heart_flutter: ['heart_flutter', 'flirting', 'missing_you'],
+  sulking: ['sulking', 'comfort', 'hug', 'flirting'],
 };
 const STICKER_REPLY_INTENT_PLANS = {
   soften_flirty_conflict: {
@@ -4075,7 +4116,14 @@ function inferStickerDisplayText(sticker, intent, index = 0) {
     cry: '哭哭',
     sad: '哭哭',
     jealous: '吃醋了',
+    jealous_cute: '小醋包',
     proud: '嗯哼',
+    waiting: '等你回我',
+    acting_cute: '抱抱我',
+    tsundere: '才没有',
+    heart_flutter: '心动了',
+    question: '啊？',
+    sulky: '不理你了',
   }[stickerPrimaryEmotion];
   if (stickerEmotionText) return stickerEmotionText;
 
@@ -4111,6 +4159,13 @@ function displayTextFromEmotion(emotion, scenarios = [], keywords = []) {
   if (/good.?night|晚安|睡|困|sleepy/.test(text)) return '晚安';
   if (/thanks|谢谢/.test(text)) return '谢谢';
   if (/miss|想你/.test(text)) return '想你';
+  if (/peek|偷看/.test(text)) return '偷看一下';
+  if (/waiting|等回复|等你/.test(text)) return '等你回我';
+  if (/jealous|吃醋|查岗|小醋包/.test(text)) return '小醋包';
+  if (/acting_cute|cute_acting|撒娇|蹭/.test(text)) return '抱抱我';
+  if (/tsundere|嘴硬|才没有/.test(text)) return '才没有';
+  if (/heart_flutter|心动|犯规/.test(text)) return '心动了';
+  if (/morning|早安/.test(text)) return '早安呀';
   if (/apology|对不起|抱歉/.test(text)) return '对不起';
   if (/shy|害羞|flirt/.test(text)) return '害羞';
   if (/love|喜欢|心动/.test(text)) return '喜欢你';
@@ -4393,6 +4448,11 @@ function scoreStockSticker(sticker, intent) {
   }
   if (Array.isArray(sticker.avoid_tags) && sticker.avoid_tags.some((tag) => intent.keywords.includes(tag) || intent.scenario.includes(tag))) {
     score += STICKER_SCORE_WEIGHTS.avoidTagPenalty;
+  }
+  if (Array.isArray(sticker.qa_flags) && sticker.qa_flags.length) {
+    const hardFlags = ['species_mismatch', 'ghost_artifact', 'style_incompatible'];
+    const hasHardFlag = sticker.qa_flags.some((flag) => hardFlags.some((prefix) => String(flag).includes(prefix)));
+    score -= hasHardFlag ? 90 : Math.min(36, sticker.qa_flags.length * 12);
   }
   if (intent.context === 'study_discomfort' && /umbrella|伞|保暖|blanket|盖被子|取暖/.test(searchableText)) {
     score -= 36;

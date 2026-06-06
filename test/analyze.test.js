@@ -76,7 +76,7 @@ const requestBody = {
 
 test('uses the OpenAI vision model', () => {
   assert.deepEqual(MODELS, ['gpt-4.1-mini']);
-  assert.equal(PRIMARY_OPENAI_TIMEOUT_MS, 26_000);
+  assert.equal(PRIMARY_OPENAI_TIMEOUT_MS, 55_000);
 });
 
 test('defines a strict schema for richer attraction analysis', () => {
@@ -1039,6 +1039,11 @@ test('safely parses fenced JSON blocks with common formatting issues', () => {
   assert.deepEqual(safeJsonParse('说明文字\n[{"ok":true,}]\n补充文字'), [{ ok: true }]);
 });
 
+test('safeJsonParse does not treat nested fragments from truncated JSON as a valid response', () => {
+  const raw = '{"analysis":{"scene":"身体不舒服"},"replies":[';
+  assert.throws(() => safeJsonParse(raw), /invalid JSON/);
+});
+
 test('validates uploaded screenshot format', () => {
   assert.equal(getRequestParts(requestBody).imageParts[0].source.media_type, 'image/png');
   assert.throws(() => getRequestParts({ messages: [{ content: [] }] }), /1 到 6 张/);
@@ -1155,13 +1160,16 @@ test('returns a minimal usable result instead of degraded fallback for malformed
     assert.equal(response.body.degraded, undefined);
     assert.equal(response.body.debug.vision_success, true);
     assert.equal(response.body.debug.json_parse_failed, true);
-    assert.match(response.body.debug.raw_output, /身体不舒服/);
+    assert.equal(response.body.debug.raw_output, '');
+    assert.equal(response.body.debug.fallback_used, true);
     assert.equal(advice.degraded, false);
     assert.equal(advice.json_parse_failed, true);
     assert.deepEqual(advice.analysis.scene, '');
     assert.deepEqual(advice.replies, []);
     assert.deepEqual(advice.stickers, []);
-    assert.deepEqual(advice.next_topics, []);
+    assert.ok(advice.next_topics.length > 0);
+    assert.equal(advice.conversation_summary, '');
+    assert.doesNotMatch(JSON.stringify(advice), /身体不舒服|OpenAI 已经返回内容/);
     assert.doesNotMatch(advice.attitude_desc, /服务暂时繁忙/);
   } finally {
     global.fetch = originalFetch;
