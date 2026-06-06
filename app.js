@@ -1,9 +1,5 @@
 /* yuchaolove - app.js */
 
-import { inject } from '@vercel/analytics';
-
-inject();
-
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_FILE_COUNT = 6;
 const MAX_TOTAL_IMAGE_BASE64_LENGTH = 3_800_000;
