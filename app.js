@@ -1,5 +1,9 @@
 /* yuchaolove - app.js */
 
+import { inject } from '@vercel/analytics';
+
+inject();
+
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_FILE_COUNT = 6;
 const MAX_TOTAL_IMAGE_BASE64_LENGTH = 3_800_000;
@@ -18,6 +22,7 @@ const SESSION_MAP_KEY = 'yuchaolove_sessions';
 const SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const SESSION_MAX_PERSONS = 5;
 const PROFILE_STORAGE_KEY = 'yuchaolove_profile';
+
 
 let uploadedImages = [];
 let lastAnalysisResult = null;

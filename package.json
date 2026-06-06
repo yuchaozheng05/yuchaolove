@@ -4,7 +4,14 @@
     "stickers:dry": "node scripts/generate-stickers.js --dry-run",
     "stickers:generate": "node scripts/generate-stickers.js",
     "stickers:build": "node scripts/build-sticker-catalog.js",
+    "stickers:validate": "node scripts/build-sticker-catalog.js --validate",
+    "stickers:prompts:list": "ls assets/stickers/prompts/",
+    "stickers:leonardo": "node scripts/generate-stickers-leonardo.js",
+    "stickers:leonardo:dry": "node scripts/generate-stickers-leonardo.js --dry=true",
     "check": "node --check app.js && node --check sticker.js && node --check api/analyze.js",
     "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1"
   }
 }
