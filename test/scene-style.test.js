@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   GENERIC_REPLY_TEMPLATE_PATTERN,
+  REFLECTIVE_INTELLIGENCE_NOTE,
   REPLY_COACH_SYSTEM_PROMPT,
   STYLE_DIMENSION_NOTE,
   extractConcreteFacts,
@@ -171,6 +172,79 @@ test('normalizeReplyCandidate 保留 INTELLECTUAL 维度', () => {
     style_dimension: 'INTELLECTUAL',
   });
   assert.equal(candidate.style_dimension, 'INTELLECTUAL');
+});
+
+// ---------- Reflective Intelligence ----------
+
+test('REFLECTIVE_INTELLIGENCE_NOTE 包含触发条件、回复公式和质量检查', () => {
+  assert.ok(typeof REFLECTIVE_INTELLIGENCE_NOTE === 'string');
+  assert.match(REFLECTIVE_INTELLIGENCE_NOTE, /触发条件/);
+  assert.match(REFLECTIVE_INTELLIGENCE_NOTE, /问题背后的情绪需求/);
+  assert.match(REFLECTIVE_INTELLIGENCE_NOTE, /回复公式/);
+  assert.match(REFLECTIVE_INTELLIGENCE_NOTE, /质量检查/);
+  assert.match(REFLECTIVE_INTELLIGENCE_NOTE, /不要照抄/);
+  assert.match(REFLECTIVE_INTELLIGENCE_NOTE, /INTELLECTUAL/);
+});
+
+test('REFLECTIVE_INTELLIGENCE_NOTE 限定触发场景且禁止泛用', () => {
+  assert.match(REFLECTIVE_INTELLIGENCE_NOTE, /其他场景不要使用/);
+  assert.match(REFLECTIVE_INTELLIGENCE_NOTE, /不要直接回答表层问题/);
+  assert.match(REFLECTIVE_INTELLIGENCE_NOTE, /不像金句，不像鸡汤，不像AI/);
+});
+
+test('REFLECTIVE_INTELLIGENCE_NOTE 包含核心参考案例', () => {
+  assert.match(REFLECTIVE_INTELLIGENCE_NOTE, /不是一道证明题/);
+  assert.match(REFLECTIVE_INTELLIGENCE_NOTE, /认真和偏爱，通常只会给少数人/);
+  assert.match(REFLECTIVE_INTELLIGENCE_NOTE, /第一个想到的是谁/);
+});
+
+test('REPLY_COACH_SYSTEM_PROMPT 引用 Reflective Intelligence 触发规则', () => {
+  assert.match(REPLY_COACH_SYSTEM_PROMPT, /Reflective Intelligence/);
+  assert.match(REPLY_COACH_SYSTEM_PROMPT, /情感试探提问/);
+});
+
+test('Reflective 案例回复不会被 AI 味兜底正则误杀', () => {
+  const reflectiveReplies = [
+    '爱好像本来就不是一道证明题\n如果非要证明的话，一个人愿意把时间留给谁，答案其实已经很明显了',
+    '善良可以给很多人\n但认真和偏爱，通常只会给少数人',
+    '会在意\n因为人在乎的从来不是输赢，而是自己在对方心里的位置',
+    '一个人重不重要，不是看聊天记录有多长\n而是看发生事情的时候，第一个想到的是谁',
+    '信任这种东西太贵了\n我宁愿少说一点，也不想用谎言换一时的好感',
+  ];
+  for (const text of reflectiveReplies) {
+    assert.ok(!GENERIC_REPLY_TEMPLATE_PATTERN.test(text), `不应误杀：${text}`);
+  }
+});
+
+test('情感试探"你为什么喜欢我"不触发撤回修复分支，保留思考型回复', () => {
+  const mk = (t, d) => ({ text: t, messages: t.split('\n'), style_dimension: d });
+  const advice = {
+    dialogue: [{ speaker: '对方', text: '你为什么喜欢我' }],
+    analysis: { scene: '表白试探' },
+    replies: [
+      mk('我觉得喜欢很少是因为某一个优点\n更多是因为和你聊天的时候，我会变成自己喜欢的样子', 'INTELLECTUAL'),
+      mk('这个问题我想了一下\n大概是你偶尔会让我想了解你', 'SINCERE'),
+      mk('真要说原因的话\n是你上次接住我那个冷笑话的时候', 'LIGHTHEARTED'),
+    ],
+  };
+  const repaired = repairReplyCandidates(advice);
+  assert.equal(repaired.replies, advice.replies, '思考型回复不应被替换成撤回模板');
+});
+
+test('追问判断依据"怎么就确定了"仍走撤回修复分支', () => {
+  const mk = (t) => ({ text: t, messages: [t], style_dimension: 'SINCERE' });
+  const advice = {
+    dialogue: [{ speaker: '对方', text: '你不是说我很难懂吗，那你怎么就确定了呢' }],
+    analysis: { scene: '轻松追问' },
+    replies: [
+      mk('让我观察你这个难懂的秘密'),
+      mk('以后再告诉你'),
+      mk('你猜猜看'),
+    ],
+  };
+  const repaired = repairReplyCandidates(advice);
+  const joined = repaired.replies.map((r) => r.text).join(' ');
+  assert.ok(/瞎猜|撤回|判断错|下结论太早/.test(joined), `应替换为认错短句：${joined}`);
 });
 
 test('normalizeReplyCandidate 把非法维度回落为 SINCERE', () => {
