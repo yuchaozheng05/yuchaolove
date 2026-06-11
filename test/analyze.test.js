@@ -1847,7 +1847,8 @@ test('CHAT_ADVICE_SCHEMA replies items include style_dimension', () => {
   assert.ok(dims.includes('PLAYFUL'));
   assert.ok(dims.includes('FLIRTY'));
   assert.ok(dims.includes('DIRECT_ANSWER'));
-  assert.equal(dims.length, 6);
+  assert.ok(dims.includes('INTELLECTUAL'));
+  assert.equal(dims.length, 7);
 });
 
 test('REPLY_REFINEMENT_SCHEMA replies items include style_dimension', () => {
