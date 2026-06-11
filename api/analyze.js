@@ -4456,6 +4456,14 @@ function scoreStockSticker(sticker, intent) {
   if (intent.context === 'repair_cold_reply' && /safe_exit|bye|先撤|不打扰|冷淡|停止|umbrella|伞|保暖/.test(searchableText)) {
     score -= 42;
   }
+  if (intent.reply_intent === 'say_goodnight_back') {
+    const isGoodnightSticker = stickerEmotion.primary === 'goodnight'
+      || stickerScenario.includes('good_night')
+      || /晚安|好梦|睡觉|睡觉觉|早睡|别熬夜|good.?night|sleep/.test(searchableText);
+    if (isGoodnightSticker) score += 34;
+    if (stickerEmotion.primary === 'comfort' && !isGoodnightSticker) score -= 28;
+    if (/早安|早上好|good_morning|morning/.test(searchableText)) score -= 36;
+  }
   score += (Number(sticker.quality_score) || 0) * STICKER_SCORE_WEIGHTS.qualityScore;
   score += (Number(sticker.usage_priority) || 0) * STICKER_SCORE_WEIGHTS.usagePriority;
 

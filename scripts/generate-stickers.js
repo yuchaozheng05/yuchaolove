@@ -76,7 +76,7 @@ no detailed fur.
 no 3D.
 
 Character identity:
-white_mochi: one round white mochi blob with tiny green sprout, soft and cute, not ghost, not egg.
+white_mochi: one plain round white mochi blob, pure white, no sprout, no leaf, soft and cute, not ghost, not egg.
 hamster: one golden hamster with small round ears, cream belly, chubby cheeks, tiny paws.
 cat: one gray and white kitten with pointy ears, cat face, small paws.
 shiba: one orange shiba inu dog with pointy ears, cream muzzle, cream belly, tiny paws, curled tail if visible.
@@ -91,9 +91,9 @@ No watermark.
 No logo.
 
 Negative prompt:
-multiple characters, group, family, friends, companions, pets, crowd, side character, background character, second animal, two animals, many animals, scene story, background props, small subject, distant view, big head close-up, face-only avatar, huge face, long arms, human hands, realistic fur, photorealistic, 3D, anime, manga, text, letters, symbols, words, typography, fake Chinese, watermark, logo`;
+multiple characters, group, family, friends, companions, pets, crowd, side character, background character, second animal, two animals, many animals, scene story, background props, small subject, distant view, big head close-up, face-only avatar, huge face, long arms, human hands, realistic fur, photorealistic, 3D, anime, manga, text, letters, symbols, words, typography, fake Chinese, watermark, logo, cropped body, cut off body, cut off limbs, missing limbs, missing paws, missing ears, incomplete body, partial body, out of frame, body outside canvas, deformed body, extra limbs, broken outline`;
 const characterPrompts = {
-  white_mochi: 'white round mochi blob with tiny green sprout',
+  white_mochi: 'plain pure white round mochi blob, no sprout, no leaf',
   hamster: 'round golden hamster',
   cat: 'round gray-and-white cat',
   shiba: 'round orange shiba dog',

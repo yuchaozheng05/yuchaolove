@@ -11,7 +11,7 @@ const imagesDir = join(stickersDir, 'packs', 'style-bible-v1', 'images');
 const thumbsDir = join(stickersDir, 'packs', 'style-bible-v1', 'thumbs');
 const catalogPath = join(root, 'assets', 'stickers', 'catalog.v1.json');
 const imageExtensions = new Set(['.png']);
-const catalogCharacters = new Set(['white_mochi', 'hamster', 'cat']);
+const catalogCharacters = new Set(['white_mochi', 'hamster', 'cat', 'shiba']);
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
@@ -57,6 +57,7 @@ function walkImages(dir) {
       }
       const relativePath = relative(stickersDir, fullPath).replaceAll('\\', '/');
       if (relativePath.includes('/thumbs/')) return;
+      if (relativePath.includes('/archived/')) return;
       if (relativePath.startsWith('reference/') || relativePath.includes('/reference/')) return;
       if (basename(fullPath).startsWith('contact-sheet')) return;
       if (imageExtensions.has(extname(entry).toLowerCase())) {

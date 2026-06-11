@@ -1,0 +1,1450 @@
+[
+  {
+    "filename": "white_mochi_morning_ss.png",
+    "priority": "SS",
+    "character": "white_mochi",
+    "emotion": "greeting",
+    "scenario": "good_morning",
+    "text": "早安呀~",
+    "action": "waving one tiny paw cheerfully in a bright morning greeting, happy sparkling eyes, energetic cute pose",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "早安",
+      "早上好",
+      "问候"
+    ]
+  },
+  {
+    "filename": "hamster_morning_ss.png",
+    "priority": "SS",
+    "character": "hamster",
+    "emotion": "greeting",
+    "scenario": "good_morning",
+    "text": "早上好！",
+    "action": "waving one tiny paw cheerfully in a bright morning greeting, happy sparkling eyes, energetic cute pose",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "早安",
+      "早上好",
+      "问候"
+    ]
+  },
+  {
+    "filename": "cat_morning_ss.png",
+    "priority": "SS",
+    "character": "cat",
+    "emotion": "greeting",
+    "scenario": "good_morning",
+    "text": "早安！",
+    "action": "waving one tiny paw cheerfully in a bright morning greeting, happy sparkling eyes, energetic cute pose",
+    "tags": [
+      "cat",
+      "小猫",
+      "早安",
+      "早上好",
+      "问候"
+    ]
+  },
+  {
+    "filename": "shiba_morning_ss.png",
+    "priority": "SS",
+    "character": "shiba",
+    "emotion": "greeting",
+    "scenario": "good_morning",
+    "text": "早呀！",
+    "action": "waving one tiny paw cheerfully in a bright morning greeting, happy sparkling eyes, energetic cute pose",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "早安",
+      "早上好",
+      "问候"
+    ]
+  },
+  {
+    "filename": "white_mochi_night_ss.png",
+    "priority": "SS",
+    "character": "white_mochi",
+    "emotion": "goodnight",
+    "scenario": "good_night",
+    "text": "晚安啦~",
+    "action": "wearing a tiny blue nightcap, sleepy half-closed eyes, snuggled in a small soft blanket, cozy and calm",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "晚安",
+      "睡觉",
+      "好梦"
+    ]
+  },
+  {
+    "filename": "hamster_night_ss.png",
+    "priority": "SS",
+    "character": "hamster",
+    "emotion": "goodnight",
+    "scenario": "good_night",
+    "text": "晚安好梦",
+    "action": "wearing a tiny blue nightcap, sleepy half-closed eyes, snuggled in a small soft blanket, cozy and calm",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "晚安",
+      "睡觉",
+      "好梦"
+    ]
+  },
+  {
+    "filename": "cat_night_ss.png",
+    "priority": "SS",
+    "character": "cat",
+    "emotion": "goodnight",
+    "scenario": "good_night",
+    "text": "晚安~",
+    "action": "wearing a tiny blue nightcap, sleepy half-closed eyes, snuggled in a small soft blanket, cozy and calm",
+    "tags": [
+      "cat",
+      "小猫",
+      "晚安",
+      "睡觉",
+      "好梦"
+    ]
+  },
+  {
+    "filename": "shiba_night_ss.png",
+    "priority": "SS",
+    "character": "shiba",
+    "emotion": "goodnight",
+    "scenario": "good_night",
+    "text": "晚安啦",
+    "action": "wearing a tiny blue nightcap, sleepy half-closed eyes, snuggled in a small soft blanket, cozy and calm",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "晚安",
+      "睡觉",
+      "好梦"
+    ]
+  },
+  {
+    "filename": "white_mochi_missyou_ss.png",
+    "priority": "SS",
+    "character": "white_mochi",
+    "emotion": "missing",
+    "scenario": "missing_you",
+    "text": "想你啦~",
+    "action": "holding a small pink heart with both tiny paws, loving warm eyes, two tiny hearts floating beside the head",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "想你",
+      "想念",
+      "甜蜜"
+    ]
+  },
+  {
+    "filename": "hamster_missyou_ss.png",
+    "priority": "SS",
+    "character": "hamster",
+    "emotion": "missing",
+    "scenario": "missing_you",
+    "text": "想你~",
+    "action": "holding a small pink heart with both tiny paws, loving warm eyes, two tiny hearts floating beside the head",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "想你",
+      "想念",
+      "甜蜜"
+    ]
+  },
+  {
+    "filename": "cat_missyou_ss.png",
+    "priority": "SS",
+    "character": "cat",
+    "emotion": "missing",
+    "scenario": "missing_you",
+    "text": "想你哦",
+    "action": "holding a small pink heart with both tiny paws, loving warm eyes, two tiny hearts floating beside the head",
+    "tags": [
+      "cat",
+      "小猫",
+      "想你",
+      "想念",
+      "甜蜜"
+    ]
+  },
+  {
+    "filename": "shiba_missyou_ss.png",
+    "priority": "SS",
+    "character": "shiba",
+    "emotion": "missing",
+    "scenario": "missing_you",
+    "text": "想你啦",
+    "action": "holding a small pink heart with both tiny paws, loving warm eyes, two tiny hearts floating beside the head",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "想你",
+      "想念",
+      "甜蜜"
+    ]
+  },
+  {
+    "filename": "white_mochi_hug_ss.png",
+    "priority": "SS",
+    "character": "white_mochi",
+    "emotion": "love",
+    "scenario": "hug",
+    "text": "抱抱你",
+    "action": "both short arms stretched wide open asking for a hug, leaning slightly forward, warm happy smile, small hearts",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "抱抱",
+      "拥抱",
+      "安慰"
+    ]
+  },
+  {
+    "filename": "hamster_hug_ss.png",
+    "priority": "SS",
+    "character": "hamster",
+    "emotion": "love",
+    "scenario": "hug",
+    "text": "抱抱~",
+    "action": "both short arms stretched wide open asking for a hug, leaning slightly forward, warm happy smile, small hearts",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "抱抱",
+      "拥抱",
+      "安慰"
+    ]
+  },
+  {
+    "filename": "cat_hug_ss.png",
+    "priority": "SS",
+    "character": "cat",
+    "emotion": "love",
+    "scenario": "hug",
+    "text": "抱抱你",
+    "action": "both short arms stretched wide open asking for a hug, leaning slightly forward, warm happy smile, small hearts",
+    "tags": [
+      "cat",
+      "小猫",
+      "抱抱",
+      "拥抱",
+      "安慰"
+    ]
+  },
+  {
+    "filename": "shiba_hug_ss.png",
+    "priority": "SS",
+    "character": "shiba",
+    "emotion": "love",
+    "scenario": "hug",
+    "text": "来抱抱~",
+    "action": "both short arms stretched wide open asking for a hug, leaning slightly forward, warm happy smile, small hearts",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "抱抱",
+      "拥抱",
+      "安慰"
+    ]
+  },
+  {
+    "filename": "white_mochi_happy_ss.png",
+    "priority": "SS",
+    "character": "white_mochi",
+    "emotion": "happy",
+    "scenario": "celebration",
+    "text": "开心~",
+    "action": "cheering with both tiny paws raised up, big bright smile, sparkles and tiny stars around",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "开心",
+      "高兴",
+      "耶"
+    ]
+  },
+  {
+    "filename": "hamster_happy_ss.png",
+    "priority": "SS",
+    "character": "hamster",
+    "emotion": "happy",
+    "scenario": "celebration",
+    "text": "好开心！",
+    "action": "cheering with both tiny paws raised up, big bright smile, sparkles and tiny stars around",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "开心",
+      "高兴",
+      "耶"
+    ]
+  },
+  {
+    "filename": "cat_happy_ss.png",
+    "priority": "SS",
+    "character": "cat",
+    "emotion": "happy",
+    "scenario": "celebration",
+    "text": "太棒啦！",
+    "action": "cheering with both tiny paws raised up, big bright smile, sparkles and tiny stars around",
+    "tags": [
+      "cat",
+      "小猫",
+      "开心",
+      "高兴",
+      "耶"
+    ]
+  },
+  {
+    "filename": "shiba_happy_ss.png",
+    "priority": "SS",
+    "character": "shiba",
+    "emotion": "happy",
+    "scenario": "celebration",
+    "text": "耶！！",
+    "action": "cheering with both tiny paws raised up, big bright smile, sparkles and tiny stars around",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "开心",
+      "高兴",
+      "耶"
+    ]
+  },
+  {
+    "filename": "white_mochi_angry_ss.png",
+    "priority": "SS",
+    "character": "white_mochi",
+    "emotion": "angry",
+    "scenario": "angry_complaint",
+    "text": "生气了！",
+    "action": "puffed up cheeks angry pout, tiny red anger marks floating beside the head, stomping cute pose, still adorable",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "生气",
+      "哼",
+      "气死"
+    ]
+  },
+  {
+    "filename": "hamster_angry_ss.png",
+    "priority": "SS",
+    "character": "hamster",
+    "emotion": "angry",
+    "scenario": "angry_complaint",
+    "text": "哼！！",
+    "action": "puffed up cheeks angry pout, tiny red anger marks floating beside the head, stomping cute pose, still adorable",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "生气",
+      "哼",
+      "气死"
+    ]
+  },
+  {
+    "filename": "cat_angry_ss.png",
+    "priority": "SS",
+    "character": "cat",
+    "emotion": "angry",
+    "scenario": "angry_complaint",
+    "text": "气死我了！",
+    "action": "puffed up cheeks angry pout, tiny red anger marks floating beside the head, stomping cute pose, still adorable",
+    "tags": [
+      "cat",
+      "小猫",
+      "生气",
+      "哼",
+      "气死"
+    ]
+  },
+  {
+    "filename": "shiba_angry_ss.png",
+    "priority": "SS",
+    "character": "shiba",
+    "emotion": "angry",
+    "scenario": "angry_complaint",
+    "text": "我生气了！",
+    "action": "puffed up cheeks angry pout, tiny red anger marks floating beside the head, stomping cute pose, still adorable",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "生气",
+      "哼",
+      "气死"
+    ]
+  },
+  {
+    "filename": "white_mochi_comfort_ss.png",
+    "priority": "SS",
+    "character": "white_mochi",
+    "emotion": "comfort",
+    "scenario": "comfort",
+    "text": "没事的~",
+    "action": "reaching one tiny paw forward to gently pat, soft caring smile, gentle comforting posture",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "没事",
+      "别难过",
+      "安慰"
+    ]
+  },
+  {
+    "filename": "hamster_comfort_ss.png",
+    "priority": "SS",
+    "character": "hamster",
+    "emotion": "comfort",
+    "scenario": "comfort",
+    "text": "别难过啦",
+    "action": "reaching one tiny paw forward to gently pat, soft caring smile, gentle comforting posture",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "没事",
+      "别难过",
+      "安慰"
+    ]
+  },
+  {
+    "filename": "cat_cheer_ss.png",
+    "priority": "SS",
+    "character": "cat",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "加油！",
+    "action": "waving two small yellow pom-poms with both paws, energetic cheering pose, big encouraging smile",
+    "tags": [
+      "cat",
+      "小猫",
+      "加油",
+      "鼓励",
+      "打气"
+    ]
+  },
+  {
+    "filename": "shiba_cheer_ss.png",
+    "priority": "SS",
+    "character": "shiba",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "加油鸭！",
+    "action": "wearing a small red headband tied around head, determined cheering pose with one fist raised",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "加油",
+      "鼓励",
+      "打气"
+    ]
+  },
+  {
+    "filename": "white_mochi_praise_ss.png",
+    "priority": "SS",
+    "character": "white_mochi",
+    "emotion": "proud",
+    "scenario": "encouragement",
+    "text": "你很棒哦！",
+    "action": "giving a thumbs up with one tiny paw, proud warm smile, golden sparkles around",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "你真棒",
+      "夸夸",
+      "最棒"
+    ]
+  },
+  {
+    "filename": "hamster_praise_ss.png",
+    "priority": "SS",
+    "character": "hamster",
+    "emotion": "proud",
+    "scenario": "encouragement",
+    "text": "你真棒！",
+    "action": "giving a thumbs up with one tiny paw, proud warm smile, golden sparkles around",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "你真棒",
+      "夸夸",
+      "最棒"
+    ]
+  },
+  {
+    "filename": "cat_praise_ss.png",
+    "priority": "SS",
+    "character": "cat",
+    "emotion": "proud",
+    "scenario": "encouragement",
+    "text": "你是最棒的！",
+    "action": "giving a thumbs up with one tiny paw, proud warm smile, golden sparkles around",
+    "tags": [
+      "cat",
+      "小猫",
+      "你真棒",
+      "夸夸",
+      "最棒"
+    ]
+  },
+  {
+    "filename": "shiba_praise_ss.png",
+    "priority": "SS",
+    "character": "shiba",
+    "emotion": "proud",
+    "scenario": "encouragement",
+    "text": "你超棒！",
+    "action": "giving a thumbs up with one tiny paw, proud warm smile, golden sparkles around",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "你真棒",
+      "夸夸",
+      "最棒"
+    ]
+  },
+  {
+    "filename": "white_mochi_laugh_ss.png",
+    "priority": "SS",
+    "character": "white_mochi",
+    "emotion": "laugh",
+    "scenario": "teasing",
+    "text": "嘻嘻嘻~",
+    "action": "laughing hard with eyes squeezed shut, both paws on round belly, bursting with joy, tiny laugh tears",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "哈哈",
+      "搞笑",
+      "笑死"
+    ]
+  },
+  {
+    "filename": "hamster_laugh_ss.png",
+    "priority": "SS",
+    "character": "hamster",
+    "emotion": "laugh",
+    "scenario": "teasing",
+    "text": "哈哈哈",
+    "action": "laughing hard with eyes squeezed shut, both paws on round belly, bursting with joy, tiny laugh tears",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "哈哈",
+      "搞笑",
+      "笑死"
+    ]
+  },
+  {
+    "filename": "cat_laugh_ss.png",
+    "priority": "SS",
+    "character": "cat",
+    "emotion": "laugh",
+    "scenario": "teasing",
+    "text": "哈哈哈",
+    "action": "laughing hard with eyes squeezed shut, both paws on round belly, bursting with joy, tiny laugh tears",
+    "tags": [
+      "cat",
+      "小猫",
+      "哈哈",
+      "搞笑",
+      "笑死"
+    ]
+  },
+  {
+    "filename": "shiba_laugh_ss.png",
+    "priority": "SS",
+    "character": "shiba",
+    "emotion": "laugh",
+    "scenario": "teasing",
+    "text": "哈哈哈",
+    "action": "laughing hard with eyes squeezed shut, both paws on round belly, bursting with joy, tiny laugh tears",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "哈哈",
+      "搞笑",
+      "笑死"
+    ]
+  },
+  {
+    "filename": "white_mochi_wow_ss.png",
+    "priority": "SS",
+    "character": "white_mochi",
+    "emotion": "surprised",
+    "scenario": "celebration",
+    "text": "哇哦~",
+    "action": "amazed expression with wide sparkling eyes, both tiny paws on cheeks, small stars around",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "哇塞",
+      "厉害",
+      "惊讶"
+    ]
+  },
+  {
+    "filename": "hamster_wow_ss.png",
+    "priority": "SS",
+    "character": "hamster",
+    "emotion": "surprised",
+    "scenario": "celebration",
+    "text": "哇！",
+    "action": "amazed expression with wide sparkling eyes, both tiny paws on cheeks, small stars around",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "哇塞",
+      "厉害",
+      "惊讶"
+    ]
+  },
+  {
+    "filename": "cat_wow_ss.png",
+    "priority": "SS",
+    "character": "cat",
+    "emotion": "surprised",
+    "scenario": "celebration",
+    "text": "哇塞！",
+    "action": "amazed expression with wide sparkling eyes, both tiny paws on cheeks, small stars around",
+    "tags": [
+      "cat",
+      "小猫",
+      "哇塞",
+      "厉害",
+      "惊讶"
+    ]
+  },
+  {
+    "filename": "shiba_wow_ss.png",
+    "priority": "SS",
+    "character": "shiba",
+    "emotion": "surprised",
+    "scenario": "celebration",
+    "text": "厉害了！",
+    "action": "wearing small black sunglasses looking cool and impressed, one paw raised, confident grin",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "哇塞",
+      "厉害",
+      "惊讶"
+    ]
+  },
+  {
+    "filename": "white_mochi_birthday_ss.png",
+    "priority": "SS",
+    "character": "white_mochi",
+    "emotion": "happy",
+    "scenario": "celebration",
+    "text": "生日快乐！",
+    "action": "wearing a tiny pink party hat, celebrating with paws up, confetti dots around",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "生日快乐",
+      "生日",
+      "庆祝"
+    ]
+  },
+  {
+    "filename": "hamster_birthday_ss.png",
+    "priority": "SS",
+    "character": "hamster",
+    "emotion": "happy",
+    "scenario": "celebration",
+    "text": "生日快乐！",
+    "action": "holding a small birthday cake with one lit candle in both paws, delighted smile",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "生日快乐",
+      "生日",
+      "庆祝"
+    ]
+  },
+  {
+    "filename": "cat_birthday_ss.png",
+    "priority": "SS",
+    "character": "cat",
+    "emotion": "happy",
+    "scenario": "celebration",
+    "text": "生日快乐！",
+    "action": "holding a small strawberry birthday cake in both paws, joyful eyes, tiny party flag",
+    "tags": [
+      "cat",
+      "小猫",
+      "生日快乐",
+      "生日",
+      "庆祝"
+    ]
+  },
+  {
+    "filename": "shiba_birthday_ss.png",
+    "priority": "SS",
+    "character": "shiba",
+    "emotion": "happy",
+    "scenario": "celebration",
+    "text": "生日快乐！",
+    "action": "wearing a tiny red party hat, cheering with both paws up, confetti dots around",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "生日快乐",
+      "生日",
+      "庆祝"
+    ]
+  },
+  {
+    "filename": "white_mochi_newyear_ss.png",
+    "priority": "SS",
+    "character": "white_mochi",
+    "emotion": "excited",
+    "scenario": "celebration",
+    "text": "新年快乐！",
+    "action": "holding a small red lucky envelope with both paws, festive joyful smile",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "新年快乐",
+      "过年",
+      "红包"
+    ]
+  },
+  {
+    "filename": "hamster_newyear_ss.png",
+    "priority": "SS",
+    "character": "hamster",
+    "emotion": "excited",
+    "scenario": "celebration",
+    "text": "新年快乐！",
+    "action": "holding a small golden ingot, festive happy expression, tiny firework sparks around",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "新年快乐",
+      "过年",
+      "红包"
+    ]
+  },
+  {
+    "filename": "cat_newyear_ss.png",
+    "priority": "SS",
+    "character": "cat",
+    "emotion": "excited",
+    "scenario": "celebration",
+    "text": "新年快乐！",
+    "action": "standing beside a tiny string of red firecrackers, excited celebrating pose",
+    "tags": [
+      "cat",
+      "小猫",
+      "新年快乐",
+      "过年",
+      "红包"
+    ]
+  },
+  {
+    "filename": "shiba_newyear_ss.png",
+    "priority": "SS",
+    "character": "shiba",
+    "emotion": "excited",
+    "scenario": "celebration",
+    "text": "新年快乐！",
+    "action": "wearing a tiny red traditional Chinese outfit, holding a red envelope with fu character shape",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "新年快乐",
+      "过年",
+      "红包"
+    ]
+  },
+  {
+    "filename": "white_mochi_sorry_ss.png",
+    "priority": "SS",
+    "character": "white_mochi",
+    "emotion": "apology",
+    "scenario": "apology",
+    "text": "对不起嘛",
+    "action": "bowing slightly in a cute apology, big teary pleading eyes, tiny paws pressed together in front",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "对不起",
+      "道歉",
+      "认错"
+    ]
+  },
+  {
+    "filename": "hamster_sorry_ss.png",
+    "priority": "SS",
+    "character": "hamster",
+    "emotion": "apology",
+    "scenario": "apology",
+    "text": "我错啦",
+    "action": "bowing slightly in a cute apology, big teary pleading eyes, tiny paws pressed together in front",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "对不起",
+      "道歉",
+      "认错"
+    ]
+  },
+  {
+    "filename": "cat_sorry_ss.png",
+    "priority": "SS",
+    "character": "cat",
+    "emotion": "apology",
+    "scenario": "apology",
+    "text": "原谅我吧",
+    "action": "bowing slightly in a cute apology, big teary pleading eyes, tiny paws pressed together in front",
+    "tags": [
+      "cat",
+      "小猫",
+      "对不起",
+      "道歉",
+      "认错"
+    ]
+  },
+  {
+    "filename": "shiba_sorry_ss.png",
+    "priority": "SS",
+    "character": "shiba",
+    "emotion": "apology",
+    "scenario": "apology",
+    "text": "不气不气",
+    "action": "bowing slightly in a cute apology, big teary pleading eyes, tiny paws pressed together in front",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "对不起",
+      "道歉",
+      "认错"
+    ]
+  },
+  {
+    "filename": "white_mochi_coax_ss.png",
+    "priority": "SS",
+    "character": "white_mochi",
+    "emotion": "comforting",
+    "scenario": "cute_acting",
+    "text": "别生气啦",
+    "action": "reaching out one tiny paw to gently pat and soothe, soft warm smile, sweet coaxing expression",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "哄你",
+      "别生气",
+      "消气",
+      "摸头"
+    ]
+  },
+  {
+    "filename": "hamster_coax_ss.png",
+    "priority": "SS",
+    "character": "hamster",
+    "emotion": "comforting",
+    "scenario": "cute_acting",
+    "text": "消消气~",
+    "action": "reaching out one tiny paw to gently pat and soothe, soft warm smile, sweet coaxing expression",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "哄你",
+      "别生气",
+      "消气",
+      "摸头"
+    ]
+  },
+  {
+    "filename": "cat_coax_ss.png",
+    "priority": "SS",
+    "character": "cat",
+    "emotion": "comforting",
+    "scenario": "cute_acting",
+    "text": "摸摸头",
+    "action": "reaching out one tiny paw to gently pat and soothe, soft warm smile, sweet coaxing expression",
+    "tags": [
+      "cat",
+      "小猫",
+      "哄你",
+      "别生气",
+      "消气",
+      "摸头"
+    ]
+  },
+  {
+    "filename": "shiba_coax_ss.png",
+    "priority": "SS",
+    "character": "shiba",
+    "emotion": "comforting",
+    "scenario": "cute_acting",
+    "text": "给你顺毛",
+    "action": "reaching out one tiny paw to gently pat and soothe, soft warm smile, sweet coaxing expression",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "哄你",
+      "别生气",
+      "消气",
+      "摸头"
+    ]
+  },
+  {
+    "filename": "white_mochi_jealous_ss.png",
+    "priority": "SS",
+    "character": "white_mochi",
+    "emotion": "jealous",
+    "scenario": "jealousy",
+    "text": "哼，酸了",
+    "action": "turning head away with puffy pouting cheeks, side-eye glance back, arms crossed, cute jealous sulk",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "吃醋",
+      "酸了",
+      "傲娇",
+      "哼"
+    ]
+  },
+  {
+    "filename": "hamster_jealous_ss.png",
+    "priority": "SS",
+    "character": "hamster",
+    "emotion": "jealous",
+    "scenario": "jealousy",
+    "text": "不理你了",
+    "action": "turning head away with puffy pouting cheeks, side-eye glance back, arms crossed, cute jealous sulk",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "吃醋",
+      "酸了",
+      "傲娇",
+      "哼"
+    ]
+  },
+  {
+    "filename": "cat_jealous_ss.png",
+    "priority": "SS",
+    "character": "cat",
+    "emotion": "jealous",
+    "scenario": "jealousy",
+    "text": "只许看我！",
+    "action": "turning head away with puffy pouting cheeks, side-eye glance back, arms crossed, cute jealous sulk",
+    "tags": [
+      "cat",
+      "小猫",
+      "吃醋",
+      "酸了",
+      "傲娇",
+      "哼"
+    ]
+  },
+  {
+    "filename": "shiba_jealous_ss.png",
+    "priority": "SS",
+    "character": "shiba",
+    "emotion": "jealous",
+    "scenario": "jealousy",
+    "text": "吃醋了！",
+    "action": "turning head away with puffy pouting cheeks, side-eye glance back, arms crossed, cute jealous sulk",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "吃醋",
+      "酸了",
+      "傲娇",
+      "哼"
+    ]
+  },
+  {
+    "filename": "white_mochi_wronged_ss.png",
+    "priority": "SS",
+    "character": "white_mochi",
+    "emotion": "wronged",
+    "scenario": "cute_acting",
+    "text": "呜呜呜…",
+    "action": "big watery teary eyes, drooping shoulders, tiny tear drops, wobbling sad mouth, asking to be comforted",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "委屈",
+      "呜呜",
+      "求安慰",
+      "撒娇"
+    ]
+  },
+  {
+    "filename": "hamster_wronged_ss.png",
+    "priority": "SS",
+    "character": "hamster",
+    "emotion": "wronged",
+    "scenario": "cute_acting",
+    "text": "委屈巴巴",
+    "action": "big watery teary eyes, drooping shoulders, tiny tear drops, wobbling sad mouth, asking to be comforted",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "委屈",
+      "呜呜",
+      "求安慰",
+      "撒娇"
+    ]
+  },
+  {
+    "filename": "cat_wronged_ss.png",
+    "priority": "SS",
+    "character": "cat",
+    "emotion": "wronged",
+    "scenario": "cute_acting",
+    "text": "求安慰~",
+    "action": "big watery teary eyes, drooping shoulders, tiny tear drops, wobbling sad mouth, asking to be comforted",
+    "tags": [
+      "cat",
+      "小猫",
+      "委屈",
+      "呜呜",
+      "求安慰",
+      "撒娇"
+    ]
+  },
+  {
+    "filename": "shiba_wronged_ss.png",
+    "priority": "SS",
+    "character": "shiba",
+    "emotion": "wronged",
+    "scenario": "cute_acting",
+    "text": "抱抱我嘛",
+    "action": "big watery teary eyes, drooping shoulders, tiny tear drops, wobbling sad mouth, asking to be comforted",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "委屈",
+      "呜呜",
+      "求安慰",
+      "撒娇"
+    ]
+  },
+  {
+    "filename": "white_mochi_eat_ss.png",
+    "priority": "SS",
+    "character": "white_mochi",
+    "emotion": "happy",
+    "scenario": "cute_acting",
+    "text": "干饭啦！",
+    "action": "holding a tiny rice bowl and chopsticks, eyes shining with delight, eager eating pose",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "干饭",
+      "吃饭",
+      "真香",
+      "好饿"
+    ]
+  },
+  {
+    "filename": "hamster_eat_ss.png",
+    "priority": "SS",
+    "character": "hamster",
+    "emotion": "happy",
+    "scenario": "cute_acting",
+    "text": "好饿呀~",
+    "action": "cheeks stuffed completely full of food, holding a tiny sunflower seed, blissful hungry eyes",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "干饭",
+      "吃饭",
+      "真香",
+      "好饿"
+    ]
+  },
+  {
+    "filename": "cat_eat_ss.png",
+    "priority": "SS",
+    "character": "cat",
+    "emotion": "happy",
+    "scenario": "cute_acting",
+    "text": "真香！",
+    "action": "sniffing a small fish dish happily, eyes closed in delight, paws up excited",
+    "tags": [
+      "cat",
+      "小猫",
+      "干饭",
+      "吃饭",
+      "真香",
+      "好饿"
+    ]
+  },
+  {
+    "filename": "shiba_eat_ss.png",
+    "priority": "SS",
+    "character": "shiba",
+    "emotion": "happy",
+    "scenario": "cute_acting",
+    "text": "吃撑了…",
+    "action": "lying back with a round full belly, satisfied dazed smile, completely stuffed after eating",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "干饭",
+      "吃饭",
+      "真香",
+      "好饿"
+    ]
+  },
+  {
+    "filename": "white_mochi_work_ss.png",
+    "priority": "SS",
+    "character": "white_mochi",
+    "emotion": "thinking",
+    "scenario": "working",
+    "text": "搬砖中…",
+    "action": "carrying a tiny brick with both paws, determined tired face, small sweat drop",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "搬砖",
+      "学习",
+      "摸鱼",
+      "打工人",
+      "加班"
+    ]
+  },
+  {
+    "filename": "hamster_work_ss.png",
+    "priority": "SS",
+    "character": "hamster",
+    "emotion": "thinking",
+    "scenario": "working",
+    "text": "学习ing",
+    "action": "reading a small open book wearing tiny round glasses, studious focused expression",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "搬砖",
+      "学习",
+      "摸鱼",
+      "打工人",
+      "加班"
+    ]
+  },
+  {
+    "filename": "cat_work_ss.png",
+    "priority": "SS",
+    "character": "cat",
+    "emotion": "thinking",
+    "scenario": "working",
+    "text": "摸鱼中~",
+    "action": "lying lazily flat on a tiny desk pretending to work, relaxed sneaky smile",
+    "tags": [
+      "cat",
+      "小猫",
+      "搬砖",
+      "学习",
+      "摸鱼",
+      "打工人",
+      "加班"
+    ]
+  },
+  {
+    "filename": "shiba_work_ss.png",
+    "priority": "SS",
+    "character": "shiba",
+    "emotion": "thinking",
+    "scenario": "working",
+    "text": "打工人冲！",
+    "action": "one fist raised high in determination, wearing a tiny tie, motivated worker pose",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "搬砖",
+      "学习",
+      "摸鱼",
+      "打工人",
+      "加班"
+    ]
+  },
+  {
+    "filename": "white_mochi_rest_ss.png",
+    "priority": "SS",
+    "character": "white_mochi",
+    "emotion": "sleepy",
+    "scenario": "tired",
+    "text": "累瘫了…",
+    "action": "lying completely flat on belly like a melted puddle, exhausted swirly eyes, fully flattened cute body",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "累瘫",
+      "躺平",
+      "没电",
+      "休息"
+    ]
+  },
+  {
+    "filename": "hamster_rest_ss.png",
+    "priority": "SS",
+    "character": "hamster",
+    "emotion": "sleepy",
+    "scenario": "tired",
+    "text": "躺平了",
+    "action": "lying completely flat on belly like a melted puddle, exhausted swirly eyes, fully flattened cute body",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "累瘫",
+      "躺平",
+      "没电",
+      "休息"
+    ]
+  },
+  {
+    "filename": "cat_rest_ss.png",
+    "priority": "SS",
+    "character": "cat",
+    "emotion": "sleepy",
+    "scenario": "tired",
+    "text": "没电了…",
+    "action": "lying completely flat on belly like a melted puddle, exhausted swirly eyes, fully flattened cute body",
+    "tags": [
+      "cat",
+      "小猫",
+      "累瘫",
+      "躺平",
+      "没电",
+      "休息"
+    ]
+  },
+  {
+    "filename": "shiba_rest_ss.png",
+    "priority": "SS",
+    "character": "shiba",
+    "emotion": "sleepy",
+    "scenario": "tired",
+    "text": "充电中~",
+    "action": "lying completely flat on belly like a melted puddle, exhausted swirly eyes, fully flattened cute body",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "累瘫",
+      "躺平",
+      "没电",
+      "休息"
+    ]
+  },
+  {
+    "filename": "white_mochi_waiting_ss.png",
+    "priority": "SS",
+    "character": "white_mochi",
+    "emotion": "missing",
+    "scenario": "waiting",
+    "text": "在吗在吗",
+    "action": "staring forward expectantly with huge sparkling waiting eyes, tiny paws together, leaning toward viewer",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "在吗",
+      "等回复",
+      "快理我",
+      "求关注"
+    ]
+  },
+  {
+    "filename": "hamster_waiting_ss.png",
+    "priority": "SS",
+    "character": "hamster",
+    "emotion": "missing",
+    "scenario": "waiting",
+    "text": "等你回复~",
+    "action": "staring forward expectantly with huge sparkling waiting eyes, tiny paws together, leaning toward viewer",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "在吗",
+      "等回复",
+      "快理我",
+      "求关注"
+    ]
+  },
+  {
+    "filename": "cat_waiting_ss.png",
+    "priority": "SS",
+    "character": "cat",
+    "emotion": "missing",
+    "scenario": "waiting",
+    "text": "快理我！",
+    "action": "staring forward expectantly with huge sparkling waiting eyes, tiny paws together, leaning toward viewer",
+    "tags": [
+      "cat",
+      "小猫",
+      "在吗",
+      "等回复",
+      "快理我",
+      "求关注"
+    ]
+  },
+  {
+    "filename": "shiba_waiting_ss.png",
+    "priority": "SS",
+    "character": "shiba",
+    "emotion": "missing",
+    "scenario": "waiting",
+    "text": "盯——",
+    "action": "staring forward expectantly with huge sparkling waiting eyes, tiny paws together, leaning toward viewer",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "在吗",
+      "等回复",
+      "快理我",
+      "求关注"
+    ]
+  },
+  {
+    "filename": "white_mochi_ok_ss.png",
+    "priority": "SS",
+    "character": "white_mochi",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "收到！",
+    "action": "doing a cute salute with one tiny paw raised to forehead, confident cheerful smile, upright proud posture",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "收到",
+      "好哒",
+      "没问题",
+      "安排"
+    ]
+  },
+  {
+    "filename": "hamster_ok_ss.png",
+    "priority": "SS",
+    "character": "hamster",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "好哒！",
+    "action": "doing a cute salute with one tiny paw raised to forehead, confident cheerful smile, upright proud posture",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "收到",
+      "好哒",
+      "没问题",
+      "安排"
+    ]
+  },
+  {
+    "filename": "cat_ok_ss.png",
+    "priority": "SS",
+    "character": "cat",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "没问题！",
+    "action": "doing a cute salute with one tiny paw raised to forehead, confident cheerful smile, upright proud posture",
+    "tags": [
+      "cat",
+      "小猫",
+      "收到",
+      "好哒",
+      "没问题",
+      "安排"
+    ]
+  },
+  {
+    "filename": "shiba_ok_ss.png",
+    "priority": "SS",
+    "character": "shiba",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "安排！",
+    "action": "doing a cute salute with one tiny paw raised to forehead, confident cheerful smile, upright proud posture",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "收到",
+      "好哒",
+      "没问题",
+      "安排"
+    ]
+  },
+  {
+    "filename": "white_mochi_awkward_ss.png",
+    "priority": "SS",
+    "character": "white_mochi",
+    "emotion": "awkward",
+    "scenario": "speechless",
+    "text": "啊这…",
+    "action": "sweat drop beside head, awkward frozen smile, eyes looking away to the side, stiff cute pose",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "尴尬",
+      "无语",
+      "啊这",
+      "冷场"
+    ]
+  },
+  {
+    "filename": "hamster_awkward_ss.png",
+    "priority": "SS",
+    "character": "hamster",
+    "emotion": "awkward",
+    "scenario": "speechless",
+    "text": "尴尬了…",
+    "action": "sweat drop beside head, awkward frozen smile, eyes looking away to the side, stiff cute pose",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "尴尬",
+      "无语",
+      "啊这",
+      "冷场"
+    ]
+  },
+  {
+    "filename": "cat_awkward_ss.png",
+    "priority": "SS",
+    "character": "cat",
+    "emotion": "awkward",
+    "scenario": "speechless",
+    "text": "无语住了",
+    "action": "sweat drop beside head, awkward frozen smile, eyes looking away to the side, stiff cute pose",
+    "tags": [
+      "cat",
+      "小猫",
+      "尴尬",
+      "无语",
+      "啊这",
+      "冷场"
+    ]
+  },
+  {
+    "filename": "shiba_awkward_ss.png",
+    "priority": "SS",
+    "character": "shiba",
+    "emotion": "awkward",
+    "scenario": "speechless",
+    "text": "汗…",
+    "action": "sweat drop beside head, awkward frozen smile, eyes looking away to the side, stiff cute pose",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "尴尬",
+      "无语",
+      "啊这",
+      "冷场"
+    ]
+  }
+]

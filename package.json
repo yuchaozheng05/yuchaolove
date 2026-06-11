@@ -3,6 +3,9 @@
   "scripts": {
     "stickers:dry": "node scripts/generate-stickers.js --dry-run",
     "stickers:generate": "node scripts/generate-stickers.js",
+    "stickers:ss:dry": "node scripts/generate-stickers.js --dry-run --prompt-file=assets/stickers/prompts/screenshot-pack-prompts.json",
+    "stickers:ss": "node scripts/generate-stickers.js --prompt-file=assets/stickers/prompts/screenshot-pack-prompts.json",
+    "stickers:captions": "python3 scripts/add-captions.py",
     "stickers:build": "node scripts/build-sticker-catalog.js",
     "stickers:validate": "node scripts/build-sticker-catalog.js --validate",
     "stickers:prompts:list": "ls assets/stickers/prompts/",

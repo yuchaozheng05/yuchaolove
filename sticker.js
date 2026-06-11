@@ -189,6 +189,7 @@ function buildStickerIntent(advice) {
   normalizeList(stageMap[advice?.conversation_stage]).forEach((stage) => stages.push(stage));
 
   return {
+    replyIntent: String(match.reply_intent || '').trim(),
     emotions: [...new Set(emotions.filter(Boolean))],
     scenarios: [...new Set(scenarios.filter(Boolean))],
     stages: [...new Set(stages.filter(Boolean))],
@@ -222,6 +223,14 @@ function scoreSticker(item, intent) {
   score += relatedScenarios.filter((scenario) => !exactScenarios.includes(scenario) && itemScenarios.includes(scenario)).length * 14;
   score += intent.stages.filter((stage) => itemStages.includes(stage)).length * 12;
   score += intent.tags.filter((tag) => searchable.includes(tag.toLowerCase())).length * 8;
+  if (intent.replyIntent === 'say_goodnight_back') {
+    const isGoodnightSticker = itemEmotion === 'goodnight'
+      || itemScenarios.includes('good_night')
+      || /晚安|好梦|睡觉|睡觉觉|早睡|别熬夜|good.?night|sleep/.test(searchable);
+    if (isGoodnightSticker) score += 34;
+    if (itemEmotion === 'comfort' && !isGoodnightSticker) score -= 28;
+    if (/早安|早上好|good_morning|morning/.test(searchable)) score -= 36;
+  }
   score += (Number(item.quality_score) || 0) * 10;
   score += (Number(item.usage_priority) || 0) * 0.1;
   return Math.round(score * 100) / 100;

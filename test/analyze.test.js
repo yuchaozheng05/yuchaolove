@@ -912,6 +912,29 @@ test('prioritizes comfort and encouragement stickers for study pressure with dis
   assert.doesNotMatch(stickerText, /umbrella|伞|保暖/);
 });
 
+test('prioritizes goodnight stickers for bedtime chats', () => {
+  const dialogue = normalizeDialogue([{ side: 'left', text: '我先睡啦 晚安' }]);
+  const suggestions = normalizeStickerSuggestions([], '稳定了解', dialogue, {
+    conversation_mode: '愿意接话',
+    flirt_level: '轻微暧昧',
+  });
+  const topThree = suggestions.slice(0, 3);
+
+  assert.equal(suggestions.length, 6);
+  assert.equal(suggestions[0].match.reply_intent, 'say_goodnight_back');
+  assert.ok(topThree.length >= 3);
+  topThree.forEach((sticker) => {
+    assert.ok(
+      sticker.emotion?.primary === 'goodnight'
+        || sticker.emotion?.primary === 'sleepy'
+        || sticker.scenario.includes('good_night')
+        || sticker.scenario.includes('tired')
+        || /晚安|好梦|睡|熬夜|躺平|困/.test(sticker.text),
+      `${sticker.id} should match a goodnight scene`,
+    );
+  });
+});
+
 test('maps study encouragement and happy chats to stock sticker intent', () => {
   const studyIntent = buildStickerMatchIntent({ conversationStage: '轻松破冰', dialogue: normalizeDialogue([
     { side: 'right', text: '明天考完就好了' },

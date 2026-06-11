@@ -1,0 +1,683 @@
+[
+  {
+    "filename": "cat_angry_01.png",
+    "priority": "L1",
+    "character": "cat",
+    "emotion": "angry",
+    "scenario": "angry_complaint",
+    "text": "生气了！",
+    "tags": [
+      "cat",
+      "小猫",
+      "生气",
+      "哼"
+    ]
+  },
+  {
+    "filename": "cat_apology_01.png",
+    "priority": "L1",
+    "character": "cat",
+    "emotion": "apology",
+    "scenario": "apology",
+    "text": "对不起嘛",
+    "tags": [
+      "cat",
+      "小猫",
+      "对不起",
+      "道歉"
+    ]
+  },
+  {
+    "filename": "cat_awkward_01.png",
+    "priority": "L1",
+    "character": "cat",
+    "emotion": "awkward",
+    "scenario": "speechless",
+    "text": "尴尬了…",
+    "tags": [
+      "cat",
+      "小猫",
+      "尴尬",
+      "无语"
+    ]
+  },
+  {
+    "filename": "cat_comfort_01.png",
+    "priority": "L1",
+    "character": "cat",
+    "emotion": "comfort",
+    "scenario": "comfort",
+    "text": "没事的~",
+    "tags": [
+      "cat",
+      "小猫",
+      "没事",
+      "安慰"
+    ]
+  },
+  {
+    "filename": "cat_cry_01.png",
+    "priority": "L1",
+    "character": "cat",
+    "emotion": "cry",
+    "scenario": "comfort",
+    "text": "呜呜呜…",
+    "tags": [
+      "cat",
+      "小猫",
+      "呜呜",
+      "哭了",
+      "委屈"
+    ]
+  },
+  {
+    "filename": "cat_encourage_01.png",
+    "priority": "L1",
+    "character": "cat",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "加油！",
+    "tags": [
+      "cat",
+      "小猫",
+      "加油",
+      "鼓励"
+    ]
+  },
+  {
+    "filename": "cat_goodnight_01.png",
+    "priority": "L1",
+    "character": "cat",
+    "emotion": "goodnight",
+    "scenario": "good_night",
+    "text": "晚安啦~",
+    "tags": [
+      "cat",
+      "小猫",
+      "晚安",
+      "睡觉"
+    ]
+  },
+  {
+    "filename": "cat_greeting_01.png",
+    "priority": "L1",
+    "character": "cat",
+    "emotion": "greeting",
+    "scenario": "greeting",
+    "text": "你好呀~",
+    "tags": [
+      "cat",
+      "小猫",
+      "你好",
+      "打招呼",
+      "早安"
+    ]
+  },
+  {
+    "filename": "cat_happy_01.png",
+    "priority": "L1",
+    "character": "cat",
+    "emotion": "happy",
+    "scenario": "celebration",
+    "text": "好开心！",
+    "tags": [
+      "cat",
+      "小猫",
+      "开心",
+      "高兴"
+    ]
+  },
+  {
+    "filename": "cat_laugh_01.png",
+    "priority": "L1",
+    "character": "cat",
+    "emotion": "laugh",
+    "scenario": "teasing",
+    "text": "哈哈哈",
+    "tags": [
+      "cat",
+      "小猫",
+      "哈哈",
+      "笑死"
+    ]
+  },
+  {
+    "filename": "cat_love_01.png",
+    "priority": "L1",
+    "character": "cat",
+    "emotion": "love",
+    "scenario": "confession",
+    "text": "喜欢你~",
+    "tags": [
+      "cat",
+      "小猫",
+      "喜欢",
+      "爱心",
+      "心动"
+    ]
+  },
+  {
+    "filename": "cat_miss_you_01.png",
+    "priority": "L1",
+    "character": "cat",
+    "emotion": "missing",
+    "scenario": "missing_you",
+    "text": "想你啦~",
+    "tags": [
+      "cat",
+      "小猫",
+      "想你",
+      "想念"
+    ]
+  },
+  {
+    "filename": "cat_shy_01.png",
+    "priority": "L1",
+    "character": "cat",
+    "emotion": "shy",
+    "scenario": "flirting",
+    "text": "害羞啦",
+    "tags": [
+      "cat",
+      "小猫",
+      "害羞",
+      "脸红"
+    ]
+  },
+  {
+    "filename": "cat_sleepy_01.png",
+    "priority": "L1",
+    "character": "cat",
+    "emotion": "sleepy",
+    "scenario": "tired",
+    "text": "困了…",
+    "tags": [
+      "cat",
+      "小猫",
+      "困",
+      "想睡"
+    ]
+  },
+  {
+    "filename": "cat_thanks_01.png",
+    "priority": "L1",
+    "character": "cat",
+    "emotion": "thanks",
+    "scenario": "thanks",
+    "text": "谢谢你",
+    "tags": [
+      "cat",
+      "小猫",
+      "谢谢",
+      "感谢"
+    ]
+  },
+  {
+    "filename": "cat_thinking_01.png",
+    "priority": "L1",
+    "character": "cat",
+    "emotion": "thinking",
+    "scenario": "waiting",
+    "text": "想一想~",
+    "tags": [
+      "cat",
+      "小猫",
+      "思考",
+      "在想"
+    ]
+  },
+  {
+    "filename": "hamster_angry_01.png",
+    "priority": "L1",
+    "character": "hamster",
+    "emotion": "angry",
+    "scenario": "angry_complaint",
+    "text": "生气了！",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "生气",
+      "哼"
+    ]
+  },
+  {
+    "filename": "hamster_apology_01.png",
+    "priority": "L1",
+    "character": "hamster",
+    "emotion": "apology",
+    "scenario": "apology",
+    "text": "对不起嘛",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "对不起",
+      "道歉"
+    ]
+  },
+  {
+    "filename": "hamster_awkward_01.png",
+    "priority": "L1",
+    "character": "hamster",
+    "emotion": "awkward",
+    "scenario": "speechless",
+    "text": "尴尬了…",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "尴尬",
+      "无语"
+    ]
+  },
+  {
+    "filename": "hamster_comfort_01.png",
+    "priority": "L1",
+    "character": "hamster",
+    "emotion": "comfort",
+    "scenario": "comfort",
+    "text": "没事的~",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "没事",
+      "安慰"
+    ]
+  },
+  {
+    "filename": "hamster_cry_01.png",
+    "priority": "L1",
+    "character": "hamster",
+    "emotion": "cry",
+    "scenario": "comfort",
+    "text": "呜呜呜…",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "呜呜",
+      "哭了",
+      "委屈"
+    ]
+  },
+  {
+    "filename": "hamster_encourage_01.png",
+    "priority": "L1",
+    "character": "hamster",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "加油！",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "加油",
+      "鼓励"
+    ]
+  },
+  {
+    "filename": "hamster_goodnight_01.png",
+    "priority": "L1",
+    "character": "hamster",
+    "emotion": "goodnight",
+    "scenario": "good_night",
+    "text": "晚安啦~",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "晚安",
+      "睡觉"
+    ]
+  },
+  {
+    "filename": "hamster_greeting_01.png",
+    "priority": "L1",
+    "character": "hamster",
+    "emotion": "greeting",
+    "scenario": "greeting",
+    "text": "你好呀~",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "你好",
+      "打招呼",
+      "早安"
+    ]
+  },
+  {
+    "filename": "hamster_happy_01.png",
+    "priority": "L1",
+    "character": "hamster",
+    "emotion": "happy",
+    "scenario": "celebration",
+    "text": "好开心！",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "开心",
+      "高兴"
+    ]
+  },
+  {
+    "filename": "hamster_laugh_01.png",
+    "priority": "L1",
+    "character": "hamster",
+    "emotion": "laugh",
+    "scenario": "teasing",
+    "text": "哈哈哈",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "哈哈",
+      "笑死"
+    ]
+  },
+  {
+    "filename": "hamster_love_01.png",
+    "priority": "L1",
+    "character": "hamster",
+    "emotion": "love",
+    "scenario": "confession",
+    "text": "喜欢你~",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "喜欢",
+      "爱心",
+      "心动"
+    ]
+  },
+  {
+    "filename": "hamster_miss_you_01.png",
+    "priority": "L1",
+    "character": "hamster",
+    "emotion": "missing",
+    "scenario": "missing_you",
+    "text": "想你啦~",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "想你",
+      "想念"
+    ]
+  },
+  {
+    "filename": "hamster_shy_01.png",
+    "priority": "L1",
+    "character": "hamster",
+    "emotion": "shy",
+    "scenario": "flirting",
+    "text": "害羞啦",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "害羞",
+      "脸红"
+    ]
+  },
+  {
+    "filename": "hamster_sleepy_01.png",
+    "priority": "L1",
+    "character": "hamster",
+    "emotion": "sleepy",
+    "scenario": "tired",
+    "text": "困了…",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "困",
+      "想睡"
+    ]
+  },
+  {
+    "filename": "hamster_surprised_01.png",
+    "priority": "L1",
+    "character": "hamster",
+    "emotion": "surprised",
+    "scenario": "celebration",
+    "text": "哇！",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "哇",
+      "惊讶"
+    ]
+  },
+  {
+    "filename": "hamster_thinking_01.png",
+    "priority": "L1",
+    "character": "hamster",
+    "emotion": "thinking",
+    "scenario": "waiting",
+    "text": "想一想~",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "思考",
+      "在想"
+    ]
+  },
+  {
+    "filename": "white_mochi_angry_01.png",
+    "priority": "L1",
+    "character": "white_mochi",
+    "emotion": "angry",
+    "scenario": "angry_complaint",
+    "text": "生气了！",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "生气",
+      "哼"
+    ]
+  },
+  {
+    "filename": "white_mochi_apology_01.png",
+    "priority": "L1",
+    "character": "white_mochi",
+    "emotion": "apology",
+    "scenario": "apology",
+    "text": "对不起嘛",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "对不起",
+      "道歉"
+    ]
+  },
+  {
+    "filename": "white_mochi_awkward_01.png",
+    "priority": "L1",
+    "character": "white_mochi",
+    "emotion": "awkward",
+    "scenario": "speechless",
+    "text": "尴尬了…",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "尴尬",
+      "无语"
+    ]
+  },
+  {
+    "filename": "white_mochi_comfort_01.png",
+    "priority": "L1",
+    "character": "white_mochi",
+    "emotion": "comfort",
+    "scenario": "comfort",
+    "text": "没事的~",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "没事",
+      "安慰"
+    ]
+  },
+  {
+    "filename": "white_mochi_cry_01.png",
+    "priority": "L1",
+    "character": "white_mochi",
+    "emotion": "cry",
+    "scenario": "comfort",
+    "text": "呜呜呜…",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "呜呜",
+      "哭了",
+      "委屈"
+    ]
+  },
+  {
+    "filename": "white_mochi_encourage_01.png",
+    "priority": "L1",
+    "character": "white_mochi",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "加油！",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "加油",
+      "鼓励"
+    ]
+  },
+  {
+    "filename": "white_mochi_goodnight_01.png",
+    "priority": "L1",
+    "character": "white_mochi",
+    "emotion": "goodnight",
+    "scenario": "good_night",
+    "text": "晚安啦~",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "晚安",
+      "睡觉"
+    ]
+  },
+  {
+    "filename": "white_mochi_greeting_01.png",
+    "priority": "L1",
+    "character": "white_mochi",
+    "emotion": "greeting",
+    "scenario": "greeting",
+    "text": "你好呀~",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "你好",
+      "打招呼",
+      "早安"
+    ]
+  },
+  {
+    "filename": "white_mochi_laugh_01.png",
+    "priority": "L1",
+    "character": "white_mochi",
+    "emotion": "laugh",
+    "scenario": "teasing",
+    "text": "哈哈哈",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "哈哈",
+      "笑死"
+    ]
+  },
+  {
+    "filename": "white_mochi_love_01.png",
+    "priority": "L1",
+    "character": "white_mochi",
+    "emotion": "love",
+    "scenario": "confession",
+    "text": "喜欢你~",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "喜欢",
+      "爱心",
+      "心动"
+    ]
+  },
+  {
+    "filename": "white_mochi_miss_you_01.png",
+    "priority": "L1",
+    "character": "white_mochi",
+    "emotion": "missing",
+    "scenario": "missing_you",
+    "text": "想你啦~",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "想你",
+      "想念"
+    ]
+  },
+  {
+    "filename": "white_mochi_sad_01.png",
+    "priority": "L1",
+    "character": "white_mochi",
+    "emotion": "sad",
+    "scenario": "comfort",
+    "text": "难过了…",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "难过",
+      "伤心"
+    ]
+  },
+  {
+    "filename": "white_mochi_shy_01.png",
+    "priority": "L1",
+    "character": "white_mochi",
+    "emotion": "shy",
+    "scenario": "flirting",
+    "text": "害羞啦",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "害羞",
+      "脸红"
+    ]
+  },
+  {
+    "filename": "white_mochi_sleepy_01.png",
+    "priority": "L1",
+    "character": "white_mochi",
+    "emotion": "sleepy",
+    "scenario": "tired",
+    "text": "困了…",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "困",
+      "想睡"
+    ]
+  },
+  {
+    "filename": "white_mochi_surprised_01.png",
+    "priority": "L1",
+    "character": "white_mochi",
+    "emotion": "surprised",
+    "scenario": "celebration",
+    "text": "哇！",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "哇",
+      "惊讶"
+    ]
+  },
+  {
+    "filename": "white_mochi_thinking_01.png",
+    "priority": "L1",
+    "character": "white_mochi",
+    "emotion": "thinking",
+    "scenario": "waiting",
+    "text": "想一想~",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "思考",
+      "在想"
+    ]
+  }
+]

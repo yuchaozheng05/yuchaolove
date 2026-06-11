@@ -1,0 +1,3017 @@
+[
+  {
+    "filename": "ref1_01.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "missing",
+    "scenario": "missing_you",
+    "text": "想你啦",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "恋爱暧昧",
+      "想你啦"
+    ],
+    "source": "ref-1 #1"
+  },
+  {
+    "filename": "ref1_02.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "missing",
+    "scenario": "missing_you",
+    "text": "偷偷想你",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "恋爱暧昧",
+      "偷偷想你"
+    ],
+    "source": "ref-1 #2"
+  },
+  {
+    "filename": "ref1_03.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "missing",
+    "scenario": "missing_you",
+    "text": "想见你",
+    "tags": [
+      "cat",
+      "小猫",
+      "恋爱暧昧",
+      "想见你"
+    ],
+    "source": "ref-1 #3"
+  },
+  {
+    "filename": "ref1_04.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "flirt",
+    "scenario": "flirting",
+    "text": "对你例外",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "恋爱暧昧",
+      "对你例外"
+    ],
+    "source": "ref-1 #4"
+  },
+  {
+    "filename": "ref1_05.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "flirt",
+    "scenario": "flirting",
+    "text": "偏心你",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "恋爱暧昧",
+      "偏心你"
+    ],
+    "source": "ref-1 #5"
+  },
+  {
+    "filename": "ref1_06.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "flirt",
+    "scenario": "flirting",
+    "text": "你比较特别",
+    "tags": [
+      "cat",
+      "小猫",
+      "恋爱暧昧",
+      "你比较特别"
+    ],
+    "source": "ref-1 #6"
+  },
+  {
+    "filename": "ref1_07.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "flirt",
+    "scenario": "flirting",
+    "text": "只给你",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "恋爱暧昧",
+      "只给你"
+    ],
+    "source": "ref-1 #7"
+  },
+  {
+    "filename": "ref1_08.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "flirt",
+    "scenario": "flirting",
+    "text": "你先说",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "恋爱暧昧",
+      "你先说"
+    ],
+    "source": "ref-1 #8"
+  },
+  {
+    "filename": "ref1_09.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "flirt",
+    "scenario": "flirting",
+    "text": "你好会",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "恋爱暧昧",
+      "你好会"
+    ],
+    "source": "ref-1 #9"
+  },
+  {
+    "filename": "ref1_10.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "flirt",
+    "scenario": "flirting",
+    "text": "有点犯规哦",
+    "tags": [
+      "cat",
+      "小猫",
+      "恋爱暧昧",
+      "有点犯规哦"
+    ],
+    "source": "ref-1 #10"
+  },
+  {
+    "filename": "ref1_11.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "flirt",
+    "scenario": "flirting",
+    "text": "被你拿捏了",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "恋爱暧昧",
+      "被你拿捏了"
+    ],
+    "source": "ref-1 #11"
+  },
+  {
+    "filename": "ref1_12.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "flirt",
+    "scenario": "flirting",
+    "text": "我会当真的",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "恋爱暧昧",
+      "我会当真的"
+    ],
+    "source": "ref-1 #12"
+  },
+  {
+    "filename": "ref1_13.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "flirt",
+    "scenario": "flirting",
+    "text": "有点心动",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "恋爱暧昧",
+      "有点心动"
+    ],
+    "source": "ref-1 #13"
+  },
+  {
+    "filename": "ref1_14.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "happy",
+    "scenario": "greeting",
+    "text": "那可不一定",
+    "tags": [
+      "cat",
+      "小猫",
+      "恋爱暧昧",
+      "那可不一定"
+    ],
+    "source": "ref-1 #14"
+  },
+  {
+    "filename": "ref1_15.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "flirt",
+    "scenario": "flirting",
+    "text": "你猜",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "恋爱暧昧",
+      "你猜"
+    ],
+    "source": "ref-1 #15"
+  },
+  {
+    "filename": "ref1_16.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "flirt",
+    "scenario": "flirting",
+    "text": "小秘密",
+    "tags": [
+      "cat",
+      "小猫",
+      "恋爱暧昧",
+      "小秘密"
+    ],
+    "source": "ref-1 #16"
+  },
+  {
+    "filename": "ref1_17.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "flirt",
+    "scenario": "flirting",
+    "text": "不告诉你",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "恋爱暧昧",
+      "不告诉你"
+    ],
+    "source": "ref-1 #17"
+  },
+  {
+    "filename": "ref1_18.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "flirt",
+    "scenario": "flirting",
+    "text": "再想想",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "恋爱暧昧",
+      "再想想"
+    ],
+    "source": "ref-1 #18"
+  },
+  {
+    "filename": "ref1_19.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "flirt",
+    "scenario": "flirting",
+    "text": "距离产生美",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "恋爱暧昧",
+      "距离产生美"
+    ],
+    "source": "ref-1 #19"
+  },
+  {
+    "filename": "ref1_20.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "missing",
+    "scenario": "missing_you",
+    "text": "想我了吗",
+    "tags": [
+      "cat",
+      "小猫",
+      "恋爱暧昧",
+      "想我了吗"
+    ],
+    "source": "ref-1 #20"
+  },
+  {
+    "filename": "ref2_01.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "love",
+    "scenario": "hug",
+    "text": "抱抱你",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "高情商安慰",
+      "抱抱你"
+    ],
+    "source": "ref-2 #1"
+  },
+  {
+    "filename": "ref2_02.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "comfort",
+    "scenario": "comfort",
+    "text": "辛苦啦",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "高情商安慰",
+      "辛苦啦"
+    ],
+    "source": "ref-2 #2"
+  },
+  {
+    "filename": "ref2_03.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "comfort",
+    "scenario": "comfort",
+    "text": "别太累",
+    "tags": [
+      "cat",
+      "小猫",
+      "高情商安慰",
+      "别太累"
+    ],
+    "source": "ref-2 #3"
+  },
+  {
+    "filename": "ref2_04.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "comfort",
+    "scenario": "comfort",
+    "text": "慢慢来",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "高情商安慰",
+      "慢慢来"
+    ],
+    "source": "ref-2 #4"
+  },
+  {
+    "filename": "ref2_05.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "comfort",
+    "scenario": "comfort",
+    "text": "不着急",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "高情商安慰",
+      "不着急"
+    ],
+    "source": "ref-2 #5"
+  },
+  {
+    "filename": "ref2_06.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "comfort",
+    "scenario": "comfort",
+    "text": "我在呢",
+    "tags": [
+      "cat",
+      "小猫",
+      "高情商安慰",
+      "我在呢"
+    ],
+    "source": "ref-2 #6"
+  },
+  {
+    "filename": "ref2_07.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "comfort",
+    "scenario": "comfort",
+    "text": "陪着你",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "高情商安慰",
+      "陪着你"
+    ],
+    "source": "ref-2 #7"
+  },
+  {
+    "filename": "ref2_08.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "comfort",
+    "scenario": "comfort",
+    "text": "会好起来的",
+    "tags": [
+      "cat",
+      "小猫",
+      "高情商安慰",
+      "会好起来的"
+    ],
+    "source": "ref-2 #8"
+  },
+  {
+    "filename": "ref2_09.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "comfort",
+    "scenario": "comfort",
+    "text": "别给自己太大压力",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "高情商安慰",
+      "别给自己太大压力"
+    ],
+    "source": "ref-2 #9"
+  },
+  {
+    "filename": "ref2_10.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "comfort",
+    "scenario": "comfort",
+    "text": "先照顾好自己",
+    "tags": [
+      "cat",
+      "小猫",
+      "高情商安慰",
+      "先照顾好自己"
+    ],
+    "source": "ref-2 #10"
+  },
+  {
+    "filename": "ref2_11.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "你已经很棒了",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "高情商安慰",
+      "你已经很棒了"
+    ],
+    "source": "ref-2 #11"
+  },
+  {
+    "filename": "ref2_12.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "相信自己",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "高情商安慰",
+      "相信自己"
+    ],
+    "source": "ref-2 #12"
+  },
+  {
+    "filename": "ref2_13.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "加油呀",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "高情商安慰",
+      "加油呀"
+    ],
+    "source": "ref-2 #13"
+  },
+  {
+    "filename": "ref2_14.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "继续冲",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "高情商安慰",
+      "继续冲"
+    ],
+    "source": "ref-2 #14"
+  },
+  {
+    "filename": "ref2_15.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "为你打Call",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "高情商安慰",
+      "为你打Call"
+    ],
+    "source": "ref-2 #15"
+  },
+  {
+    "filename": "ref2_17.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "给你点赞",
+    "tags": [
+      "cat",
+      "小猫",
+      "高情商安慰",
+      "给你点赞"
+    ],
+    "source": "ref-2 #17"
+  },
+  {
+    "filename": "ref2_18.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "今天也很厉害",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "高情商安慰",
+      "今天也很厉害"
+    ],
+    "source": "ref-2 #18"
+  },
+  {
+    "filename": "ref2_19.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "别慌",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "高情商安慰",
+      "别慌"
+    ],
+    "source": "ref-2 #19"
+  },
+  {
+    "filename": "ref2_20.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "稳住",
+    "tags": [
+      "cat",
+      "小猫",
+      "高情商安慰",
+      "稳住"
+    ],
+    "source": "ref-2 #20"
+  },
+  {
+    "filename": "ref3_01.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "我在听",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "日常接话",
+      "我在听"
+    ],
+    "source": "ref-3 #1"
+  },
+  {
+    "filename": "ref3_02.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "然后呢",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "日常接话",
+      "然后呢"
+    ],
+    "source": "ref-3 #2"
+  },
+  {
+    "filename": "ref3_03.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "继续说",
+    "tags": [
+      "cat",
+      "小猫",
+      "日常接话",
+      "继续说"
+    ],
+    "source": "ref-3 #3"
+  },
+  {
+    "filename": "ref3_04.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "展开讲讲",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "日常接话",
+      "展开讲讲"
+    ],
+    "source": "ref-3 #4"
+  },
+  {
+    "filename": "ref3_05.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "后来呢",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "日常接话",
+      "后来呢"
+    ],
+    "source": "ref-3 #5"
+  },
+  {
+    "filename": "ref3_06.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "真的吗",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "日常接话",
+      "真的吗"
+    ],
+    "source": "ref-3 #6"
+  },
+  {
+    "filename": "ref3_07.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "原来如此",
+    "tags": [
+      "cat",
+      "小猫",
+      "日常接话",
+      "原来如此"
+    ],
+    "source": "ref-3 #7"
+  },
+  {
+    "filename": "ref3_08.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "这么巧",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "日常接话",
+      "这么巧"
+    ],
+    "source": "ref-3 #8"
+  },
+  {
+    "filename": "ref3_09.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "有点意思",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "日常接话",
+      "有点意思"
+    ],
+    "source": "ref-3 #9"
+  },
+  {
+    "filename": "ref3_10.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "我懂了",
+    "tags": [
+      "cat",
+      "小猫",
+      "日常接话",
+      "我懂了"
+    ],
+    "source": "ref-3 #10"
+  },
+  {
+    "filename": "ref3_11.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "好家伙",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "日常接话",
+      "好家伙"
+    ],
+    "source": "ref-3 #11"
+  },
+  {
+    "filename": "ref3_12.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "awkward",
+    "scenario": "speechless",
+    "text": "绷不住了",
+    "tags": [
+      "cat",
+      "小猫",
+      "日常接话",
+      "绷不住了"
+    ],
+    "source": "ref-3 #12"
+  },
+  {
+    "filename": "ref3_13.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "laugh",
+    "scenario": "teasing",
+    "text": "哈哈哈",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "日常接话",
+      "哈哈哈"
+    ],
+    "source": "ref-3 #13"
+  },
+  {
+    "filename": "ref3_14.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "太真实了",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "日常接话",
+      "太真实了"
+    ],
+    "source": "ref-3 #14"
+  },
+  {
+    "filename": "ref3_15.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "awkward",
+    "scenario": "speechless",
+    "text": "离谱",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "日常接话",
+      "离谱"
+    ],
+    "source": "ref-3 #15"
+  },
+  {
+    "filename": "ref3_16.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "行吧",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "日常接话",
+      "行吧"
+    ],
+    "source": "ref-3 #16"
+  },
+  {
+    "filename": "ref3_17.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "我信了",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "日常接话",
+      "我信了"
+    ],
+    "source": "ref-3 #17"
+  },
+  {
+    "filename": "ref3_18.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "surprised",
+    "scenario": "celebration",
+    "text": "有被震惊到",
+    "tags": [
+      "cat",
+      "小猫",
+      "日常接话",
+      "有被震惊到"
+    ],
+    "source": "ref-3 #18"
+  },
+  {
+    "filename": "ref3_19.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "收到",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "日常接话",
+      "收到"
+    ],
+    "source": "ref-3 #19"
+  },
+  {
+    "filename": "ref3_20.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "明白",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "日常接话",
+      "明白"
+    ],
+    "source": "ref-3 #20"
+  },
+  {
+    "filename": "ref4_01.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "OK",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "万能高频",
+      "OK"
+    ],
+    "source": "ref-4 #1"
+  },
+  {
+    "filename": "ref4_02.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "好耶",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "万能高频",
+      "好耶"
+    ],
+    "source": "ref-4 #2"
+  },
+  {
+    "filename": "ref4_03.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "安排",
+    "tags": [
+      "cat",
+      "小猫",
+      "万能高频",
+      "安排"
+    ],
+    "source": "ref-4 #3"
+  },
+  {
+    "filename": "ref4_04.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "没问题",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "万能高频",
+      "没问题"
+    ],
+    "source": "ref-4 #4"
+  },
+  {
+    "filename": "ref4_05.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "可以",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "万能高频",
+      "可以"
+    ],
+    "source": "ref-4 #5"
+  },
+  {
+    "filename": "ref4_06.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "懂了",
+    "tags": [
+      "cat",
+      "小猫",
+      "万能高频",
+      "懂了"
+    ],
+    "source": "ref-4 #6"
+  },
+  {
+    "filename": "ref4_07.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "赞",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "万能高频",
+      "赞"
+    ],
+    "source": "ref-4 #7"
+  },
+  {
+    "filename": "ref4_08.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "牛哇",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "万能高频",
+      "牛哇"
+    ],
+    "source": "ref-4 #8"
+  },
+  {
+    "filename": "ref4_09.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "厉害",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "万能高频",
+      "厉害"
+    ],
+    "source": "ref-4 #9"
+  },
+  {
+    "filename": "ref4_11.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "太棒了",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "万能高频",
+      "太棒了"
+    ],
+    "source": "ref-4 #11"
+  },
+  {
+    "filename": "ref4_12.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "666",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "万能高频",
+      "666"
+    ],
+    "source": "ref-4 #12"
+  },
+  {
+    "filename": "ref4_13.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "嗯嗯",
+    "tags": [
+      "cat",
+      "小猫",
+      "万能高频",
+      "嗯嗯"
+    ],
+    "source": "ref-4 #13"
+  },
+  {
+    "filename": "ref4_14.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "对对对",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "万能高频",
+      "对对对"
+    ],
+    "source": "ref-4 #14"
+  },
+  {
+    "filename": "ref4_15.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "laugh",
+    "scenario": "teasing",
+    "text": "哈哈",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "万能高频",
+      "哈哈"
+    ],
+    "source": "ref-4 #15"
+  },
+  {
+    "filename": "ref4_16.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "laugh",
+    "scenario": "teasing",
+    "text": "嘿嘿",
+    "tags": [
+      "cat",
+      "小猫",
+      "万能高频",
+      "嘿嘿"
+    ],
+    "source": "ref-4 #16"
+  },
+  {
+    "filename": "ref4_17.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "love",
+    "scenario": "flirting",
+    "text": "爱了",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "万能高频",
+      "爱了"
+    ],
+    "source": "ref-4 #17"
+  },
+  {
+    "filename": "ref4_18.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "surprised",
+    "scenario": "celebration",
+    "text": "哇哦",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "万能高频",
+      "哇哦"
+    ],
+    "source": "ref-4 #18"
+  },
+  {
+    "filename": "ref4_19.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "awkward",
+    "scenario": "speechless",
+    "text": "真惨",
+    "tags": [
+      "cat",
+      "小猫",
+      "万能高频",
+      "真惨"
+    ],
+    "source": "ref-4 #19"
+  },
+  {
+    "filename": "ref4_20.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "完美",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "万能高频",
+      "完美"
+    ],
+    "source": "ref-4 #20"
+  },
+  {
+    "filename": "ref5_01.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "angry",
+    "scenario": "angry_complaint",
+    "text": "哼",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "吃醋撒娇",
+      "哼"
+    ],
+    "source": "ref-5 #1"
+  },
+  {
+    "filename": "ref5_02.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "jealous",
+    "scenario": "jealousy",
+    "text": "不开心了",
+    "tags": [
+      "cat",
+      "小猫",
+      "吃醋撒娇",
+      "不开心了"
+    ],
+    "source": "ref-5 #2"
+  },
+  {
+    "filename": "ref5_03.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "jealous",
+    "scenario": "jealousy",
+    "text": "解释一下",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "吃醋撒娇",
+      "解释一下"
+    ],
+    "source": "ref-5 #3"
+  },
+  {
+    "filename": "ref5_04.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "jealous",
+    "scenario": "jealousy",
+    "text": "你变了",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "吃醋撒娇",
+      "你变了"
+    ],
+    "source": "ref-5 #4"
+  },
+  {
+    "filename": "ref5_05.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "jealous",
+    "scenario": "jealousy",
+    "text": "我记住了哦",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "吃醋撒娇",
+      "我记住了哦"
+    ],
+    "source": "ref-5 #5"
+  },
+  {
+    "filename": "ref5_06.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "jealous",
+    "scenario": "jealousy",
+    "text": "哄我",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "吃醋撒娇",
+      "哄我"
+    ],
+    "source": "ref-5 #6"
+  },
+  {
+    "filename": "ref5_07.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "jealous",
+    "scenario": "jealousy",
+    "text": "不理你了",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "吃醋撒娇",
+      "不理你了"
+    ],
+    "source": "ref-5 #7"
+  },
+  {
+    "filename": "ref5_09.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "jealous",
+    "scenario": "jealousy",
+    "text": "给我个解释",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "吃醋撒娇",
+      "给我个解释"
+    ],
+    "source": "ref-5 #9"
+  },
+  {
+    "filename": "ref5_10.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "jealous",
+    "scenario": "jealousy",
+    "text": "你负责",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "吃醋撒娇",
+      "你负责"
+    ],
+    "source": "ref-5 #10"
+  },
+  {
+    "filename": "ref5_11.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "jealous",
+    "scenario": "jealousy",
+    "text": "我酸了",
+    "tags": [
+      "cat",
+      "小猫",
+      "吃醋撒娇",
+      "我酸了"
+    ],
+    "source": "ref-5 #11"
+  },
+  {
+    "filename": "ref5_12.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "jealous",
+    "scenario": "jealousy",
+    "text": "有点介意",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "吃醋撒娇",
+      "有点介意"
+    ],
+    "source": "ref-5 #12"
+  },
+  {
+    "filename": "ref5_13.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "angry",
+    "scenario": "angry_complaint",
+    "text": "我生气啦",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "吃醋撒娇",
+      "我生气啦"
+    ],
+    "source": "ref-5 #13"
+  },
+  {
+    "filename": "ref5_14.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "jealous",
+    "scenario": "jealousy",
+    "text": "最好解释一下",
+    "tags": [
+      "cat",
+      "小猫",
+      "吃醋撒娇",
+      "最好解释一下"
+    ],
+    "source": "ref-5 #14"
+  },
+  {
+    "filename": "ref5_15.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "jealous",
+    "scenario": "jealousy",
+    "text": "这题不会",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "吃醋撒娇",
+      "这题不会"
+    ],
+    "source": "ref-5 #15"
+  },
+  {
+    "filename": "ref5_16.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "jealous",
+    "scenario": "jealousy",
+    "text": "你说怎么办",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "吃醋撒娇",
+      "你说怎么办"
+    ],
+    "source": "ref-5 #16"
+  },
+  {
+    "filename": "ref5_18.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "jealous",
+    "scenario": "jealousy",
+    "text": "不许跑",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "吃醋撒娇",
+      "不许跑"
+    ],
+    "source": "ref-5 #18"
+  },
+  {
+    "filename": "ref5_19.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "jealous",
+    "scenario": "jealousy",
+    "text": "你心虚了",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "吃醋撒娇",
+      "你心虚了"
+    ],
+    "source": "ref-5 #19"
+  },
+  {
+    "filename": "ref5_20.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "jealous",
+    "scenario": "jealousy",
+    "text": "看你表现",
+    "tags": [
+      "cat",
+      "小猫",
+      "吃醋撒娇",
+      "看你表现"
+    ],
+    "source": "ref-5 #20"
+  },
+  {
+    "filename": "ref6_01.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "shy",
+    "scenario": "cute_acting",
+    "text": "么么哒",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "可爱卖萌",
+      "么么哒"
+    ],
+    "source": "ref-6 #1"
+  },
+  {
+    "filename": "ref6_02.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "happy",
+    "scenario": "greeting",
+    "text": "好喜欢",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "可爱卖萌",
+      "好喜欢"
+    ],
+    "source": "ref-6 #2"
+  },
+  {
+    "filename": "ref6_03.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "shy",
+    "scenario": "cute_acting",
+    "text": "可爱捏",
+    "tags": [
+      "cat",
+      "小猫",
+      "可爱卖萌",
+      "可爱捏"
+    ],
+    "source": "ref-6 #3"
+  },
+  {
+    "filename": "ref6_04.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "shy",
+    "scenario": "cute_acting",
+    "text": "撒娇中",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "可爱卖萌",
+      "撒娇中"
+    ],
+    "source": "ref-6 #4"
+  },
+  {
+    "filename": "ref6_05.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "shy",
+    "scenario": "cute_acting",
+    "text": "求你啦",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "可爱卖萌",
+      "求你啦"
+    ],
+    "source": "ref-6 #5"
+  },
+  {
+    "filename": "ref6_06.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "shy",
+    "scenario": "cute_acting",
+    "text": "拜托拜托",
+    "tags": [
+      "cat",
+      "小猫",
+      "可爱卖萌",
+      "拜托拜托"
+    ],
+    "source": "ref-6 #6"
+  },
+  {
+    "filename": "ref6_07.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "shy",
+    "scenario": "flirting",
+    "text": "人家害羞啦",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "可爱卖萌",
+      "人家害羞啦"
+    ],
+    "source": "ref-6 #7"
+  },
+  {
+    "filename": "ref6_08.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "love",
+    "scenario": "flirting",
+    "text": "最爱你",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "可爱卖萌",
+      "最爱你"
+    ],
+    "source": "ref-6 #8"
+  },
+  {
+    "filename": "ref6_09.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "love",
+    "scenario": "flirting",
+    "text": "比心心",
+    "tags": [
+      "cat",
+      "小猫",
+      "可爱卖萌",
+      "比心心"
+    ],
+    "source": "ref-6 #9"
+  },
+  {
+    "filename": "ref6_10.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "love",
+    "scenario": "flirting",
+    "text": "爱你哟",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "可爱卖萌",
+      "爱你哟"
+    ],
+    "source": "ref-6 #10"
+  },
+  {
+    "filename": "ref6_11.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "shy",
+    "scenario": "cute_acting",
+    "text": "萌萌哒",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "可爱卖萌",
+      "萌萌哒"
+    ],
+    "source": "ref-6 #11"
+  },
+  {
+    "filename": "ref6_12.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "shy",
+    "scenario": "cute_acting",
+    "text": "好乖哦",
+    "tags": [
+      "cat",
+      "小猫",
+      "可爱卖萌",
+      "好乖哦"
+    ],
+    "source": "ref-6 #12"
+  },
+  {
+    "filename": "ref6_13.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "shy",
+    "scenario": "cute_acting",
+    "text": "乖巧.jpg",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "可爱卖萌",
+      "乖巧.jpg"
+    ],
+    "source": "ref-6 #13"
+  },
+  {
+    "filename": "ref6_14.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "shy",
+    "scenario": "cute_acting",
+    "text": "眨眼睛",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "可爱卖萌",
+      "眨眼睛"
+    ],
+    "source": "ref-6 #14"
+  },
+  {
+    "filename": "ref6_15.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "love",
+    "scenario": "hug",
+    "text": "抱抱我",
+    "tags": [
+      "cat",
+      "小猫",
+      "可爱卖萌",
+      "抱抱我"
+    ],
+    "source": "ref-6 #15"
+  },
+  {
+    "filename": "ref6_16.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "shy",
+    "scenario": "cute_acting",
+    "text": "给你花花",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "可爱卖萌",
+      "给你花花"
+    ],
+    "source": "ref-6 #16"
+  },
+  {
+    "filename": "ref6_17.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "shy",
+    "scenario": "cute_acting",
+    "text": "开心到起飞",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "可爱卖萌",
+      "开心到起飞"
+    ],
+    "source": "ref-6 #17"
+  },
+  {
+    "filename": "ref6_18.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "happy",
+    "scenario": "greeting",
+    "text": "啵啵啵",
+    "tags": [
+      "cat",
+      "小猫",
+      "可爱卖萌",
+      "啵啵啵"
+    ],
+    "source": "ref-6 #18"
+  },
+  {
+    "filename": "ref6_19.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "shy",
+    "scenario": "cute_acting",
+    "text": "甜甜的",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "可爱卖萌",
+      "甜甜的"
+    ],
+    "source": "ref-6 #19"
+  },
+  {
+    "filename": "ref6_20.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "shy",
+    "scenario": "cute_acting",
+    "text": "小可怜",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "可爱卖萌",
+      "小可怜"
+    ],
+    "source": "ref-6 #20"
+  },
+  {
+    "filename": "ref7_01.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "love",
+    "scenario": "flirting",
+    "text": "爱你哦",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "软萌治愈",
+      "爱你哦"
+    ],
+    "source": "ref-7 #1"
+  },
+  {
+    "filename": "ref7_02.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "love",
+    "scenario": "flirting",
+    "text": "mua~",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "软萌治愈",
+      "mua"
+    ],
+    "source": "ref-7 #2"
+  },
+  {
+    "filename": "ref7_03.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "love",
+    "scenario": "flirting",
+    "text": "亲亲",
+    "tags": [
+      "cat",
+      "小猫",
+      "软萌治愈",
+      "亲亲"
+    ],
+    "source": "ref-7 #3"
+  },
+  {
+    "filename": "ref7_04.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "love",
+    "scenario": "flirting",
+    "text": "比心",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "软萌治愈",
+      "比心"
+    ],
+    "source": "ref-7 #4"
+  },
+  {
+    "filename": "ref7_05.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "love",
+    "scenario": "hug",
+    "text": "抱抱",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "软萌治愈",
+      "抱抱"
+    ],
+    "source": "ref-7 #5"
+  },
+  {
+    "filename": "ref7_06.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "shy",
+    "scenario": "cute_acting",
+    "text": "期待",
+    "tags": [
+      "cat",
+      "小猫",
+      "软萌治愈",
+      "期待"
+    ],
+    "source": "ref-7 #6"
+  },
+  {
+    "filename": "ref7_07.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "goodnight",
+    "scenario": "good_night",
+    "text": "晚安",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "软萌治愈",
+      "晚安"
+    ],
+    "source": "ref-7 #7"
+  },
+  {
+    "filename": "ref7_08.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "goodnight",
+    "scenario": "good_night",
+    "text": "睡觉觉",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "软萌治愈",
+      "睡觉觉"
+    ],
+    "source": "ref-7 #8"
+  },
+  {
+    "filename": "ref7_09.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "shy",
+    "scenario": "flirting",
+    "text": "wink",
+    "tags": [
+      "cat",
+      "小猫",
+      "软萌治愈",
+      "wink"
+    ],
+    "source": "ref-7 #9"
+  },
+  {
+    "filename": "ref7_10.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "shy",
+    "scenario": "flirting",
+    "text": "害羞",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "软萌治愈",
+      "害羞"
+    ],
+    "source": "ref-7 #10"
+  },
+  {
+    "filename": "ref7_13.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "shy",
+    "scenario": "cute_acting",
+    "text": "送你花花",
+    "tags": [
+      "cat",
+      "小猫",
+      "软萌治愈",
+      "送你花花"
+    ],
+    "source": "ref-7 #13"
+  },
+  {
+    "filename": "ref7_15.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "laugh",
+    "scenario": "teasing",
+    "text": "开心",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "软萌治愈",
+      "开心"
+    ],
+    "source": "ref-7 #15"
+  },
+  {
+    "filename": "ref7_16.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "thanks",
+    "scenario": "thanks",
+    "text": "谢谢你",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "软萌治愈",
+      "谢谢你"
+    ],
+    "source": "ref-7 #16"
+  },
+  {
+    "filename": "ref7_17.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "thanks",
+    "scenario": "thanks",
+    "text": "感恩",
+    "tags": [
+      "cat",
+      "小猫",
+      "软萌治愈",
+      "感恩"
+    ],
+    "source": "ref-7 #17"
+  },
+  {
+    "filename": "ref7_18.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "love",
+    "scenario": "hug",
+    "text": "抱抱小熊",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "软萌治愈",
+      "抱抱小熊"
+    ],
+    "source": "ref-7 #18"
+  },
+  {
+    "filename": "ref7_19.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "你真棒",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "软萌治愈",
+      "你真棒"
+    ],
+    "source": "ref-7 #19"
+  },
+  {
+    "filename": "ref8_01.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "greeting",
+    "scenario": "good_morning",
+    "text": "早呀",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "日常互动",
+      "早呀"
+    ],
+    "source": "ref-8 #1"
+  },
+  {
+    "filename": "ref8_02.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "happy",
+    "scenario": "greeting",
+    "text": "在干嘛呢",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "日常互动",
+      "在干嘛呢"
+    ],
+    "source": "ref-8 #2"
+  },
+  {
+    "filename": "ref8_03.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "missing",
+    "scenario": "waiting",
+    "text": "等你哦",
+    "tags": [
+      "cat",
+      "小猫",
+      "日常互动",
+      "等你哦"
+    ],
+    "source": "ref-8 #3"
+  },
+  {
+    "filename": "ref8_04.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "happy",
+    "scenario": "greeting",
+    "text": "来啦来啦",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "日常互动",
+      "来啦来啦"
+    ],
+    "source": "ref-8 #4"
+  },
+  {
+    "filename": "ref8_05.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "好哒",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "日常互动",
+      "好哒"
+    ],
+    "source": "ref-8 #5"
+  },
+  {
+    "filename": "ref8_08.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "missing",
+    "scenario": "waiting",
+    "text": "稍等一下",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "日常互动",
+      "稍等一下"
+    ],
+    "source": "ref-8 #8"
+  },
+  {
+    "filename": "ref8_09.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "了解",
+    "tags": [
+      "cat",
+      "小猫",
+      "日常互动",
+      "了解"
+    ],
+    "source": "ref-8 #9"
+  },
+  {
+    "filename": "ref8_10.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "OKOK",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "日常互动",
+      "OKOK"
+    ],
+    "source": "ref-8 #10"
+  },
+  {
+    "filename": "ref8_12.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "laugh",
+    "scenario": "teasing",
+    "text": "笑死我了",
+    "tags": [
+      "cat",
+      "小猫",
+      "日常互动",
+      "笑死我了"
+    ],
+    "source": "ref-8 #12"
+  },
+  {
+    "filename": "ref8_13.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "好厉害!",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "日常互动",
+      "好厉害"
+    ],
+    "source": "ref-8 #13"
+  },
+  {
+    "filename": "ref8_15.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "surprised",
+    "scenario": "celebration",
+    "text": "哇塞",
+    "tags": [
+      "cat",
+      "小猫",
+      "日常互动",
+      "哇塞"
+    ],
+    "source": "ref-8 #15"
+  },
+  {
+    "filename": "ref8_16.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "happy",
+    "scenario": "greeting",
+    "text": "真好呀",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "日常互动",
+      "真好呀"
+    ],
+    "source": "ref-8 #16"
+  },
+  {
+    "filename": "ref8_20.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "happy",
+    "scenario": "bye",
+    "text": "拜拜",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "日常互动",
+      "拜拜"
+    ],
+    "source": "ref-8 #20"
+  },
+  {
+    "filename": "ref9_01.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "laugh",
+    "scenario": "teasing",
+    "text": "嘿嘿嘿",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "趣味搞怪",
+      "嘿嘿嘿"
+    ],
+    "source": "ref-9 #1"
+  },
+  {
+    "filename": "ref9_02.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "laugh",
+    "scenario": "teasing",
+    "text": "耶耶耶",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "趣味搞怪",
+      "耶耶耶"
+    ],
+    "source": "ref-9 #2"
+  },
+  {
+    "filename": "ref9_04.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "awkward",
+    "scenario": "speechless",
+    "text": "emmm...",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "趣味搞怪",
+      "emmm..."
+    ],
+    "source": "ref-9 #4"
+  },
+  {
+    "filename": "ref9_05.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "awkward",
+    "scenario": "speechless",
+    "text": "啊?",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "趣味搞怪",
+      "啊"
+    ],
+    "source": "ref-9 #5"
+  },
+  {
+    "filename": "ref9_06.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "awkward",
+    "scenario": "speechless",
+    "text": "哈?",
+    "tags": [
+      "cat",
+      "小猫",
+      "趣味搞怪",
+      "哈"
+    ],
+    "source": "ref-9 #6"
+  },
+  {
+    "filename": "ref9_07.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "搞定!",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "趣味搞怪",
+      "搞定"
+    ],
+    "source": "ref-9 #7"
+  },
+  {
+    "filename": "ref9_09.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "laugh",
+    "scenario": "teasing",
+    "text": "呵呵呵",
+    "tags": [
+      "cat",
+      "小猫",
+      "趣味搞怪",
+      "呵呵呵"
+    ],
+    "source": "ref-9 #9"
+  },
+  {
+    "filename": "ref9_10.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "awkward",
+    "scenario": "speechless",
+    "text": "无语...",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "趣味搞怪",
+      "无语..."
+    ],
+    "source": "ref-9 #10"
+  },
+  {
+    "filename": "ref9_11.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "awkward",
+    "scenario": "speechless",
+    "text": "怕怕~",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "趣味搞怪",
+      "怕怕"
+    ],
+    "source": "ref-9 #11"
+  },
+  {
+    "filename": "ref9_12.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "angry",
+    "scenario": "angry_complaint",
+    "text": "生气了!",
+    "tags": [
+      "cat",
+      "小猫",
+      "趣味搞怪",
+      "生气了"
+    ],
+    "source": "ref-9 #12"
+  },
+  {
+    "filename": "ref9_13.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "jealous",
+    "scenario": "jealousy",
+    "text": "怪我咯?",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "趣味搞怪",
+      "怪我咯"
+    ],
+    "source": "ref-9 #13"
+  },
+  {
+    "filename": "ref9_14.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "surprised",
+    "scenario": "celebration",
+    "text": "惊呆了!",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "趣味搞怪",
+      "惊呆了"
+    ],
+    "source": "ref-9 #14"
+  },
+  {
+    "filename": "ref9_15.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "laugh",
+    "scenario": "teasing",
+    "text": "哇哈哈",
+    "tags": [
+      "cat",
+      "小猫",
+      "趣味搞怪",
+      "哇哈哈"
+    ],
+    "source": "ref-9 #15"
+  },
+  {
+    "filename": "ref9_16.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "冲鸭!",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "趣味搞怪",
+      "冲鸭"
+    ],
+    "source": "ref-9 #16"
+  },
+  {
+    "filename": "ref9_17.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "laugh",
+    "scenario": "teasing",
+    "text": "吃瓜",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "趣味搞怪",
+      "吃瓜"
+    ],
+    "source": "ref-9 #17"
+  },
+  {
+    "filename": "ref9_18.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "sleepy",
+    "scenario": "tired",
+    "text": "躺平了",
+    "tags": [
+      "cat",
+      "小猫",
+      "趣味搞怪",
+      "躺平了"
+    ],
+    "source": "ref-9 #18"
+  },
+  {
+    "filename": "ref9_19.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "awkward",
+    "scenario": "speechless",
+    "text": "爱咋咋地",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "趣味搞怪",
+      "爱咋咋地"
+    ],
+    "source": "ref-9 #19"
+  },
+  {
+    "filename": "ref9_20.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "happy",
+    "scenario": "bye",
+    "text": "拜拜啦",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "趣味搞怪",
+      "拜拜啦"
+    ],
+    "source": "ref-9 #20"
+  },
+  {
+    "filename": "ref13_02.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "happy",
+    "scenario": "agree",
+    "text": "好的",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "日常实用",
+      "好的"
+    ],
+    "source": "ref-13 #2"
+  },
+  {
+    "filename": "ref13_03.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "thanks",
+    "scenario": "thanks",
+    "text": "谢谢~",
+    "tags": [
+      "cat",
+      "小猫",
+      "日常实用",
+      "谢谢"
+    ],
+    "source": "ref-13 #3"
+  },
+  {
+    "filename": "ref13_06.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "加油!",
+    "tags": [
+      "cat",
+      "小猫",
+      "日常实用",
+      "加油"
+    ],
+    "source": "ref-13 #6"
+  },
+  {
+    "filename": "ref13_08.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "goodnight",
+    "scenario": "good_night",
+    "text": "早睡哦",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "日常实用",
+      "早睡哦"
+    ],
+    "source": "ref-13 #8"
+  },
+  {
+    "filename": "ref13_10.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "goodnight",
+    "scenario": "good_night",
+    "text": "别熬夜!",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "日常实用",
+      "别熬夜"
+    ],
+    "source": "ref-13 #10"
+  },
+  {
+    "filename": "ref13_11.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "comfort",
+    "scenario": "comfort",
+    "text": "喝水!",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "日常实用",
+      "喝水"
+    ],
+    "source": "ref-13 #11"
+  },
+  {
+    "filename": "ref13_12.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "comfort",
+    "scenario": "comfort",
+    "text": "记得吃饭",
+    "tags": [
+      "cat",
+      "小猫",
+      "日常实用",
+      "记得吃饭"
+    ],
+    "source": "ref-13 #12"
+  },
+  {
+    "filename": "ref13_13.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "comfort",
+    "scenario": "comfort",
+    "text": "注意身体",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "日常实用",
+      "注意身体"
+    ],
+    "source": "ref-13 #13"
+  },
+  {
+    "filename": "ref13_16.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "comfort",
+    "scenario": "comfort",
+    "text": "路上小心",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "日常实用",
+      "路上小心"
+    ],
+    "source": "ref-13 #16"
+  },
+  {
+    "filename": "ref13_17.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "happy",
+    "scenario": "bye",
+    "text": "出发!",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "日常实用",
+      "出发"
+    ],
+    "source": "ref-13 #17"
+  },
+  {
+    "filename": "ref13_18.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "happy",
+    "scenario": "bye",
+    "text": "到家啦",
+    "tags": [
+      "cat",
+      "小猫",
+      "日常实用",
+      "到家啦"
+    ],
+    "source": "ref-13 #18"
+  },
+  {
+    "filename": "ref13_19.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "comfort",
+    "scenario": "comfort",
+    "text": "放松一下",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "日常实用",
+      "放松一下"
+    ],
+    "source": "ref-13 #19"
+  },
+  {
+    "filename": "ref13_20.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "laugh",
+    "scenario": "teasing",
+    "text": "开心每一天",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "日常实用",
+      "开心每一天"
+    ],
+    "source": "ref-13 #20"
+  },
+  {
+    "filename": "ref10_01.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "greeting",
+    "scenario": "good_morning",
+    "text": "早安呀~",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "风格扩展1",
+      "早安呀"
+    ],
+    "source": "ref-10 #1"
+  },
+  {
+    "filename": "ref10_02.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "greeting",
+    "scenario": "good_morning",
+    "text": "早上好!",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "风格扩展1",
+      "早上好"
+    ],
+    "source": "ref-10 #2"
+  },
+  {
+    "filename": "ref10_03.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "greeting",
+    "scenario": "good_morning",
+    "text": "早安!",
+    "tags": [
+      "cat",
+      "小猫",
+      "风格扩展1",
+      "早安"
+    ],
+    "source": "ref-10 #3"
+  },
+  {
+    "filename": "ref10_05.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "goodnight",
+    "scenario": "good_night",
+    "text": "晚安啦~",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "风格扩展1",
+      "晚安啦"
+    ],
+    "source": "ref-10 #5"
+  },
+  {
+    "filename": "ref10_07.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "missing",
+    "scenario": "missing_you",
+    "text": "想你~",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "风格扩展1",
+      "想你"
+    ],
+    "source": "ref-10 #7"
+  },
+  {
+    "filename": "ref10_08.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "missing",
+    "scenario": "missing_you",
+    "text": "想你哦",
+    "tags": [
+      "cat",
+      "小猫",
+      "风格扩展1",
+      "想你哦"
+    ],
+    "source": "ref-10 #8"
+  },
+  {
+    "filename": "ref10_12.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "laugh",
+    "scenario": "teasing",
+    "text": "好开心!",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "风格扩展1",
+      "好开心"
+    ],
+    "source": "ref-10 #12"
+  },
+  {
+    "filename": "ref10_13.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "太棒啦!",
+    "tags": [
+      "cat",
+      "小猫",
+      "风格扩展1",
+      "太棒啦"
+    ],
+    "source": "ref-10 #13"
+  },
+  {
+    "filename": "ref10_14.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "laugh",
+    "scenario": "teasing",
+    "text": "耶!!",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "风格扩展1",
+      "耶"
+    ],
+    "source": "ref-10 #14"
+  },
+  {
+    "filename": "ref10_16.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "comfort",
+    "scenario": "comfort",
+    "text": "没事的~",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "风格扩展1",
+      "没事的"
+    ],
+    "source": "ref-10 #16"
+  },
+  {
+    "filename": "ref10_17.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "comfort",
+    "scenario": "comfort",
+    "text": "别难过啦",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "风格扩展1",
+      "别难过啦"
+    ],
+    "source": "ref-10 #17"
+  },
+  {
+    "filename": "ref10_19.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "加油鸭!",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "风格扩展1",
+      "加油鸭"
+    ],
+    "source": "ref-10 #19"
+  },
+  {
+    "filename": "ref10_20.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "你很棒哦!",
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "风格扩展1",
+      "你很棒哦"
+    ],
+    "source": "ref-10 #20"
+  },
+  {
+    "filename": "ref11_01.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "goodnight",
+    "scenario": "good_night",
+    "text": "晚安好梦",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "风格扩展2",
+      "晚安好梦"
+    ],
+    "source": "ref-11 #1"
+  },
+  {
+    "filename": "ref11_05.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "goodnight",
+    "scenario": "good_night",
+    "text": "晚安哈",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "风格扩展2",
+      "晚安哈"
+    ],
+    "source": "ref-11 #5"
+  },
+  {
+    "filename": "ref11_08.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "love",
+    "scenario": "hug",
+    "text": "来抱抱~",
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "风格扩展2",
+      "来抱抱"
+    ],
+    "source": "ref-11 #8"
+  },
+  {
+    "filename": "ref11_10.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "love",
+    "scenario": "flirting",
+    "text": "亲亲呀",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "风格扩展2",
+      "亲亲呀"
+    ],
+    "source": "ref-11 #10"
+  },
+  {
+    "filename": "ref11_11.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "surprised",
+    "scenario": "celebration",
+    "text": "哇!!",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "风格扩展2",
+      "哇"
+    ],
+    "source": "ref-11 #11"
+  },
+  {
+    "filename": "ref11_12.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "angry",
+    "scenario": "angry_complaint",
+    "text": "气死我了!",
+    "tags": [
+      "cat",
+      "小猫",
+      "风格扩展2",
+      "气死我了"
+    ],
+    "source": "ref-11 #12"
+  },
+  {
+    "filename": "ref11_13.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "angry",
+    "scenario": "angry_complaint",
+    "text": "我生气了!",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "风格扩展2",
+      "我生气了"
+    ],
+    "source": "ref-11 #13"
+  },
+  {
+    "filename": "ref11_17.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "你是最棒的!",
+    "tags": [
+      "cat",
+      "小猫",
+      "风格扩展2",
+      "你是最棒的"
+    ],
+    "source": "ref-11 #17"
+  },
+  {
+    "filename": "ref11_18.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "你超棒!",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "风格扩展2",
+      "你超棒"
+    ],
+    "source": "ref-11 #18"
+  },
+  {
+    "filename": "ref11_20.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "厉害了!",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "风格扩展2",
+      "厉害了"
+    ],
+    "source": "ref-11 #20"
+  },
+  {
+    "filename": "ref12_05.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "goodnight",
+    "scenario": "good_night",
+    "text": "晚安咯",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "风格扩展3",
+      "晚安咯"
+    ],
+    "source": "ref-12 #5"
+  },
+  {
+    "filename": "ref12_20.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "你一定行!",
+    "tags": [
+      "shiba",
+      "柴犬",
+      "风格扩展3",
+      "你一定行"
+    ],
+    "source": "ref-12 #20"
+  }
+]

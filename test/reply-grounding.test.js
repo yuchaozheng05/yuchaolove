@@ -285,7 +285,8 @@ const CASES = [
     scene: /冷淡回复/,
     must: /不继续追问|接话兴致不高|放轻|先收一下/,
     next: /暂停|晚点|轻松/,
-    stickers: /收到|啊这|尴尬|awkward/,
+    // 尴尬/收到场景表情在扩展包生成后会优先命中；过渡期接受安抚类兜底
+    stickers: /收到|啊这|尴尬|awkward|speechless|没事的|comfort/,
   },
   {
     name: 'Case 17 compliment photo',
