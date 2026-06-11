@@ -718,7 +718,7 @@ export default async function handler(req, res) {
             advice: groupChatAdvice,
             imageParts,
             metadata,
-            sessionId: metadata.session_context?.session_id || null,
+            sessionId: null,
             model,
             status: 'success',
             errorMessage: '',
@@ -765,9 +765,8 @@ export default async function handler(req, res) {
           ? buildRegeneratePrefix(metadata.previous_replies)
           : '';
         const intentPrefix = buildIntentPrefix(conversationIntent, INTENT_STRATEGY_MAP);
-        const sessionPrefix = buildSessionPrefix(metadata.session_context);
         const userProfilePrefix = buildUserProfilePrefix(metadata.user_profile);
-        const analysisPrompt = userProfilePrefix + STYLE_DIMENSION_NOTE + COMPACT_RESPONSE_NOTE + regeneratePrefix + sessionPrefix + intentPrefix + backgroundPrefix + textPart.text;
+        const analysisPrompt = userProfilePrefix + STYLE_DIMENSION_NOTE + COMPACT_RESPONSE_NOTE + regeneratePrefix + intentPrefix + backgroundPrefix + textPart.text;
 
         debug.vision_called = !isRegenerateMode;
         const rawResult = await requestOpenAIAdviceWithVisionRetry({
@@ -826,7 +825,7 @@ export default async function handler(req, res) {
           advice,
           imageParts,
           metadata,
-          sessionId: metadata.session_context?.session_id || null,
+          sessionId: null,
           model,
           status: debug.json_parse_failed || advice.needs_retry || advice.degraded ? 'failed' : 'success',
           errorMessage: debug.json_parse_failed ? 'OpenAI returned invalid JSON; returned minimal usable structure.' : '',
@@ -876,7 +875,7 @@ export default async function handler(req, res) {
         advice,
         imageParts,
         metadata,
-        sessionId: metadata.session_context?.session_id || null,
+        sessionId: null,
         model: 'fallback',
         degraded: true,
         status: 'failed',
@@ -906,7 +905,7 @@ export default async function handler(req, res) {
         }),
         imageParts,
         metadata,
-        sessionId: metadata.session_context?.session_id || null,
+        sessionId: null,
         model: 'failed',
         status: 'failed',
         errorMessage: summarizeError(lastError),
@@ -930,7 +929,7 @@ export default async function handler(req, res) {
         }),
         imageParts,
         metadata,
-        sessionId: metadata.session_context?.session_id || null,
+        sessionId: null,
         model: 'failed',
         status: 'failed',
         errorMessage: error.publicMessage || error.message,
@@ -1141,30 +1140,6 @@ function normalizeUserProfile(value) {
   return normalized;
 }
 
-function normalizeSessionContext(value) {
-  if (!value || typeof value !== 'object') return null;
-  const sessionId = cleanText(value.session_id, 80);
-  const dialogueSummary = cleanText(value.dialogue_summary, 400);
-  if (!sessionId || !dialogueSummary) return null;
-  return {
-    session_id: sessionId,
-    target_person_label: cleanText(value.target_person_label, 20) || '对方',
-    dialogue_summary: dialogueSummary,
-    relationship_stage: cleanText(value.relationship_stage, 40),
-    last_recommended_replies: Array.isArray(value.last_recommended_replies)
-      ? value.last_recommended_replies
-          .map((r) => cleanText(r, 100))
-          .filter(Boolean)
-          .slice(0, 3)
-      : [],
-    sent_reply: cleanText(value.sent_reply, 200),
-    sent_at: Number.isFinite(Number(value.sent_at)) ? Number(value.sent_at) : null,
-    days_ago: Number.isFinite(Number(value.days_ago))
-      ? Math.max(0, Math.round(Number(value.days_ago)))
-      : 0,
-  };
-}
-
 function normalizeClientMetadata(metadata) {
   if (!metadata || typeof metadata !== 'object') return {};
 
@@ -1179,7 +1154,6 @@ function normalizeClientMetadata(metadata) {
     screen_width: Number.isFinite(Number(metadata.screen_width)) ? Number(metadata.screen_width) : undefined,
     screen_height: Number.isFinite(Number(metadata.screen_height)) ? Number(metadata.screen_height) : undefined,
     device_pixel_ratio: Number.isFinite(Number(metadata.device_pixel_ratio)) ? Number(metadata.device_pixel_ratio) : undefined,
-    session_context: normalizeSessionContext(metadata.session_context),
     target_person_label: cleanText(metadata.target_person_label, 20),
     regenerate: metadata.regenerate === true,
     previous_replies: Array.isArray(metadata.previous_replies)
@@ -1271,42 +1245,6 @@ function buildIntentPrefix(intent, strategyMap) {
     `方向：${strategy.reply_direction || '接住最后一句，顺着聊'}`,
     `语气：${strategy.tone || '自然'}`,
     `避免：${avoidText}`,
-    '',
-    '',
-  ]
-    .filter((line) => line !== undefined)
-    .join('\n');
-}
-
-function buildSessionPrefix(sessionContext) {
-  if (!sessionContext || !sessionContext.dialogue_summary) return '';
-  const label = sessionContext.target_person_label || '对方';
-  const daysText =
-    sessionContext.days_ago === 0
-      ? '今天早些时候'
-      : sessionContext.days_ago === 1
-      ? '昨天'
-      : `${sessionContext.days_ago}天前`;
-  const stageText = sessionContext.relationship_stage
-    ? `关系阶段：${sessionContext.relationship_stage}\n`
-    : '';
-  const repliesText =
-    Array.isArray(sessionContext.last_recommended_replies) &&
-    sessionContext.last_recommended_replies.length
-      ? `上次推荐回复（本次请生成不同风格，不要重复）：\n${sessionContext.last_recommended_replies
-          .map((r) => `- ${r}`)
-          .join('\n')}\n`
-      : '';
-  const sentText = sessionContext.sent_reply
-    ? `用户上次实际发送：${sessionContext.sent_reply}\n`
-    : '';
-  return [
-    `【与"${label}"的上次对话背景】`,
-    `上次分析：${daysText}`,
-    stageText,
-    `对话摘要：${sessionContext.dialogue_summary}`,
-    sentText,
-    repliesText,
     '',
     '',
   ]
@@ -5355,4 +5293,4 @@ function buildStoragePath({ visitorId, index, ext }) {
   return `screenshots/${day}/${safeVisitorId}-${Date.now()}-${index}.${ext}`;
 }
 
-export { CHAT_ADVICE_SCHEMA, CHAT_SCENE_LIBRARY, EXTRACTION_IMAGE_DETAIL, EXTRACTION_MAX_COMPLETION_TOKENS, EXTRACTION_SCHEMA, EXTRACTION_SYSTEM_PROMPT, GENERIC_REPLY_TEMPLATE_PATTERN, IMAGE_READING_RULES, INTENT_DETECTION_SCHEMA, INTENT_DETECTION_SYSTEM_PROMPT, INTENT_MAX_COMPLETION_TOKENS, INTENT_STRATEGY_MAP, MODELS, PRIMARY_IMAGE_DETAIL, PRIMARY_MAX_COMPLETION_TOKENS, PRIMARY_OPENAI_TIMEOUT_MS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, REPLY_REFINEMENT_SCHEMA, REFINEMENT_MAX_COMPLETION_TOKENS, STYLE_DIMENSION_NOTE, analyzeConversationDirection, buildActiveCuriosityGuide, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildGroupChatAdvice, buildGroundedFallbackReplies, buildIntentPrefix, buildRegeneratePrefix, buildReplyRefinementPrompt, buildSessionPrefix, buildStageChatGuide, buildStickerMatchIntent, buildUserProfilePrefix, detectConversationIntent, detectScene, extractConcreteFacts, extractDialogueFromImages, extractFirstJsonObject, getReplyGroundingReport, getRequestParts, getStickerContext, hasActiveCuriosity, hasHappyEmotion, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, hasStudyStress, inferConversationStage, isRetryableModelError, isVerifiedChatScreenshot, logUsage, mergeRefinedReplies, needsReplyRefinement, normalizeChatGuide, normalizeClientMetadata, normalizeConversationMode, normalizeConversationStage, normalizeDialogue, normalizeChatEvidence, normalizeReplyCandidate, normalizeSessionContext, normalizeStickerSuggestions, normalizeUserProfile, parseAdvice, recommendStockStickers, repairReplyCandidates, requestOpenAIAdvice, requestOpenAIReplyRefinement, safeJsonParse, scoreStockSticker };
+export { CHAT_ADVICE_SCHEMA, CHAT_SCENE_LIBRARY, EXTRACTION_IMAGE_DETAIL, EXTRACTION_MAX_COMPLETION_TOKENS, EXTRACTION_SCHEMA, EXTRACTION_SYSTEM_PROMPT, GENERIC_REPLY_TEMPLATE_PATTERN, IMAGE_READING_RULES, INTENT_DETECTION_SCHEMA, INTENT_DETECTION_SYSTEM_PROMPT, INTENT_MAX_COMPLETION_TOKENS, INTENT_STRATEGY_MAP, MODELS, PRIMARY_IMAGE_DETAIL, PRIMARY_MAX_COMPLETION_TOKENS, PRIMARY_OPENAI_TIMEOUT_MS, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, REPLY_REFINEMENT_SCHEMA, REFINEMENT_MAX_COMPLETION_TOKENS, STYLE_DIMENSION_NOTE, analyzeConversationDirection, buildActiveCuriosityGuide, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildGroupChatAdvice, buildGroundedFallbackReplies, buildIntentPrefix, buildRegeneratePrefix, buildReplyRefinementPrompt, buildStageChatGuide, buildStickerMatchIntent, buildUserProfilePrefix, detectConversationIntent, detectScene, extractConcreteFacts, extractDialogueFromImages, extractFirstJsonObject, getReplyGroundingReport, getRequestParts, getStickerContext, hasActiveCuriosity, hasHappyEmotion, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, hasStudyStress, inferConversationStage, isRetryableModelError, isVerifiedChatScreenshot, logUsage, mergeRefinedReplies, needsReplyRefinement, normalizeChatGuide, normalizeClientMetadata, normalizeConversationMode, normalizeConversationStage, normalizeDialogue, normalizeChatEvidence, normalizeReplyCandidate, normalizeStickerSuggestions, normalizeUserProfile, parseAdvice, recommendStockStickers, repairReplyCandidates, requestOpenAIAdvice, requestOpenAIReplyRefinement, safeJsonParse, scoreStockSticker };
