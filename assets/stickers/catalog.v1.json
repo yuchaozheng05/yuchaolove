@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-11T20:25:54.229Z",
+  "generated_at": "2026-06-12T03:33:29.893Z",
   "pack": "style-bible-v1",
   "source_prompts": [
     "/assets/stickers/prompts/sticker-prompts.json",
@@ -28,6 +28,16 @@
         "ref1",
         "01"
       ],
+      "scene": [
+        "想念",
+        "撒娇",
+        "暧昧"
+      ],
+      "intent": [
+        "表达想念",
+        "撒娇"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -48,6 +58,16 @@
         "ref1",
         "02"
       ],
+      "scene": [
+        "想念",
+        "撒娇",
+        "暧昧"
+      ],
+      "intent": [
+        "表达想念",
+        "撒娇"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -68,6 +88,16 @@
         "ref1",
         "03"
       ],
+      "scene": [
+        "想念",
+        "撒娇",
+        "暧昧"
+      ],
+      "intent": [
+        "表达想念",
+        "撒娇"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -88,6 +118,16 @@
         "ref1",
         "04"
       ],
+      "scene": [
+        "暧昧",
+        "心动",
+        "卖萌"
+      ],
+      "intent": [
+        "回应撩拨",
+        "表达心动"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -108,6 +148,16 @@
         "ref1",
         "05"
       ],
+      "scene": [
+        "暧昧",
+        "心动",
+        "卖萌"
+      ],
+      "intent": [
+        "回应撩拨",
+        "表达心动"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -128,6 +178,16 @@
         "ref1",
         "06"
       ],
+      "scene": [
+        "暧昧",
+        "心动",
+        "卖萌"
+      ],
+      "intent": [
+        "回应撩拨",
+        "表达心动"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -148,6 +208,16 @@
         "ref1",
         "07"
       ],
+      "scene": [
+        "暧昧",
+        "心动",
+        "卖萌"
+      ],
+      "intent": [
+        "回应撩拨",
+        "表达心动"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -168,6 +238,15 @@
         "ref1",
         "08"
       ],
+      "scene": [
+        "暧昧",
+        "拉扯"
+      ],
+      "intent": [
+        "调情",
+        "卖关子"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -188,6 +267,16 @@
         "ref1",
         "09"
       ],
+      "scene": [
+        "暧昧",
+        "心动",
+        "卖萌"
+      ],
+      "intent": [
+        "回应撩拨",
+        "表达心动"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -208,6 +297,16 @@
         "ref1",
         "10"
       ],
+      "scene": [
+        "暧昧",
+        "心动",
+        "卖萌"
+      ],
+      "intent": [
+        "回应撩拨",
+        "表达心动"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -228,6 +327,16 @@
         "ref1",
         "11"
       ],
+      "scene": [
+        "暧昧",
+        "心动",
+        "卖萌"
+      ],
+      "intent": [
+        "回应撩拨",
+        "表达心动"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -248,6 +357,16 @@
         "ref1",
         "12"
       ],
+      "scene": [
+        "暧昧",
+        "心动",
+        "卖萌"
+      ],
+      "intent": [
+        "回应撩拨",
+        "表达心动"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -268,6 +387,16 @@
         "ref1",
         "13"
       ],
+      "scene": [
+        "暧昧",
+        "心动",
+        "卖萌"
+      ],
+      "intent": [
+        "回应撩拨",
+        "表达心动"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -288,6 +417,15 @@
         "ref1",
         "14"
       ],
+      "scene": [
+        "暧昧",
+        "拉扯"
+      ],
+      "intent": [
+        "调情",
+        "卖关子"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -308,6 +446,15 @@
         "ref1",
         "15"
       ],
+      "scene": [
+        "暧昧",
+        "拉扯"
+      ],
+      "intent": [
+        "调情",
+        "卖关子"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -328,6 +475,15 @@
         "ref1",
         "16"
       ],
+      "scene": [
+        "暧昧",
+        "拉扯"
+      ],
+      "intent": [
+        "调情",
+        "卖关子"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -348,6 +504,15 @@
         "ref1",
         "17"
       ],
+      "scene": [
+        "暧昧",
+        "拉扯"
+      ],
+      "intent": [
+        "调情",
+        "卖关子"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -368,6 +533,15 @@
         "ref1",
         "18"
       ],
+      "scene": [
+        "暧昧",
+        "拉扯"
+      ],
+      "intent": [
+        "调情",
+        "卖关子"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -388,6 +562,15 @@
         "ref1",
         "19"
       ],
+      "scene": [
+        "暧昧",
+        "拉扯"
+      ],
+      "intent": [
+        "调情",
+        "卖关子"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -408,6 +591,16 @@
         "ref1",
         "20"
       ],
+      "scene": [
+        "想念",
+        "撒娇",
+        "暧昧"
+      ],
+      "intent": [
+        "表达想念",
+        "撒娇"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -428,6 +621,15 @@
         "ref10",
         "01"
       ],
+      "scene": [
+        "早安",
+        "打招呼"
+      ],
+      "intent": [
+        "道早安",
+        "开启对话"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -448,6 +650,15 @@
         "ref10",
         "02"
       ],
+      "scene": [
+        "早安",
+        "打招呼"
+      ],
+      "intent": [
+        "道早安",
+        "开启对话"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -468,6 +679,15 @@
         "ref10",
         "03"
       ],
+      "scene": [
+        "早安",
+        "打招呼"
+      ],
+      "intent": [
+        "道早安",
+        "开启对话"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -488,6 +708,17 @@
         "ref10",
         "05"
       ],
+      "scene": [
+        "晚安",
+        "睡觉",
+        "结束聊天"
+      ],
+      "intent": [
+        "道晚安",
+        "关心",
+        "结束对话"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -508,6 +739,16 @@
         "ref10",
         "07"
       ],
+      "scene": [
+        "想念",
+        "撒娇",
+        "暧昧"
+      ],
+      "intent": [
+        "表达想念",
+        "撒娇"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -528,6 +769,16 @@
         "ref10",
         "08"
       ],
+      "scene": [
+        "想念",
+        "撒娇",
+        "暧昧"
+      ],
+      "intent": [
+        "表达想念",
+        "撒娇"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -548,6 +799,14 @@
         "ref10",
         "12"
       ],
+      "scene": [
+        "开心",
+        "庆祝"
+      ],
+      "intent": [
+        "分享开心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -568,6 +827,16 @@
         "ref10",
         "13"
       ],
+      "scene": [
+        "夸夸",
+        "惊叹",
+        "庆祝"
+      ],
+      "intent": [
+        "夸奖",
+        "惊叹"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -588,6 +857,16 @@
         "ref10",
         "14"
       ],
+      "scene": [
+        "大笑",
+        "玩笑",
+        "开心"
+      ],
+      "intent": [
+        "接梗",
+        "一起笑"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -607,6 +886,16 @@
         "ref10",
         "16"
       ],
+      "scene": [
+        "安慰",
+        "关心"
+      ],
+      "intent": [
+        "安抚",
+        "陪伴",
+        "关心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -626,6 +915,16 @@
         "ref10",
         "17"
       ],
+      "scene": [
+        "安慰",
+        "关心"
+      ],
+      "intent": [
+        "安抚",
+        "陪伴",
+        "关心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -646,6 +945,15 @@
         "ref10",
         "19"
       ],
+      "scene": [
+        "鼓励",
+        "夸夸"
+      ],
+      "intent": [
+        "鼓励",
+        "夸奖"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -666,6 +974,15 @@
         "ref10",
         "20"
       ],
+      "scene": [
+        "鼓励",
+        "夸夸"
+      ],
+      "intent": [
+        "鼓励",
+        "夸奖"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -686,6 +1003,17 @@
         "ref11",
         "01"
       ],
+      "scene": [
+        "晚安",
+        "睡觉",
+        "结束聊天"
+      ],
+      "intent": [
+        "道晚安",
+        "关心",
+        "结束对话"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -706,6 +1034,17 @@
         "ref11",
         "05"
       ],
+      "scene": [
+        "晚安",
+        "睡觉",
+        "结束聊天"
+      ],
+      "intent": [
+        "道晚安",
+        "关心",
+        "结束对话"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -726,6 +1065,17 @@
         "ref11",
         "08"
       ],
+      "scene": [
+        "安慰",
+        "亲密",
+        "想念"
+      ],
+      "intent": [
+        "安抚",
+        "求抱抱",
+        "表达亲密"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -746,6 +1096,16 @@
         "ref11",
         "10"
       ],
+      "scene": [
+        "亲密",
+        "暧昧",
+        "示爱"
+      ],
+      "intent": [
+        "示爱",
+        "亲昵"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -766,6 +1126,16 @@
         "ref11",
         "11"
       ],
+      "scene": [
+        "夸夸",
+        "惊叹",
+        "庆祝"
+      ],
+      "intent": [
+        "夸奖",
+        "惊叹"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -786,6 +1156,17 @@
         "ref11",
         "12"
       ],
+      "scene": [
+        "吃醋",
+        "撒娇",
+        "闹脾气"
+      ],
+      "intent": [
+        "撒娇",
+        "求哄",
+        "吃醋"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -806,6 +1187,17 @@
         "ref11",
         "13"
       ],
+      "scene": [
+        "吃醋",
+        "撒娇",
+        "闹脾气"
+      ],
+      "intent": [
+        "撒娇",
+        "求哄",
+        "吃醋"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -826,6 +1218,15 @@
         "ref11",
         "17"
       ],
+      "scene": [
+        "鼓励",
+        "夸夸"
+      ],
+      "intent": [
+        "鼓励",
+        "夸奖"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -846,6 +1247,15 @@
         "ref11",
         "18"
       ],
+      "scene": [
+        "鼓励",
+        "夸夸"
+      ],
+      "intent": [
+        "鼓励",
+        "夸奖"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -866,6 +1276,16 @@
         "ref11",
         "20"
       ],
+      "scene": [
+        "夸夸",
+        "惊叹",
+        "庆祝"
+      ],
+      "intent": [
+        "夸奖",
+        "惊叹"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -886,6 +1306,17 @@
         "ref12",
         "05"
       ],
+      "scene": [
+        "晚安",
+        "睡觉",
+        "结束聊天"
+      ],
+      "intent": [
+        "道晚安",
+        "关心",
+        "结束对话"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -906,6 +1337,15 @@
         "ref12",
         "20"
       ],
+      "scene": [
+        "鼓励",
+        "夸夸"
+      ],
+      "intent": [
+        "鼓励",
+        "夸奖"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -926,6 +1366,15 @@
         "ref13",
         "02"
       ],
+      "scene": [
+        "确认",
+        "回应"
+      ],
+      "intent": [
+        "确认",
+        "答应"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -945,6 +1394,13 @@
         "ref13",
         "03"
       ],
+      "scene": [
+        "感谢"
+      ],
+      "intent": [
+        "道谢"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -965,6 +1421,15 @@
         "ref13",
         "06"
       ],
+      "scene": [
+        "鼓励",
+        "夸夸"
+      ],
+      "intent": [
+        "鼓励",
+        "夸奖"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -985,6 +1450,17 @@
         "ref13",
         "08"
       ],
+      "scene": [
+        "晚安",
+        "睡觉",
+        "结束聊天"
+      ],
+      "intent": [
+        "道晚安",
+        "关心",
+        "结束对话"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1005,6 +1481,17 @@
         "ref13",
         "10"
       ],
+      "scene": [
+        "晚安",
+        "睡觉",
+        "结束聊天"
+      ],
+      "intent": [
+        "道晚安",
+        "关心",
+        "结束对话"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1024,6 +1511,16 @@
         "ref13",
         "11"
       ],
+      "scene": [
+        "安慰",
+        "关心"
+      ],
+      "intent": [
+        "安抚",
+        "陪伴",
+        "关心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1043,6 +1540,16 @@
         "ref13",
         "12"
       ],
+      "scene": [
+        "安慰",
+        "关心"
+      ],
+      "intent": [
+        "安抚",
+        "陪伴",
+        "关心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1062,6 +1569,16 @@
         "ref13",
         "13"
       ],
+      "scene": [
+        "安慰",
+        "关心"
+      ],
+      "intent": [
+        "安抚",
+        "陪伴",
+        "关心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1081,6 +1598,15 @@
         "ref13",
         "16"
       ],
+      "scene": [
+        "告别",
+        "出行"
+      ],
+      "intent": [
+        "告别",
+        "关心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1101,6 +1627,15 @@
         "ref13",
         "17"
       ],
+      "scene": [
+        "告别",
+        "出行"
+      ],
+      "intent": [
+        "告别",
+        "关心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1121,6 +1656,15 @@
         "ref13",
         "18"
       ],
+      "scene": [
+        "告别",
+        "出行"
+      ],
+      "intent": [
+        "告别",
+        "关心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1140,6 +1684,16 @@
         "ref13",
         "19"
       ],
+      "scene": [
+        "安慰",
+        "关心"
+      ],
+      "intent": [
+        "安抚",
+        "陪伴",
+        "关心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1160,6 +1714,14 @@
         "ref13",
         "20"
       ],
+      "scene": [
+        "开心",
+        "庆祝"
+      ],
+      "intent": [
+        "分享开心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1180,6 +1742,17 @@
         "ref2",
         "01"
       ],
+      "scene": [
+        "安慰",
+        "亲密",
+        "想念"
+      ],
+      "intent": [
+        "安抚",
+        "求抱抱",
+        "表达亲密"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1199,6 +1772,16 @@
         "ref2",
         "02"
       ],
+      "scene": [
+        "安慰",
+        "关心"
+      ],
+      "intent": [
+        "安抚",
+        "陪伴",
+        "关心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1218,6 +1801,16 @@
         "ref2",
         "03"
       ],
+      "scene": [
+        "安慰",
+        "关心"
+      ],
+      "intent": [
+        "安抚",
+        "陪伴",
+        "关心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1237,6 +1830,16 @@
         "ref2",
         "04"
       ],
+      "scene": [
+        "安慰",
+        "关心"
+      ],
+      "intent": [
+        "安抚",
+        "陪伴",
+        "关心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1256,6 +1859,16 @@
         "ref2",
         "05"
       ],
+      "scene": [
+        "安慰",
+        "关心"
+      ],
+      "intent": [
+        "安抚",
+        "陪伴",
+        "关心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1275,6 +1888,16 @@
         "ref2",
         "06"
       ],
+      "scene": [
+        "安慰",
+        "关心"
+      ],
+      "intent": [
+        "安抚",
+        "陪伴",
+        "关心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1294,6 +1917,16 @@
         "ref2",
         "07"
       ],
+      "scene": [
+        "安慰",
+        "关心"
+      ],
+      "intent": [
+        "安抚",
+        "陪伴",
+        "关心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1313,6 +1946,16 @@
         "ref2",
         "08"
       ],
+      "scene": [
+        "安慰",
+        "关心"
+      ],
+      "intent": [
+        "安抚",
+        "陪伴",
+        "关心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1332,6 +1975,16 @@
         "ref2",
         "09"
       ],
+      "scene": [
+        "安慰",
+        "关心"
+      ],
+      "intent": [
+        "安抚",
+        "陪伴",
+        "关心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1351,6 +2004,16 @@
         "ref2",
         "10"
       ],
+      "scene": [
+        "安慰",
+        "关心"
+      ],
+      "intent": [
+        "安抚",
+        "陪伴",
+        "关心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1371,6 +2034,15 @@
         "ref2",
         "11"
       ],
+      "scene": [
+        "鼓励",
+        "夸夸"
+      ],
+      "intent": [
+        "鼓励",
+        "夸奖"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1391,6 +2063,15 @@
         "ref2",
         "12"
       ],
+      "scene": [
+        "鼓励",
+        "夸夸"
+      ],
+      "intent": [
+        "鼓励",
+        "夸奖"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1411,6 +2092,15 @@
         "ref2",
         "13"
       ],
+      "scene": [
+        "鼓励",
+        "夸夸"
+      ],
+      "intent": [
+        "鼓励",
+        "夸奖"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1431,6 +2121,15 @@
         "ref2",
         "14"
       ],
+      "scene": [
+        "鼓励",
+        "夸夸"
+      ],
+      "intent": [
+        "鼓励",
+        "夸奖"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1451,6 +2150,15 @@
         "ref2",
         "15"
       ],
+      "scene": [
+        "鼓励",
+        "夸夸"
+      ],
+      "intent": [
+        "鼓励",
+        "夸奖"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1471,6 +2179,15 @@
         "ref2",
         "17"
       ],
+      "scene": [
+        "鼓励",
+        "夸夸"
+      ],
+      "intent": [
+        "鼓励",
+        "夸奖"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1491,6 +2208,15 @@
         "ref2",
         "18"
       ],
+      "scene": [
+        "鼓励",
+        "夸夸"
+      ],
+      "intent": [
+        "鼓励",
+        "夸奖"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1511,6 +2237,15 @@
         "ref2",
         "19"
       ],
+      "scene": [
+        "鼓励",
+        "夸夸"
+      ],
+      "intent": [
+        "鼓励",
+        "夸奖"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1531,6 +2266,15 @@
         "ref2",
         "20"
       ],
+      "scene": [
+        "鼓励",
+        "夸夸"
+      ],
+      "intent": [
+        "鼓励",
+        "夸奖"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1551,6 +2295,15 @@
         "ref3",
         "01"
       ],
+      "scene": [
+        "日常接话",
+        "倾听"
+      ],
+      "intent": [
+        "接话",
+        "表达兴趣"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1571,6 +2324,15 @@
         "ref3",
         "02"
       ],
+      "scene": [
+        "日常接话",
+        "倾听"
+      ],
+      "intent": [
+        "接话",
+        "表达兴趣"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1591,6 +2353,15 @@
         "ref3",
         "03"
       ],
+      "scene": [
+        "日常接话",
+        "倾听"
+      ],
+      "intent": [
+        "接话",
+        "表达兴趣"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1611,6 +2382,15 @@
         "ref3",
         "04"
       ],
+      "scene": [
+        "日常接话",
+        "倾听"
+      ],
+      "intent": [
+        "接话",
+        "表达兴趣"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1631,6 +2411,15 @@
         "ref3",
         "05"
       ],
+      "scene": [
+        "日常接话",
+        "倾听"
+      ],
+      "intent": [
+        "接话",
+        "表达兴趣"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1651,6 +2440,15 @@
         "ref3",
         "06"
       ],
+      "scene": [
+        "日常接话",
+        "倾听"
+      ],
+      "intent": [
+        "接话",
+        "表达兴趣"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1671,6 +2469,15 @@
         "ref3",
         "07"
       ],
+      "scene": [
+        "日常接话",
+        "倾听"
+      ],
+      "intent": [
+        "接话",
+        "表达兴趣"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1691,6 +2498,15 @@
         "ref3",
         "08"
       ],
+      "scene": [
+        "日常接话",
+        "倾听"
+      ],
+      "intent": [
+        "接话",
+        "表达兴趣"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1711,6 +2527,15 @@
         "ref3",
         "09"
       ],
+      "scene": [
+        "日常接话",
+        "倾听"
+      ],
+      "intent": [
+        "接话",
+        "表达兴趣"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1731,6 +2556,15 @@
         "ref3",
         "10"
       ],
+      "scene": [
+        "确认",
+        "回应"
+      ],
+      "intent": [
+        "确认",
+        "答应"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1751,6 +2585,15 @@
         "ref3",
         "11"
       ],
+      "scene": [
+        "日常接话",
+        "倾听"
+      ],
+      "intent": [
+        "接话",
+        "表达兴趣"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1771,6 +2614,16 @@
         "ref3",
         "12"
       ],
+      "scene": [
+        "大笑",
+        "玩笑",
+        "开心"
+      ],
+      "intent": [
+        "接梗",
+        "一起笑"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1791,6 +2644,16 @@
         "ref3",
         "13"
       ],
+      "scene": [
+        "大笑",
+        "玩笑",
+        "开心"
+      ],
+      "intent": [
+        "接梗",
+        "一起笑"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1811,6 +2674,16 @@
         "ref3",
         "14"
       ],
+      "scene": [
+        "大笑",
+        "玩笑",
+        "开心"
+      ],
+      "intent": [
+        "接梗",
+        "一起笑"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1831,6 +2704,16 @@
         "ref3",
         "15"
       ],
+      "scene": [
+        "搞怪",
+        "无语",
+        "吐槽"
+      ],
+      "intent": [
+        "吐槽",
+        "装傻"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1851,6 +2734,15 @@
         "ref3",
         "16"
       ],
+      "scene": [
+        "确认",
+        "回应"
+      ],
+      "intent": [
+        "确认",
+        "答应"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1871,6 +2763,15 @@
         "ref3",
         "17"
       ],
+      "scene": [
+        "日常接话",
+        "倾听"
+      ],
+      "intent": [
+        "接话",
+        "表达兴趣"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1891,6 +2792,16 @@
         "ref3",
         "18"
       ],
+      "scene": [
+        "夸夸",
+        "惊叹",
+        "庆祝"
+      ],
+      "intent": [
+        "夸奖",
+        "惊叹"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1911,6 +2822,15 @@
         "ref3",
         "19"
       ],
+      "scene": [
+        "确认",
+        "回应"
+      ],
+      "intent": [
+        "确认",
+        "答应"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1931,6 +2851,15 @@
         "ref3",
         "20"
       ],
+      "scene": [
+        "确认",
+        "回应"
+      ],
+      "intent": [
+        "确认",
+        "答应"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1951,6 +2880,15 @@
         "ref4",
         "01"
       ],
+      "scene": [
+        "确认",
+        "回应"
+      ],
+      "intent": [
+        "确认",
+        "答应"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1971,6 +2909,15 @@
         "ref4",
         "02"
       ],
+      "scene": [
+        "确认",
+        "回应"
+      ],
+      "intent": [
+        "确认",
+        "答应"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -1991,6 +2938,15 @@
         "ref4",
         "03"
       ],
+      "scene": [
+        "确认",
+        "回应"
+      ],
+      "intent": [
+        "确认",
+        "答应"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2011,6 +2967,15 @@
         "ref4",
         "04"
       ],
+      "scene": [
+        "确认",
+        "回应"
+      ],
+      "intent": [
+        "确认",
+        "答应"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2031,6 +2996,15 @@
         "ref4",
         "05"
       ],
+      "scene": [
+        "确认",
+        "回应"
+      ],
+      "intent": [
+        "确认",
+        "答应"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2051,6 +3025,15 @@
         "ref4",
         "06"
       ],
+      "scene": [
+        "确认",
+        "回应"
+      ],
+      "intent": [
+        "确认",
+        "答应"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2070,6 +3053,15 @@
         "ref4",
         "07"
       ],
+      "scene": [
+        "确认",
+        "回应"
+      ],
+      "intent": [
+        "确认",
+        "答应"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2090,6 +3082,16 @@
         "ref4",
         "08"
       ],
+      "scene": [
+        "夸夸",
+        "惊叹",
+        "庆祝"
+      ],
+      "intent": [
+        "夸奖",
+        "惊叹"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2110,6 +3112,16 @@
         "ref4",
         "09"
       ],
+      "scene": [
+        "夸夸",
+        "惊叹",
+        "庆祝"
+      ],
+      "intent": [
+        "夸奖",
+        "惊叹"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2130,6 +3142,16 @@
         "ref4",
         "11"
       ],
+      "scene": [
+        "夸夸",
+        "惊叹",
+        "庆祝"
+      ],
+      "intent": [
+        "夸奖",
+        "惊叹"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2150,6 +3172,16 @@
         "ref4",
         "12"
       ],
+      "scene": [
+        "夸夸",
+        "惊叹",
+        "庆祝"
+      ],
+      "intent": [
+        "夸奖",
+        "惊叹"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2170,6 +3202,15 @@
         "ref4",
         "13"
       ],
+      "scene": [
+        "确认",
+        "回应"
+      ],
+      "intent": [
+        "确认",
+        "答应"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2190,6 +3231,15 @@
         "ref4",
         "14"
       ],
+      "scene": [
+        "确认",
+        "回应"
+      ],
+      "intent": [
+        "确认",
+        "答应"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2210,6 +3260,16 @@
         "ref4",
         "15"
       ],
+      "scene": [
+        "大笑",
+        "玩笑",
+        "开心"
+      ],
+      "intent": [
+        "接梗",
+        "一起笑"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2230,6 +3290,16 @@
         "ref4",
         "16"
       ],
+      "scene": [
+        "大笑",
+        "玩笑",
+        "开心"
+      ],
+      "intent": [
+        "接梗",
+        "一起笑"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2250,6 +3320,16 @@
         "ref4",
         "17"
       ],
+      "scene": [
+        "亲密",
+        "暧昧",
+        "示爱"
+      ],
+      "intent": [
+        "示爱",
+        "亲昵"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2270,6 +3350,16 @@
         "ref4",
         "18"
       ],
+      "scene": [
+        "夸夸",
+        "惊叹",
+        "庆祝"
+      ],
+      "intent": [
+        "夸奖",
+        "惊叹"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2290,6 +3380,16 @@
         "ref4",
         "19"
       ],
+      "scene": [
+        "搞怪",
+        "无语",
+        "吐槽"
+      ],
+      "intent": [
+        "吐槽",
+        "装傻"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2310,6 +3410,16 @@
         "ref4",
         "20"
       ],
+      "scene": [
+        "夸夸",
+        "惊叹",
+        "庆祝"
+      ],
+      "intent": [
+        "夸奖",
+        "惊叹"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2329,6 +3439,17 @@
         "ref5",
         "01"
       ],
+      "scene": [
+        "吃醋",
+        "撒娇",
+        "闹脾气"
+      ],
+      "intent": [
+        "撒娇",
+        "求哄",
+        "吃醋"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2349,6 +3470,17 @@
         "ref5",
         "02"
       ],
+      "scene": [
+        "吃醋",
+        "撒娇",
+        "闹脾气"
+      ],
+      "intent": [
+        "撒娇",
+        "求哄",
+        "吃醋"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2369,6 +3501,17 @@
         "ref5",
         "03"
       ],
+      "scene": [
+        "吃醋",
+        "撒娇",
+        "闹脾气"
+      ],
+      "intent": [
+        "撒娇",
+        "求哄",
+        "吃醋"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2389,6 +3532,17 @@
         "ref5",
         "04"
       ],
+      "scene": [
+        "吃醋",
+        "撒娇",
+        "闹脾气"
+      ],
+      "intent": [
+        "撒娇",
+        "求哄",
+        "吃醋"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2409,6 +3563,16 @@
         "ref5",
         "05"
       ],
+      "scene": [
+        "吃醋",
+        "撒娇",
+        "闹脾气"
+      ],
+      "intent": [
+        "撒娇",
+        "警告对方"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2429,6 +3593,17 @@
         "ref5",
         "06"
       ],
+      "scene": [
+        "吃醋",
+        "撒娇",
+        "闹脾气"
+      ],
+      "intent": [
+        "撒娇",
+        "求哄",
+        "吃醋"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2449,6 +3624,17 @@
         "ref5",
         "07"
       ],
+      "scene": [
+        "吃醋",
+        "撒娇",
+        "闹脾气"
+      ],
+      "intent": [
+        "撒娇",
+        "求哄",
+        "吃醋"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2469,6 +3655,17 @@
         "ref5",
         "09"
       ],
+      "scene": [
+        "吃醋",
+        "撒娇",
+        "闹脾气"
+      ],
+      "intent": [
+        "撒娇",
+        "求哄",
+        "吃醋"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2489,6 +3686,17 @@
         "ref5",
         "10"
       ],
+      "scene": [
+        "吃醋",
+        "撒娇",
+        "闹脾气"
+      ],
+      "intent": [
+        "撒娇",
+        "求哄",
+        "吃醋"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2509,6 +3717,17 @@
         "ref5",
         "11"
       ],
+      "scene": [
+        "吃醋",
+        "撒娇",
+        "闹脾气"
+      ],
+      "intent": [
+        "撒娇",
+        "求哄",
+        "吃醋"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2529,6 +3748,17 @@
         "ref5",
         "12"
       ],
+      "scene": [
+        "吃醋",
+        "撒娇",
+        "闹脾气"
+      ],
+      "intent": [
+        "撒娇",
+        "求哄",
+        "吃醋"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2549,6 +3779,17 @@
         "ref5",
         "13"
       ],
+      "scene": [
+        "吃醋",
+        "撒娇",
+        "闹脾气"
+      ],
+      "intent": [
+        "撒娇",
+        "求哄",
+        "吃醋"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2569,6 +3810,17 @@
         "ref5",
         "14"
       ],
+      "scene": [
+        "吃醋",
+        "撒娇",
+        "闹脾气"
+      ],
+      "intent": [
+        "撒娇",
+        "求哄",
+        "吃醋"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2589,6 +3841,17 @@
         "ref5",
         "15"
       ],
+      "scene": [
+        "吃醋",
+        "撒娇",
+        "闹脾气"
+      ],
+      "intent": [
+        "撒娇",
+        "求哄",
+        "吃醋"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2609,6 +3872,17 @@
         "ref5",
         "16"
       ],
+      "scene": [
+        "吃醋",
+        "撒娇",
+        "闹脾气"
+      ],
+      "intent": [
+        "撒娇",
+        "求哄",
+        "吃醋"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2629,6 +3903,17 @@
         "ref5",
         "18"
       ],
+      "scene": [
+        "吃醋",
+        "撒娇",
+        "闹脾气"
+      ],
+      "intent": [
+        "撒娇",
+        "求哄",
+        "吃醋"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2649,6 +3934,17 @@
         "ref5",
         "19"
       ],
+      "scene": [
+        "吃醋",
+        "撒娇",
+        "闹脾气"
+      ],
+      "intent": [
+        "撒娇",
+        "求哄",
+        "吃醋"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2669,6 +3965,17 @@
         "ref5",
         "20"
       ],
+      "scene": [
+        "吃醋",
+        "撒娇",
+        "闹脾气"
+      ],
+      "intent": [
+        "撒娇",
+        "求哄",
+        "吃醋"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2689,6 +3996,15 @@
         "ref6",
         "01"
       ],
+      "scene": [
+        "卖萌",
+        "撒娇"
+      ],
+      "intent": [
+        "卖萌",
+        "撒娇"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2709,6 +4025,16 @@
         "ref6",
         "02"
       ],
+      "scene": [
+        "暧昧",
+        "心动",
+        "卖萌"
+      ],
+      "intent": [
+        "回应撩拨",
+        "表达心动"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2729,6 +4055,15 @@
         "ref6",
         "03"
       ],
+      "scene": [
+        "卖萌",
+        "撒娇"
+      ],
+      "intent": [
+        "卖萌",
+        "撒娇"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2749,6 +4084,15 @@
         "ref6",
         "04"
       ],
+      "scene": [
+        "卖萌",
+        "撒娇"
+      ],
+      "intent": [
+        "卖萌",
+        "撒娇"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2769,6 +4113,15 @@
         "ref6",
         "05"
       ],
+      "scene": [
+        "卖萌",
+        "撒娇"
+      ],
+      "intent": [
+        "卖萌",
+        "撒娇"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2789,6 +4142,15 @@
         "ref6",
         "06"
       ],
+      "scene": [
+        "卖萌",
+        "撒娇"
+      ],
+      "intent": [
+        "卖萌",
+        "撒娇"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2809,6 +4171,16 @@
         "ref6",
         "07"
       ],
+      "scene": [
+        "暧昧",
+        "心动",
+        "卖萌"
+      ],
+      "intent": [
+        "回应撩拨",
+        "表达心动"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2829,6 +4201,16 @@
         "ref6",
         "08"
       ],
+      "scene": [
+        "亲密",
+        "暧昧",
+        "示爱"
+      ],
+      "intent": [
+        "示爱",
+        "亲昵"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2849,6 +4231,16 @@
         "ref6",
         "09"
       ],
+      "scene": [
+        "亲密",
+        "暧昧",
+        "示爱"
+      ],
+      "intent": [
+        "示爱",
+        "亲昵"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2869,6 +4261,16 @@
         "ref6",
         "10"
       ],
+      "scene": [
+        "亲密",
+        "暧昧",
+        "示爱"
+      ],
+      "intent": [
+        "示爱",
+        "亲昵"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2889,6 +4291,15 @@
         "ref6",
         "11"
       ],
+      "scene": [
+        "卖萌",
+        "撒娇"
+      ],
+      "intent": [
+        "卖萌",
+        "撒娇"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2909,6 +4320,15 @@
         "ref6",
         "12"
       ],
+      "scene": [
+        "卖萌",
+        "撒娇"
+      ],
+      "intent": [
+        "卖萌",
+        "撒娇"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2929,6 +4349,15 @@
         "ref6",
         "13"
       ],
+      "scene": [
+        "卖萌",
+        "撒娇"
+      ],
+      "intent": [
+        "卖萌",
+        "撒娇"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2949,6 +4378,15 @@
         "ref6",
         "14"
       ],
+      "scene": [
+        "卖萌",
+        "撒娇"
+      ],
+      "intent": [
+        "卖萌",
+        "撒娇"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2969,6 +4407,17 @@
         "ref6",
         "15"
       ],
+      "scene": [
+        "安慰",
+        "亲密",
+        "想念"
+      ],
+      "intent": [
+        "安抚",
+        "求抱抱",
+        "表达亲密"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -2989,6 +4438,15 @@
         "ref6",
         "16"
       ],
+      "scene": [
+        "卖萌",
+        "撒娇"
+      ],
+      "intent": [
+        "卖萌",
+        "撒娇"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3009,6 +4467,15 @@
         "ref6",
         "17"
       ],
+      "scene": [
+        "卖萌",
+        "撒娇"
+      ],
+      "intent": [
+        "卖萌",
+        "撒娇"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3029,6 +4496,16 @@
         "ref6",
         "18"
       ],
+      "scene": [
+        "亲密",
+        "暧昧",
+        "示爱"
+      ],
+      "intent": [
+        "示爱",
+        "亲昵"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3049,6 +4526,15 @@
         "ref6",
         "19"
       ],
+      "scene": [
+        "卖萌",
+        "撒娇"
+      ],
+      "intent": [
+        "卖萌",
+        "撒娇"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3069,6 +4555,15 @@
         "ref6",
         "20"
       ],
+      "scene": [
+        "卖萌",
+        "撒娇"
+      ],
+      "intent": [
+        "卖萌",
+        "撒娇"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3089,6 +4584,16 @@
         "ref7",
         "01"
       ],
+      "scene": [
+        "亲密",
+        "暧昧",
+        "示爱"
+      ],
+      "intent": [
+        "示爱",
+        "亲昵"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3109,6 +4614,16 @@
         "ref7",
         "02"
       ],
+      "scene": [
+        "亲密",
+        "暧昧",
+        "示爱"
+      ],
+      "intent": [
+        "示爱",
+        "亲昵"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3129,6 +4644,16 @@
         "ref7",
         "03"
       ],
+      "scene": [
+        "亲密",
+        "暧昧",
+        "示爱"
+      ],
+      "intent": [
+        "示爱",
+        "亲昵"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3149,6 +4674,16 @@
         "ref7",
         "04"
       ],
+      "scene": [
+        "亲密",
+        "暧昧",
+        "示爱"
+      ],
+      "intent": [
+        "示爱",
+        "亲昵"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3169,6 +4704,17 @@
         "ref7",
         "05"
       ],
+      "scene": [
+        "安慰",
+        "亲密",
+        "想念"
+      ],
+      "intent": [
+        "安抚",
+        "求抱抱",
+        "表达亲密"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3189,6 +4735,15 @@
         "ref7",
         "06"
       ],
+      "scene": [
+        "卖萌",
+        "撒娇"
+      ],
+      "intent": [
+        "卖萌",
+        "撒娇"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3209,6 +4764,17 @@
         "ref7",
         "07"
       ],
+      "scene": [
+        "晚安",
+        "睡觉",
+        "结束聊天"
+      ],
+      "intent": [
+        "道晚安",
+        "关心",
+        "结束对话"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3229,6 +4795,17 @@
         "ref7",
         "08"
       ],
+      "scene": [
+        "晚安",
+        "睡觉",
+        "结束聊天"
+      ],
+      "intent": [
+        "道晚安",
+        "关心",
+        "结束对话"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3249,6 +4826,16 @@
         "ref7",
         "09"
       ],
+      "scene": [
+        "暧昧",
+        "心动",
+        "卖萌"
+      ],
+      "intent": [
+        "回应撩拨",
+        "表达心动"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3269,6 +4856,16 @@
         "ref7",
         "10"
       ],
+      "scene": [
+        "暧昧",
+        "心动",
+        "卖萌"
+      ],
+      "intent": [
+        "回应撩拨",
+        "表达心动"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3289,6 +4886,15 @@
         "ref7",
         "13"
       ],
+      "scene": [
+        "卖萌",
+        "撒娇"
+      ],
+      "intent": [
+        "卖萌",
+        "撒娇"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3309,6 +4915,14 @@
         "ref7",
         "15"
       ],
+      "scene": [
+        "开心",
+        "庆祝"
+      ],
+      "intent": [
+        "分享开心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3328,6 +4942,13 @@
         "ref7",
         "16"
       ],
+      "scene": [
+        "感谢"
+      ],
+      "intent": [
+        "道谢"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3347,6 +4968,13 @@
         "ref7",
         "17"
       ],
+      "scene": [
+        "感谢"
+      ],
+      "intent": [
+        "道谢"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3367,6 +4995,17 @@
         "ref7",
         "18"
       ],
+      "scene": [
+        "安慰",
+        "亲密",
+        "想念"
+      ],
+      "intent": [
+        "安抚",
+        "求抱抱",
+        "表达亲密"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3387,6 +5026,15 @@
         "ref7",
         "19"
       ],
+      "scene": [
+        "鼓励",
+        "夸夸"
+      ],
+      "intent": [
+        "鼓励",
+        "夸奖"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3407,6 +5055,15 @@
         "ref8",
         "01"
       ],
+      "scene": [
+        "早安",
+        "打招呼"
+      ],
+      "intent": [
+        "道早安",
+        "开启对话"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3427,6 +5084,15 @@
         "ref8",
         "02"
       ],
+      "scene": [
+        "等待",
+        "日常"
+      ],
+      "intent": [
+        "等待",
+        "回应"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3447,6 +5113,15 @@
         "ref8",
         "03"
       ],
+      "scene": [
+        "等待",
+        "日常"
+      ],
+      "intent": [
+        "等待",
+        "回应"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3467,6 +5142,15 @@
         "ref8",
         "04"
       ],
+      "scene": [
+        "等待",
+        "日常"
+      ],
+      "intent": [
+        "等待",
+        "回应"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3487,6 +5171,15 @@
         "ref8",
         "05"
       ],
+      "scene": [
+        "确认",
+        "回应"
+      ],
+      "intent": [
+        "确认",
+        "答应"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3507,6 +5200,15 @@
         "ref8",
         "08"
       ],
+      "scene": [
+        "等待",
+        "日常"
+      ],
+      "intent": [
+        "等待",
+        "回应"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3527,6 +5229,15 @@
         "ref8",
         "09"
       ],
+      "scene": [
+        "确认",
+        "回应"
+      ],
+      "intent": [
+        "确认",
+        "答应"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3547,6 +5258,15 @@
         "ref8",
         "10"
       ],
+      "scene": [
+        "确认",
+        "回应"
+      ],
+      "intent": [
+        "确认",
+        "答应"
+      ],
+      "generic": true,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3567,6 +5287,16 @@
         "ref8",
         "12"
       ],
+      "scene": [
+        "大笑",
+        "玩笑",
+        "开心"
+      ],
+      "intent": [
+        "接梗",
+        "一起笑"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3587,6 +5317,16 @@
         "ref8",
         "13"
       ],
+      "scene": [
+        "夸夸",
+        "惊叹",
+        "庆祝"
+      ],
+      "intent": [
+        "夸奖",
+        "惊叹"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3607,6 +5347,16 @@
         "ref8",
         "15"
       ],
+      "scene": [
+        "夸夸",
+        "惊叹",
+        "庆祝"
+      ],
+      "intent": [
+        "夸奖",
+        "惊叹"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3627,6 +5377,14 @@
         "ref8",
         "16"
       ],
+      "scene": [
+        "开心",
+        "庆祝"
+      ],
+      "intent": [
+        "分享开心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3647,6 +5405,15 @@
         "ref8",
         "20"
       ],
+      "scene": [
+        "告别",
+        "出行"
+      ],
+      "intent": [
+        "告别",
+        "关心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3667,6 +5434,16 @@
         "ref9",
         "01"
       ],
+      "scene": [
+        "大笑",
+        "玩笑",
+        "开心"
+      ],
+      "intent": [
+        "接梗",
+        "一起笑"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3687,6 +5464,16 @@
         "ref9",
         "02"
       ],
+      "scene": [
+        "大笑",
+        "玩笑",
+        "开心"
+      ],
+      "intent": [
+        "接梗",
+        "一起笑"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3707,6 +5494,16 @@
         "ref9",
         "04"
       ],
+      "scene": [
+        "搞怪",
+        "无语",
+        "吐槽"
+      ],
+      "intent": [
+        "吐槽",
+        "装傻"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3727,6 +5524,16 @@
         "ref9",
         "05"
       ],
+      "scene": [
+        "搞怪",
+        "无语",
+        "吐槽"
+      ],
+      "intent": [
+        "吐槽",
+        "装傻"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3747,6 +5554,16 @@
         "ref9",
         "06"
       ],
+      "scene": [
+        "搞怪",
+        "无语",
+        "吐槽"
+      ],
+      "intent": [
+        "吐槽",
+        "装傻"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3767,6 +5584,16 @@
         "ref9",
         "07"
       ],
+      "scene": [
+        "大笑",
+        "玩笑",
+        "开心"
+      ],
+      "intent": [
+        "接梗",
+        "一起笑"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3787,6 +5614,16 @@
         "ref9",
         "09"
       ],
+      "scene": [
+        "大笑",
+        "玩笑",
+        "开心"
+      ],
+      "intent": [
+        "接梗",
+        "一起笑"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3807,6 +5644,16 @@
         "ref9",
         "10"
       ],
+      "scene": [
+        "搞怪",
+        "无语",
+        "吐槽"
+      ],
+      "intent": [
+        "吐槽",
+        "装傻"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3827,6 +5674,15 @@
         "ref9",
         "11"
       ],
+      "scene": [
+        "卖萌",
+        "撒娇"
+      ],
+      "intent": [
+        "卖萌",
+        "撒娇"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3847,6 +5703,17 @@
         "ref9",
         "12"
       ],
+      "scene": [
+        "吃醋",
+        "撒娇",
+        "闹脾气"
+      ],
+      "intent": [
+        "撒娇",
+        "求哄",
+        "吃醋"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3867,6 +5734,17 @@
         "ref9",
         "13"
       ],
+      "scene": [
+        "吃醋",
+        "撒娇",
+        "闹脾气"
+      ],
+      "intent": [
+        "撒娇",
+        "求哄",
+        "吃醋"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3887,6 +5765,16 @@
         "ref9",
         "14"
       ],
+      "scene": [
+        "夸夸",
+        "惊叹",
+        "庆祝"
+      ],
+      "intent": [
+        "夸奖",
+        "惊叹"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3907,6 +5795,16 @@
         "ref9",
         "15"
       ],
+      "scene": [
+        "夸夸",
+        "惊叹",
+        "庆祝"
+      ],
+      "intent": [
+        "夸奖",
+        "惊叹"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3927,6 +5825,15 @@
         "ref9",
         "16"
       ],
+      "scene": [
+        "鼓励",
+        "夸夸"
+      ],
+      "intent": [
+        "鼓励",
+        "夸奖"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3947,6 +5854,16 @@
         "ref9",
         "17"
       ],
+      "scene": [
+        "搞怪",
+        "无语",
+        "吐槽"
+      ],
+      "intent": [
+        "吐槽",
+        "装傻"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3967,6 +5884,15 @@
         "ref9",
         "18"
       ],
+      "scene": [
+        "摆烂",
+        "休息"
+      ],
+      "intent": [
+        "自嘲",
+        "休息"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -3987,6 +5913,16 @@
         "ref9",
         "19"
       ],
+      "scene": [
+        "搞怪",
+        "无语",
+        "吐槽"
+      ],
+      "intent": [
+        "吐槽",
+        "装傻"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     },
@@ -4007,6 +5943,15 @@
         "ref9",
         "20"
       ],
+      "scene": [
+        "告别",
+        "出行"
+      ],
+      "intent": [
+        "告别",
+        "关心"
+      ],
+      "generic": false,
       "quality_score": 0.82,
       "usage_priority": 60
     }

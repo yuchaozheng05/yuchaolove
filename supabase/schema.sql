@@ -93,32 +93,5 @@ create index if not exists usage_logs_created_at_idx on public.usage_logs (creat
 create index if not exists usage_logs_visitor_id_idx on public.usage_logs (visitor_id);
 create index if not exists usage_logs_country_city_idx on public.usage_logs (country, city);
 
-create table if not exists public.conversation_sessions (
-  id uuid primary key default gen_random_uuid(),
-  session_id text not null unique,
-  visitor_id text,
-  target_person_label text not null default '对方',
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  last_relationship_stage text,
-  last_dialogue_summary text,
-  last_replies jsonb not null default '[]'::jsonb,
-  analysis_count integer not null default 1
-);
-
-create index if not exists conversation_sessions_session_id_idx
-  on public.conversation_sessions (session_id);
-
-create index if not exists conversation_sessions_visitor_id_idx
-  on public.conversation_sessions (visitor_id);
-
-alter table public.conversation_sessions enable row level security;
-
-alter table public.usage_logs
-  add column if not exists session_id text;
-
 alter table public.usage_logs
   add column if not exists target_person_label text;
-
-create index if not exists usage_logs_session_id_idx
-  on public.usage_logs (session_id);

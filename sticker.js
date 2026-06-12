@@ -2,6 +2,10 @@
 
 const STICKER_CATALOG_URL = '/assets/stickers/catalog.v1.json';
 const STICKER_PANEL_RECOMMENDATION_COUNT = 6;
+const STICKER_EXPORT_SIZE = 512;
+const STICKER_EXPORT_CONTENT_RATIO = 0.88;
+const STICKER_PREVIEW_SIZE = 180;
+const STICKER_MODAL_PREVIEW_SIZE = 420;
 const STICKER_CHARACTER_ORDER = ['white_mochi', 'hamster', 'cat', 'shiba'];
 const STICKER_MAX_PER_CHARACTER_SOFT = 2;
 const STICKER_CANONICAL_EMOTIONS = {
@@ -312,7 +316,7 @@ function createStockStickerElement(sticker) {
   image.loading = 'lazy';
   image.addEventListener('click', () => showStickerModal(sticker));
   image.onerror = () => {
-    const canvas = makeFallbackCanvas(sticker, 180);
+    const canvas = makeFallbackCanvas(sticker, STICKER_PREVIEW_SIZE, { previewBackground: true });
     canvas.className = 'sticker-thumb';
     canvas.addEventListener('click', () => showStickerModal(sticker));
     image.replaceWith(canvas);
@@ -423,18 +427,21 @@ function createStickerArtElement(sticker) {
   return art;
 }
 
-function drawFallbackCharacter(ctx, size, sticker) {
+function drawFallbackCharacter(ctx, size, sticker, options = {}) {
+  const isExport = options.export === true;
   const cx = size * 0.5;
   const cy = size * 0.56;
-  const r = size * 0.25;
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, size, size);
-  ctx.fillStyle = sticker.color || '#ffe6ec';
-  ctx.globalAlpha = 0.34;
-  ctx.beginPath();
-  ctx.roundRect(size * 0.08, size * 0.08, size * 0.84, size * 0.84, size * 0.11);
-  ctx.fill();
-  ctx.globalAlpha = 1;
+  const r = size * (isExport ? 0.34 : 0.25);
+  if (options.previewBackground) {
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = sticker.color || '#ffe6ec';
+    ctx.globalAlpha = 0.34;
+    ctx.beginPath();
+    ctx.roundRect(size * 0.08, size * 0.08, size * 0.84, size * 0.84, size * 0.11);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
   ctx.fillStyle = '#fffdf9';
   ctx.strokeStyle = '#3a2927';
   ctx.lineWidth = Math.max(3, size * 0.018);
@@ -472,25 +479,31 @@ function drawFallbackCharacter(ctx, size, sticker) {
 }
 
 function drawStickerText(ctx, text, size) {
-  if (!text) return;
-  ctx.fillStyle = '#38231f';
-  ctx.font = `700 ${Math.max(18, size * 0.12)}px "Noto Sans SC","PingFang SC",sans-serif`;
+  const compact = formatStickerDisplayText(text);
+  if (!compact) return;
+  ctx.font = `800 ${Math.max(22, size * 0.115)}px "Noto Sans SC","PingFang SC",sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text.slice(0, 8), size / 2, size * 0.18);
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = Math.max(5, size * 0.024);
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.96)';
+  ctx.fillStyle = '#38231f';
+  ctx.strokeText(compact, size / 2, size * 0.84);
+  ctx.fillText(compact, size / 2, size * 0.84);
 }
 
-function makeFallbackCanvas(sticker, size) {
+function makeFallbackCanvas(sticker, size, options = {}) {
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext('2d');
-  drawFallbackCharacter(ctx, size, sticker);
+  drawFallbackCharacter(ctx, size, sticker, options);
+  if (options.includeText) drawStickerText(ctx, getStickerDisplayText(sticker), size);
   return canvas;
 }
 
 function createFallbackStickerElement(sticker) {
-  const canvas = makeFallbackCanvas(sticker, 180);
+  const canvas = makeFallbackCanvas(sticker, STICKER_PREVIEW_SIZE, { previewBackground: true });
   canvas.className = 'sticker-thumb';
   canvas.title = getStickerDisplayText(sticker) || '表情包';
   canvas.addEventListener('click', () => showStickerModal(sticker));
@@ -504,7 +517,18 @@ async function showStickerPanel(advice) {
 
   grid.replaceChildren();
   const catalog = await loadStickerCatalog();
-  const stickers = catalog.length ? recommendFromCatalog(catalog, advice) : getFallbackStickers(advice);
+  // 优先采用后端语义场景筛选的结果（3-6个，宁缺毋滥）；旧数据没有该字段时才本地兜底
+  const hasBackendSuggestions = Array.isArray(advice?.sticker_suggestions);
+  const backendPicks = hasBackendSuggestions
+    ? advice.sticker_suggestions.filter((sticker) => sticker && sticker.file)
+    : [];
+  const stickers = hasBackendSuggestions
+    ? backendPicks
+    : (catalog.length ? recommendFromCatalog(catalog, advice) : getFallbackStickers(advice));
+  if (!stickers.length) {
+    panel.style.display = 'none';
+    return;
+  }
   stickers.forEach((sticker) => {
     const wrap = document.createElement('div');
     wrap.className = 'sticker-wrap';
@@ -539,7 +563,7 @@ function showStickerModal(sticker) {
     image.style.cssText = 'display:block;width:100%;border-radius:16px;';
     holder.appendChild(image);
   } else {
-    const canvas = makeFallbackCanvas(sticker, 420);
+    const canvas = makeFallbackCanvas(sticker, STICKER_MODAL_PREVIEW_SIZE, { previewBackground: true });
     canvas.style.cssText = 'display:block;max-width:100%;height:auto;border-radius:16px;';
     holder.appendChild(canvas);
   }
@@ -549,20 +573,210 @@ function showStickerModal(sticker) {
 }
 
 async function downloadStickerPng(sticker) {
-  const link = document.createElement('a');
-  link.download = `${sticker.id || 'yuchaolove-sticker'}.png`;
-  if (sticker.file) {
-    link.href = sticker.file;
-    link.click();
-    return;
+  const filename = `${sticker.id || 'yuchaolove-sticker'}.png`;
+  try {
+    const blob = sticker.file
+      ? await downloadStockStickerPng(sticker)
+      : await downloadFallbackStickerPng(sticker);
+    triggerStickerPngDownload(blob, filename);
+  } catch (error) {
+    console.warn('Sticker PNG export failed:', error);
+    if (typeof showToast === 'function') showToast('表情包 PNG 导出失败，请重试');
   }
-  const canvas = makeFallbackCanvas(sticker, 420);
-  canvas.toBlob((blob) => {
-    const url = URL.createObjectURL(blob);
-    link.href = url;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }, 'image/png');
+}
+
+async function downloadStockStickerPng(sticker) {
+  const image = await loadStickerImage(sticker.file);
+  const sourceCanvas = document.createElement('canvas');
+  sourceCanvas.width = Math.max(1, image.naturalWidth || image.width || STICKER_EXPORT_SIZE);
+  sourceCanvas.height = Math.max(1, image.naturalHeight || image.height || STICKER_EXPORT_SIZE);
+  const sourceContext = sourceCanvas.getContext('2d');
+  sourceContext.drawImage(image, 0, 0, sourceCanvas.width, sourceCanvas.height);
+
+  const imageData = sourceContext.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+  removeConnectedStickerBackground(imageData);
+  sourceContext.putImageData(imageData, 0, 0);
+
+  const exportCanvas = document.createElement('canvas');
+  exportCanvas.width = STICKER_EXPORT_SIZE;
+  exportCanvas.height = STICKER_EXPORT_SIZE;
+  const exportContext = exportCanvas.getContext('2d');
+  const bounds = getVisibleStickerBounds(imageData);
+  if (bounds) {
+    const maxContentSize = STICKER_EXPORT_SIZE * STICKER_EXPORT_CONTENT_RATIO;
+    const scale = Math.min(maxContentSize / bounds.width, maxContentSize / bounds.height);
+    const width = Math.round(bounds.width * scale);
+    const height = Math.round(bounds.height * scale);
+    const x = Math.round((STICKER_EXPORT_SIZE - width) / 2);
+    const y = Math.round((STICKER_EXPORT_SIZE - height) / 2);
+    exportContext.imageSmoothingEnabled = true;
+    exportContext.imageSmoothingQuality = 'high';
+    exportContext.drawImage(sourceCanvas, bounds.x, bounds.y, bounds.width, bounds.height, x, y, width, height);
+  }
+  return canvasToPngBlob(exportCanvas);
+}
+
+function downloadFallbackStickerPng(sticker) {
+  const canvas = makeFallbackCanvas(sticker, STICKER_EXPORT_SIZE, { export: true, includeText: true });
+  return canvasToPngBlob(canvas);
+}
+
+function loadStickerImage(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.crossOrigin = 'anonymous';
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Sticker image failed to load'));
+    image.src = src;
+  });
+}
+
+function removeConnectedStickerBackground(imageData) {
+  const { data, width, height } = imageData;
+  const protectedPixels = buildStickerForegroundProtection(data, width, height);
+  const seen = new Uint8Array(width * height);
+  const queue = new Uint32Array(width * height);
+  let head = 0;
+  let tail = 0;
+  const enqueue = (x, y) => {
+    if (x < 0 || y < 0 || x >= width || y >= height) return;
+    const index = y * width + x;
+    if (seen[index]) return;
+    seen[index] = 1;
+    queue[tail] = index;
+    tail += 1;
+  };
+
+  for (let x = 0; x < width; x += 1) {
+    enqueue(x, 0);
+    enqueue(x, height - 1);
+  }
+  for (let y = 0; y < height; y += 1) {
+    enqueue(0, y);
+    enqueue(width - 1, y);
+  }
+
+  while (head < tail) {
+    const index = queue[head];
+    head += 1;
+    const offset = index * 4;
+    if (protectedPixels[index]) continue;
+    if (!isStickerBackgroundPixel(data, offset)) continue;
+    data[offset] = 255;
+    data[offset + 1] = 255;
+    data[offset + 2] = 255;
+    data[offset + 3] = 0;
+    const x = index % width;
+    const y = (index - x) / width;
+    enqueue(x + 1, y);
+    enqueue(x - 1, y);
+    enqueue(x, y + 1);
+    enqueue(x, y - 1);
+  }
+}
+
+function buildStickerForegroundProtection(data, width, height) {
+  const pixelCount = width * height;
+  const maxDistance = width + height;
+  const distances = new Uint16Array(pixelCount);
+  distances.fill(maxDistance);
+  for (let index = 0; index < pixelCount; index += 1) {
+    if (isStickerDetailPixel(data, index * 4)) distances[index] = 0;
+  }
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const index = y * width + x;
+      let distance = distances[index];
+      if (x > 0) distance = Math.min(distance, distances[index - 1] + 1);
+      if (y > 0) {
+        distance = Math.min(distance, distances[index - width] + 1);
+        if (x > 0) distance = Math.min(distance, distances[index - width - 1] + 1);
+        if (x + 1 < width) distance = Math.min(distance, distances[index - width + 1] + 1);
+      }
+      distances[index] = distance;
+    }
+  }
+
+  for (let y = height - 1; y >= 0; y -= 1) {
+    for (let x = width - 1; x >= 0; x -= 1) {
+      const index = y * width + x;
+      let distance = distances[index];
+      if (x + 1 < width) distance = Math.min(distance, distances[index + 1] + 1);
+      if (y + 1 < height) {
+        distance = Math.min(distance, distances[index + width] + 1);
+        if (x > 0) distance = Math.min(distance, distances[index + width - 1] + 1);
+        if (x + 1 < width) distance = Math.min(distance, distances[index + width + 1] + 1);
+      }
+      distances[index] = distance;
+    }
+  }
+
+  const radius = Math.max(18, Math.round(Math.min(width, height) * 0.13));
+  const protectedPixels = new Uint8Array(pixelCount);
+  for (let index = 0; index < pixelCount; index += 1) {
+    if (distances[index] <= radius) protectedPixels[index] = 1;
+  }
+  return protectedPixels;
+}
+
+function isStickerDetailPixel(data, offset) {
+  const alpha = data[offset + 3];
+  if (alpha <= 8) return false;
+  const red = data[offset];
+  const green = data[offset + 1];
+  const blue = data[offset + 2];
+  const max = Math.max(red, green, blue);
+  const min = Math.min(red, green, blue);
+  return !(red >= 236 && green >= 236 && blue >= 236 && max - min <= 28);
+}
+
+function isStickerBackgroundPixel(data, offset) {
+  const alpha = data[offset + 3];
+  if (alpha <= 4) return true;
+  const red = data[offset];
+  const green = data[offset + 1];
+  const blue = data[offset + 2];
+  const max = Math.max(red, green, blue);
+  const min = Math.min(red, green, blue);
+  return alpha > 0 && red >= 240 && green >= 240 && blue >= 240 && max - min <= 24;
+}
+
+function getVisibleStickerBounds(imageData) {
+  const { data, width, height } = imageData;
+  let minX = width;
+  let minY = height;
+  let maxX = -1;
+  let maxY = -1;
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (data[(y * width + x) * 4 + 3] <= 8) continue;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+  }
+  if (maxX < minX || maxY < minY) return null;
+  return { x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1 };
+}
+
+function canvasToPngBlob(canvas) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error('Canvas PNG export returned an empty blob'));
+    }, 'image/png');
+  });
+}
+
+function triggerStickerPngDownload(blob, filename) {
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.download = filename;
+  link.href = url;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function closeStickerModal() {

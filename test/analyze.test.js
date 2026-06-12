@@ -213,6 +213,32 @@ test('builds a relationship memory engine from the whole dialogue', () => {
   assert.ok(advice.coach_advice.do.length >= 2);
 });
 
+test('ignores historical relationship memory returned by the model', () => {
+  const advice = parseAdvice(JSON.stringify(adviceValue({
+    conversation_stage: '轻松破冰',
+    conversation_mode: '礼貌回应',
+    interest_score: 30,
+    relationship_memory_engine: {
+      relationship_stage: 'relationship_confirmation',
+      intimacy_score: 100,
+      attraction_score: 100,
+      investment_balance: 'other_person_investing_more',
+      initiator: 'other_person',
+      risk_level: 'safe',
+      next_best_move: '继续上次的话题推进关系。',
+    },
+    dialogue: [
+      { side: 'left', speaker: '对方', text: '你好' },
+      { side: 'right', speaker: '我', text: '你好呀' },
+    ],
+  })));
+
+  assert.notEqual(advice.relationship_stage, 'relationship_confirmation');
+  assert.ok(advice.intimacy_score < 100);
+  assert.ok(advice.attraction_score < 100);
+  assert.doesNotMatch(advice.next_best_move, /上次|之前|继续上次|延续/);
+});
+
 test('flags needy investment imbalance across the conversation', () => {
   const advice = parseAdvice(JSON.stringify(adviceValue({
     conversation_stage: '轻松破冰',
@@ -269,7 +295,8 @@ test('parses willingness signals, flirt level, and clean untagged replies', () =
   assert.ok(advice.sticker_match_intent.scenario.includes('flirting'));
   assert.ok(advice.sticker_match_intent.relationship_stage.includes('flirting'));
   assert.ok(advice.sticker_match_intent.keywords.includes('偷看'));
-  assert.equal(advice.sticker_suggestions.length, 6);
+  assert.ok(advice.sticker_suggestions.length >= 3 && advice.sticker_suggestions.length <= 6,
+    `语义筛选后应为3-6个，实际 ${advice.sticker_suggestions.length}`);
   assert.equal(advice.sticker_suggestions[0].match.reply_intent, 'flirty_continue');
   assert.equal(advice.conversation_summary, '对方：你感受到我的了吗；我：好像遇到我你才对白由向往');
 });
@@ -883,7 +910,8 @@ test('scores caring stock stickers higher for physical discomfort', () => {
   assert.ok(intent.keywords.includes('递热水'));
   assert.ok(scoreStockSticker(caringSticker, intent) > scoreStockSticker(unrelatedSticker, intent));
   const supportSuggestions = normalizeStickerSuggestions([], '情绪陪伴', dialogue, { emotional_disclosure: true });
-  assert.equal(supportSuggestions.length, 6);
+  assert.ok(supportSuggestions.length >= 3 && supportSuggestions.length <= 6,
+    `expected 3-6 caring stickers, got ${supportSuggestions.length}`);
   assert.equal(supportSuggestions[0].match.reply_intent, 'care_action_support');
 });
 
@@ -906,7 +934,8 @@ test('prioritizes comfort and encouragement stickers for study pressure with dis
   assert.equal(intent.emotion, 'comfort');
   assert.ok(intent.secondary_emotions.includes('encourage'));
   assert.ok(intent.keywords.includes('别硬撑'));
-  assert.equal(suggestions.length, 6);
+  assert.ok(suggestions.length >= 3 && suggestions.length <= 6,
+    `expected 3-6 study support stickers, got ${suggestions.length}`);
   const stickerText = suggestions.map((sticker) => `${sticker.id} ${sticker.text} ${(sticker.tags || []).join(' ')}`).join(' ');
   assert.match(stickerText, /抱|摸|硬撑|休息|我在|加油|喝水|comfort|pat|hug|cheer|drink|tired|hard/);
   assert.doesNotMatch(stickerText, /umbrella|伞|保暖/);
@@ -920,7 +949,8 @@ test('prioritizes goodnight stickers for bedtime chats', () => {
   });
   const topThree = suggestions.slice(0, 3);
 
-  assert.equal(suggestions.length, 6);
+  assert.ok(suggestions.length >= 3 && suggestions.length <= 6,
+    `expected 3-6 goodnight stickers, got ${suggestions.length}`);
   assert.equal(suggestions[0].match.reply_intent, 'say_goodnight_back');
   assert.ok(topThree.length >= 3);
   topThree.forEach((sticker) => {
@@ -965,7 +995,8 @@ test('softens flirty conflict instead of matching opponent anger literally', () 
   assert.equal(intent.emotion, 'shy');
   assert.ok(intent.secondary_emotions.includes('apology'));
   assert.notEqual(intent.emotion, 'angry');
-  assert.equal(suggestions.length, 6);
+  assert.ok(suggestions.length >= 3 && suggestions.length <= 6,
+    `expected 3-6 flirty conflict stickers, got ${suggestions.length}`);
   assert.equal(suggestions.some((sticker) => sticker.emotion?.primary === 'angry'), false);
 });
 
@@ -1705,17 +1736,14 @@ test('buildRegeneratePrefix returns empty string for empty array', () => {
   assert.equal(buildRegeneratePrefix(undefined), '');
 });
 
-test('buildRegeneratePrefix includes previous replies and style instruction', () => {
+test('buildRegeneratePrefix ignores previous replies while session continuation is disabled', () => {
   const previous = ['你继续说\n我在', '没事的，先喝点水'];
   const prefix = buildRegeneratePrefix(previous);
-  assert.ok(prefix.includes('换一批不同风格'));
-  assert.ok(prefix.includes('你继续说'));
-  assert.ok(prefix.includes('没事的'));
-  assert.ok(prefix.includes('不同风格'));
-  assert.ok(prefix.endsWith('\n\n'));
+  assert.equal(prefix, '');
+  assert.doesNotMatch(prefix, /上次|之前|继续|换一批|你继续说|没事的/);
 });
 
-test('normalizeClientMetadata handles regenerate fields', () => {
+test('normalizeClientMetadata discards regenerate fields', () => {
   const meta = normalizeClientMetadata({
     visitor_id: 'v1',
     regenerate: true,
@@ -1725,10 +1753,9 @@ test('normalizeClientMetadata handles regenerate fields', () => {
       { side: 'right', speaker: '我', text: '嗨' },
     ],
   });
-  assert.equal(meta.regenerate, true);
-  assert.equal(meta.previous_replies.length, 2);
-  assert.equal(meta.regenerate_dialogue.length, 2);
-  assert.equal(meta.regenerate_dialogue[0].text, '你好');
+  assert.equal(meta.regenerate, false);
+  assert.deepEqual(meta.previous_replies, []);
+  assert.deepEqual(meta.regenerate_dialogue, []);
 });
 
 test('normalizeClientMetadata defaults regenerate to false', () => {
@@ -1738,8 +1765,8 @@ test('normalizeClientMetadata defaults regenerate to false', () => {
   assert.deepEqual(meta.regenerate_dialogue, []);
 });
 
-test('getRequestParts allows regenerate requests without image parts', () => {
-  const parts = getRequestParts({
+test('getRequestParts rejects text-only regenerate requests', () => {
+  assert.throws(() => getRequestParts({
     metadata: {
       regenerate: true,
       regenerate_dialogue: [
@@ -1751,10 +1778,7 @@ test('getRequestParts allows regenerate requests without image parts', () => {
       role: 'user',
       content: [{ type: 'text', text: '换一批回复' }],
     }],
-  });
-  assert.equal(parts.imageParts.length, 0);
-  assert.equal(parts.metadata.regenerate, true);
-  assert.equal(parts.metadata.regenerate_dialogue.length, 2);
+  }), /1 到 6 张/);
 });
 
 test('CHAT_ADVICE_SCHEMA replies items include style_dimension', () => {

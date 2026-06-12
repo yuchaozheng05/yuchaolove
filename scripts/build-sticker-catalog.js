@@ -12,6 +12,7 @@ const thumbsDir = join(stickersDir, 'packs', 'style-bible-v1', 'thumbs');
 const catalogPath = join(root, 'assets', 'stickers', 'catalog.v1.json');
 const imageExtensions = new Set(['.png']);
 const catalogCharacters = new Set(['white_mochi', 'hamster', 'cat', 'shiba']);
+const validateOnly = process.argv.includes('--validate');
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
@@ -88,6 +89,9 @@ function ensureThumb(image) {
   if (!thumb) return image;
   mkdirSync(thumbsDir, { recursive: true });
   if (!existsSync(thumb.fullPath)) {
+    if (validateOnly) {
+      throw new Error(`Missing thumb for ${image.filename}. Run npm run stickers:build to generate it.`);
+    }
     const code = String.raw`
 from PIL import Image
 import sys
@@ -203,6 +207,9 @@ function buildCatalogItem(item) {
     relationship_stage: relationshipStage,
     text: item.text || '',
     tags: buildTags(enrichedItem, scenario),
+    scene: Array.isArray(item.scene) ? item.scene : [],
+    intent: Array.isArray(item.intent) ? item.intent : [],
+    generic: item.generic === true,
     quality_score: Number.isFinite(Number(item.quality_score)) ? Number(item.quality_score) : 0.82,
     usage_priority: Number.isFinite(Number(item.usage_priority)) ? Number(item.usage_priority) : 60,
   };
@@ -233,7 +240,9 @@ if (!items.length) {
 
 const catalog = {
   version: 1,
-  generated_at: new Date().toISOString(),
+  generated_at: validateOnly && existsSync(catalogPath)
+    ? readJson(catalogPath).generated_at || new Date().toISOString()
+    : new Date().toISOString(),
   pack: 'style-bible-v1',
   source_prompts: sources,
   image_dir: '/assets/stickers',
@@ -242,5 +251,14 @@ const catalog = {
   items,
 };
 
-writeFileSync(catalogPath, `${JSON.stringify(catalog, null, 2)}\n`);
-console.log(`Sticker catalog built: ${items.length} records from ${images.length} PNG files (${prompts.length} prompts available, ${builtItems.length - items.length} legacy/non-main skipped)`);
+const output = `${JSON.stringify(catalog, null, 2)}\n`;
+if (validateOnly) {
+  const existing = existsSync(catalogPath) ? readFileSync(catalogPath, 'utf8') : '';
+  if (existing !== output) {
+    throw new Error(`Sticker catalog is out of date. Run npm run stickers:build to update ${relative(root, catalogPath)}.`);
+  }
+  console.log(`Sticker catalog valid: ${items.length} records from ${images.length} PNG files (${prompts.length} prompts available, ${builtItems.length - items.length} legacy/non-main skipped)`);
+} else {
+  writeFileSync(catalogPath, output);
+  console.log(`Sticker catalog built: ${items.length} records from ${images.length} PNG files (${prompts.length} prompts available, ${builtItems.length - items.length} legacy/non-main skipped)`);
+}

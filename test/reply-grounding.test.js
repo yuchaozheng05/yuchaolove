@@ -351,7 +351,8 @@ test('20 core reply grounding regression cases stay tied to screenshot facts', (
     if (fixture.forbidden) assert.doesNotMatch(replyText, fixture.forbidden, `${fixture.name}: forbidden reply content`);
     assert.equal(grounding.needs_repair, false, `${fixture.name}: repaired output should pass grounding`);
     assert.equal(grounding.ungrounded_count, 0, `${fixture.name}: every reply should hit a concrete fact or synonym`);
-    assert.equal(advice.sticker_suggestions.length, 6, `${fixture.name}: should return 6 stickers`);
+    assert.ok(advice.sticker_suggestions.length >= 3 && advice.sticker_suggestions.length <= 6,
+      `${fixture.name}: should return 3-6 stickers, got ${advice.sticker_suggestions.length}`);
     assert.match(stickerText, fixture.stickers, `${fixture.name}: sticker tags/text should match scene`);
     assert.equal(seenReplyBodies.has(replyText), false, `${fixture.name}: replies should not duplicate another scene`);
     seenReplyBodies.add(replyText);
@@ -452,7 +453,8 @@ test('conversation direction analysis distinguishes other attention seeking from
     assert.match(replyText, fixture.must, `${fixture.name}: replies should repair and catch the complaint`);
     assert.doesNotMatch(`${replyText}\n${guideText}`, /不要继续发消息|给对方空间|对方.{0,8}信号.{0,6}弱|先别硬聊|停止推进/, `${fixture.name}: should not recommend giving space`);
     assert.equal(advice.suggest_stop, false, `${fixture.name}: should not suggest stop`);
-    assert.equal(advice.sticker_suggestions.length, 6, `${fixture.name}: should return 6 stickers`);
+    assert.ok(advice.sticker_suggestions.length >= 3 && advice.sticker_suggestions.length <= 6,
+      `${fixture.name}: should return 3-6 stickers, got ${advice.sticker_suggestions.length}`);
     assert.match(stickerText, /apology|comfort|hug|flirting|asking_attention|道歉|抱抱|我在呢|贴贴|哄|委屈|害羞|喜欢/, `${fixture.name}: stickers should match repair/apology/comfort`);
   }
 });
@@ -509,7 +511,8 @@ test('common light scenes replace generic listening templates with sendable repl
     const stickerText = flattenStickers(advice);
     assert.match(replyText, fixture.reply, `${fixture.name}: should be sendable`);
     assert.doesNotMatch(replyText, GENERIC_FORBIDDEN_PATTERN, `${fixture.name}: generic template leaked`);
-    assert.equal(advice.sticker_suggestions.length, 6, `${fixture.name}: should keep 6 stickers`);
+    assert.ok(advice.sticker_suggestions.length >= 3 && advice.sticker_suggestions.length <= 6,
+      `${fixture.name}: should return 3-6 stickers, got ${advice.sticker_suggestions.length}`);
     assert.match(stickerText, fixture.sticker, `${fixture.name}: stickers should match scene`);
   }
 });

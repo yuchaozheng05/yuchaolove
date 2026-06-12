@@ -92,9 +92,56 @@ test('shows contextual stickers only after a usable chat result', () => {
   assert.doesNotMatch(stickers, /ANIMATED_STICKER_SCENES/);
   assert.doesNotMatch(stickers, /sticker-motion-badge/);
   assert.match(html, /本地库存/);
-  assert.match(html, /按语境匹配/);
+  assert.match(html, /按语义场景匹配/);
   assert.doesNotMatch(html, /动图\/静态按语境/);
   assert.doesNotMatch(app, /selectedStyle|chipGroup/);
+});
+
+test('downloads stickers as transparent 512px PNG exports, not preview image links', () => {
+  const stickers = read('sticker.js');
+  assert.match(stickers, /STICKER_EXPORT_SIZE = 512/);
+  assert.match(stickers, /function downloadStockStickerPng/);
+  assert.match(stickers, /function removeConnectedStickerBackground/);
+  assert.match(stickers, /function buildStickerForegroundProtection/);
+  assert.match(stickers, /canvas\.toBlob[\s\S]*['"]image\/png['"]/);
+  assert.match(stickers, /drawImage\(sourceCanvas,\s*bounds\.x,\s*bounds\.y,\s*bounds\.width,\s*bounds\.height/);
+  assert.match(stickers, /makeFallbackCanvas\(sticker,\s*STICKER_EXPORT_SIZE/);
+  assert.doesNotMatch(stickers, /link\.href = sticker\.file;\s*link\.click\(\)/);
+  assert.doesNotMatch(stickers, /toDataURL\(['"]image\/jpeg/);
+});
+
+test('background removal keeps white sticker body near foreground details', () => {
+  const sandbox = { console };
+  runInNewContext(
+    `${read('sticker.js')}\n`
+      + 'globalThis.__removeConnectedStickerBackground = removeConnectedStickerBackground;',
+    sandbox,
+  );
+  const width = 100;
+  const height = 100;
+  const data = new Uint8ClampedArray(width * height * 4);
+  for (let index = 0; index < width * height; index += 1) {
+    data[index * 4] = 255;
+    data[index * 4 + 1] = 255;
+    data[index * 4 + 2] = 255;
+    data[index * 4 + 3] = 255;
+  }
+  const paintBlack = (x, y) => {
+    const offset = (y * width + x) * 4;
+    data[offset] = 20;
+    data[offset + 1] = 20;
+    data[offset + 2] = 20;
+    data[offset + 3] = 255;
+  };
+  for (let y = 48; y <= 52; y += 1) {
+    for (let x = 38; x <= 42; x += 1) paintBlack(x, y);
+    for (let x = 58; x <= 62; x += 1) paintBlack(x, y);
+  }
+
+  sandbox.__removeConnectedStickerBackground({ data, width, height });
+
+  assert.equal(data[3], 0, 'canvas corner should become transparent');
+  assert.equal(data[(50 * width + 50) * 4 + 3], 255, 'white face area should remain opaque');
 });
 
 test('client parser preserves backend repair advice instead of recalculating stop advice', () => {
@@ -160,6 +207,48 @@ test('client parser preserves backend repair advice instead of recalculating sto
   assert.match(replyText, /不只回一个字|太冷了|补回来|好好回你/);
 });
 
+test('client does not send previous replies or dialogue for regeneration', () => {
+  const app = read('app.js');
+  assert.doesNotMatch(app, /previous_replies/);
+  assert.doesNotMatch(app, /regenerate_dialogue/);
+  assert.doesNotMatch(app, /regenerate:\s*true/);
+  assert.doesNotMatch(app, /previousReplies/);
+  assert.match(app, /async function regenerateReplies\(\)\s*\{\s*await analyze\(\);\s*\}/s);
+});
+
+test('client preserves semantic sticker tags and displays 3-6 recommendation copy', () => {
+  const sandbox = loadAppSandbox();
+  const parsed = sandbox.__parseAdvice(JSON.stringify({
+    is_chat_screenshot: true,
+    dialogue: [{ side: 'left', text: '晚安' }],
+    replies: [{ text: '晚安，早点睡' }],
+    sticker_suggestions: [{
+      id: 'ref13_08',
+      file: '/assets/stickers/packs/style-bible-v1/images/ref13_08.png',
+      text: '早睡哦',
+      scene: ['晚安', '睡觉', '结束聊天'],
+      intent: ['道晚安', '安抚'],
+      intent_tags: ['道晚安', '安抚'],
+      generic: false,
+    }],
+  }));
+  const index = read('index.html');
+  const sticker = read('sticker.js');
+
+  assert.deepEqual(Array.from(parsed.sticker_suggestions[0].scene), ['晚安', '睡觉', '结束聊天']);
+  assert.deepEqual(Array.from(parsed.sticker_suggestions[0].intent), ['道晚安', '安抚']);
+  assert.equal(parsed.sticker_suggestions[0].generic, false);
+  assert.match(index, /推荐 3-6 个/);
+  assert.doesNotMatch(index, /每次推荐 6 个/);
+  assert.match(sticker, /hasBackendSuggestions[\s\S]*panel\.style\.display = 'none'/);
+});
+
+test('schema does not create conversation continuation storage', () => {
+  const schema = read('supabase/schema.sql');
+  assert.doesNotMatch(schema, /conversation_sessions/);
+  assert.doesNotMatch(schema, /usage_logs_session_id_idx/);
+});
+
 test('ships the stock sticker inventory files and scripts', () => {
   const packageJson = JSON.parse(read('package.json'));
   assert.equal(existsSync(join(root, 'assets', 'stickers', 'prompts', 'sticker-prompts.json')), true);
@@ -168,6 +257,9 @@ test('ships the stock sticker inventory files and scripts', () => {
   assert.equal(existsSync(join(root, 'assets', 'stickers', 'catalog.v1.json')), true);
   assert.equal(existsSync(join(root, 'scripts', 'generate-stickers.js')), true);
   assert.equal(existsSync(join(root, 'scripts', 'build-sticker-catalog.js')), true);
+  const buildScript = read('scripts/build-sticker-catalog.js');
+  assert.match(buildScript, /validateOnly = process\.argv\.includes\(['"]--validate['"]\)/);
+  assert.match(buildScript, /if \(validateOnly\)[\s\S]*Sticker catalog is out of date/);
   assert.equal(packageJson.scripts['stickers:dry'], 'node scripts/generate-stickers.js --dry-run');
   assert.equal(packageJson.scripts['stickers:generate'], 'node scripts/generate-stickers.js');
   assert.equal(packageJson.scripts['stickers:build'], 'node scripts/build-sticker-catalog.js');

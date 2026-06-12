@@ -21,7 +21,7 @@ const EMOTIONAL_DISCLOSURE_PATTERN = /困死|好困|太困|困了|很困|累死|
 const PHYSICAL_DISCOMFORT_PATTERN = /疼|痛|难受|不舒服|生病|发烧|胃疼|肚子疼|头疼|头痛/;
 const STUDY_STRESS_PATTERN = /考试|考完|考砸|复习|作业|没写完|论文|ddl|期中|期末|测验|quiz|midterm|final|题|第一题|做不出来|卡住|想太多|最近的东西/i;
 const ENVIRONMENT_DISCOMFORT_PATTERN = /闷|里面好闷|空气不好|不透气|憋|热得慌|喘不过气/;
-const HAPPY_EMOTION_PATTERN = /哈哈|开心|好耶|太好了|笑死|嘿嘿|嘻嘻|期待|成功|过了|收到|喜欢|可以呀|行呀|耶/;
+const HAPPY_EMOTION_PATTERN = /哈哈|开心|好耶|太好了|笑死|嘿嘿|嘻嘻|期待|成功|过了|可以呀|行呀|耶/;
 const LATE_NIGHT_MISS_PATTERN = /睡了吗|睡了|睡醒|刚醒|醒了|晚安|熬夜|想你|等你|梦里|白睡|困但想聊|在等/;
 const PLAYFUL_FLIRT_PATTERN = /想你|喜欢你|喜欢我|心动|见面|想我|等我|香味|新人|新包|嘴硬|亲亲|钓|上钩|暧昧|犯规|靠近|只想你|在等我|自由向往/;
 const QUESTION_TEASE_PATTERN = /你在干嘛|干嘛|为啥|为什么|真的假的|质疑|怀疑|可疑|你问|问你|说了啥|听不懂|看出来|猜/;
@@ -38,6 +38,8 @@ const OTHER_EMOTIONAL_PROBE_PATTERN = /我俩很不熟吗|我们很不熟吗|很
 const USER_SHORT_REPLY_PATTERN = /^(?:o|0|嗯|哦|噢|喔|好|好的|不知道|刚看到|有吗|[?？])$/i;
 const USER_COLD_DEFENSIVE_PATTERN = /你要干啥|你干啥|有吗|刚看到|不知道|^o$/i;
 const REPLY_COACH_SYSTEM_PROMPT = `你是中文聊天回复顾问。你的目标不是替用户表白，也不是输出礼貌客服话术，而是根据整段对话判断对方真实意愿，再给出自然、可发送、容易接住的回复。
+
+【独立分析模式】每一次分析都是全新的请求。只能使用本次上传的截图、本次识别出的 dialogue 和用户本次填写的背景；不要读取、引用、假设或延续任何上次会话、历史截图、已保存回复、已选择回复、relationship memory 或 session。不要输出“继续上次的话题”“接着之前聊”“延续你们之前的互动”“根据之前记录”等基于历史的表达。
 
 第一原则：不要预设固定人格。不要把所有回复都写成智性恋、高冷、恋爱脑或哲学风格。先理解当前聊天场景，再决定最适合的回复方式。
 
@@ -74,7 +76,7 @@ const REPLY_COACH_SYSTEM_PROMPT = `你是中文聊天回复顾问。你的目标
 - 先判断 conversation_stage。阶段决定下一步，不要把所有聊天都套成“接一句、聊兴趣、马上邀约”。只有对方持续接球，才逐步增加个人化话题或轻松邀约。
 - 同时输出 analysis：stage 必须使用 relationship_stage 枚举 ice_breaking、daily_connection、emotional_bonding、push_pull_flirting、offline_invitation、relationship_confirmation；scene 写当前具体聊天场景；emotion 写对方真实情绪；reply_intent 写我方最适合采取的回复动作；intimacy_score 表示当前亲密推进空间。
 - 回复流程必须是：先判断关系阶段，再判断场景和对方情绪，再判断我方 reply_intent，最后生成 3 到 5 组微信连续消息、6 个库存表情包检索意图和 next_topics。
-- 现在你还是恋爱关系推进教练。必须分析整段聊天记录，而不是只看最后一句。relationship_memory_engine 要判断：当前 relationship_stage、亲密度 intimacy_score、吸引力 attraction_score、谁投入更多 investment_balance、谁先开启/推进 initiator、当前回复风险 risk_level、下一步最优动作 next_best_move。
+- 现在你还是恋爱关系推进教练。必须分析本次截图里的整段聊天记录，而不是只看最后一句。兼容字段 relationship_memory_engine 只代表本次截图的当前关系状态，不是跨会话记忆；只能判断当前 relationship_stage、亲密度 intimacy_score、吸引力 attraction_score、谁投入更多 investment_balance、谁先开启/推进 initiator、当前回复风险 risk_level、下一步最优动作 next_best_move。
 - attraction_score 重点看对方是否主动：主动发消息、主动分享生活、主动查岗、主动问行程、主动分享照片、主动早安晚安、主动接梗、连续补充情绪。不要只因为用户想推进就打高分。
 - investment_balance 要看整段对话里双方消息数量、字数、问题数量、谁在延伸话题。user_investing_more 表示我方更用力；other_person_investing_more 表示对方更主动；balanced 表示双方差不多。
 - reply_risk 判断当前最可能的回复风险：too_needy、too_cold、too_pushy、safe。身体不舒服或 emo 场景，太冷是风险；早期阶段强邀约或表白，太 pushy 是风险；对方连续短回还追问，too_needy。
@@ -704,44 +706,25 @@ export default async function handler(req, res) {
 
     for (const model of MODELS) {
       try {
-        const isRegenerateMode = metadata.regenerate && metadata.regenerate_dialogue.length > 0;
         // 阶段一：提取对话（Extraction Call）
         let extractedDialogue = null;
-        if (isRegenerateMode) {
-          const regenerateDialogue = normalizeDialogue(
-            metadata.regenerate_dialogue.map((message) => ({ ...message, confidence: 'high' })),
-          );
-          extractedDialogue = {
-            dialogue: regenerateDialogue,
-            is_chat_screenshot: true,
-            is_group_chat: false,
-            needs_retry: false,
-            chat_evidence: {},
-            non_chat_reply: '',
-          };
-          console.info(`[${requestId}] Regenerate mode: skipping OCR and Intent Detection`, {
-            dialogue_count: regenerateDialogue.length,
-            previous_replies_count: metadata.previous_replies.length,
+        try {
+          extractedDialogue = await extractDialogueFromImages({
+            apiKey,
+            model,
+            imageParts,
+            requestId: `${requestId}-extract`,
           });
-        } else {
-          try {
-            extractedDialogue = await extractDialogueFromImages({
-              apiKey,
-              model,
-              imageParts,
-              requestId: `${requestId}-extract`,
-            });
-            console.info(`[${requestId}] Extraction Call succeeded`, {
-              dialogue_count: extractedDialogue.dialogue.length,
-              is_chat_screenshot: extractedDialogue.is_chat_screenshot,
-              needs_retry: extractedDialogue.needs_retry,
-            });
-          } catch (extractionError) {
-            console.warn(`[${requestId}] Extraction Call failed, falling back to single-call mode`, {
-              error: summarizeError(extractionError),
-            });
-            extractedDialogue = null;
-          }
+          console.info(`[${requestId}] Extraction Call succeeded`, {
+            dialogue_count: extractedDialogue.dialogue.length,
+            is_chat_screenshot: extractedDialogue.is_chat_screenshot,
+            needs_retry: extractedDialogue.needs_retry,
+          });
+        } catch (extractionError) {
+          console.warn(`[${requestId}] Extraction Call failed, falling back to single-call mode`, {
+            error: summarizeError(extractionError),
+          });
+          extractedDialogue = null;
         }
 
         // 群聊截图：不进行分析，直接返回友好提示。
@@ -752,7 +735,6 @@ export default async function handler(req, res) {
             advice: groupChatAdvice,
             imageParts,
             metadata,
-            sessionId: null,
             model,
             status: 'success',
             errorMessage: '',
@@ -767,7 +749,7 @@ export default async function handler(req, res) {
 
         // 阶段一点五：意图识别 (Intent Detection Call)
         let conversationIntent = null;
-        if (!isRegenerateMode && extractedDialogue && extractedDialogue.dialogue.length > 0) {
+        if (extractedDialogue && extractedDialogue.dialogue.length > 0) {
           try {
             conversationIntent = await detectConversationIntent({
               apiKey,
@@ -795,14 +777,12 @@ export default async function handler(req, res) {
         const backgroundPrefix = backgroundText
           ? `【用户提供的背景信息】\n${backgroundText}\n\n`
           : '';
-        const regeneratePrefix = metadata.regenerate
-          ? buildRegeneratePrefix(metadata.previous_replies)
-          : '';
+        const regeneratePrefix = '';
         const intentPrefix = buildIntentPrefix(conversationIntent, INTENT_STRATEGY_MAP);
         const userProfilePrefix = buildUserProfilePrefix(metadata.user_profile);
         const analysisPrompt = userProfilePrefix + STYLE_DIMENSION_NOTE + COMPACT_RESPONSE_NOTE + regeneratePrefix + intentPrefix + backgroundPrefix + textPart.text;
 
-        debug.vision_called = !isRegenerateMode;
+        debug.vision_called = true;
         const rawResult = await requestOpenAIAdviceWithVisionRetry({
           apiKey,
           model,
@@ -810,7 +790,7 @@ export default async function handler(req, res) {
           prompt: analysisPrompt,
           requestId,
           extractedDialogue: extractedDialogue || undefined,
-          temperature: metadata.regenerate ? 0.75 : 0.55,
+          temperature: 0.55,
         });
         const rawText = typeof rawResult === 'string' ? rawResult : rawResult.text;
         if (rawResult?.ocrFallback) {
@@ -859,7 +839,6 @@ export default async function handler(req, res) {
           advice,
           imageParts,
           metadata,
-          sessionId: null,
           model,
           status: debug.json_parse_failed || advice.needs_retry || advice.degraded ? 'failed' : 'success',
           errorMessage: debug.json_parse_failed ? 'OpenAI returned invalid JSON; returned minimal usable structure.' : '',
@@ -909,7 +888,6 @@ export default async function handler(req, res) {
         advice,
         imageParts,
         metadata,
-        sessionId: null,
         model: 'fallback',
         degraded: true,
         status: 'failed',
@@ -939,7 +917,6 @@ export default async function handler(req, res) {
         }),
         imageParts,
         metadata,
-        sessionId: null,
         model: 'failed',
         status: 'failed',
         errorMessage: summarizeError(lastError),
@@ -963,7 +940,6 @@ export default async function handler(req, res) {
         }),
         imageParts,
         metadata,
-        sessionId: null,
         model: 'failed',
         status: 'failed',
         errorMessage: error.publicMessage || error.message,
@@ -984,9 +960,7 @@ function getRequestParts(body) {
   const imageParts = dedupeImageParts(content.filter((part) => part.type === 'image'));
   const textPart = content.find((part) => part.type === 'text');
   const metadata = normalizeClientMetadata(payload?.metadata);
-  const allowTextOnlyRegenerate = metadata.regenerate && metadata.regenerate_dialogue.length > 0;
-
-  if ((!allowTextOnlyRegenerate && !imageParts.length) || imageParts.length > MAX_IMAGE_COUNT) {
+  if (!imageParts.length || imageParts.length > MAX_IMAGE_COUNT) {
     throw createPublicError(400, `请上传 1 到 ${MAX_IMAGE_COUNT} 张聊天截图。`);
   }
   if (imageParts.some((part) => !ALLOWED_MEDIA_TYPES.has(part?.source?.media_type))) {
@@ -1189,20 +1163,9 @@ function normalizeClientMetadata(metadata) {
     screen_height: Number.isFinite(Number(metadata.screen_height)) ? Number(metadata.screen_height) : undefined,
     device_pixel_ratio: Number.isFinite(Number(metadata.device_pixel_ratio)) ? Number(metadata.device_pixel_ratio) : undefined,
     target_person_label: cleanText(metadata.target_person_label, 20),
-    regenerate: metadata.regenerate === true,
-    previous_replies: Array.isArray(metadata.previous_replies)
-      ? metadata.previous_replies.map((r) => cleanText(r, 120)).filter(Boolean).slice(0, 5)
-      : [],
-    regenerate_dialogue: Array.isArray(metadata.regenerate_dialogue)
-      ? metadata.regenerate_dialogue
-          .map((m) => ({
-            side: ['left', 'right', 'feed'].includes(m?.side) ? m.side : 'left',
-            speaker: cleanText(m?.speaker, 10) || '对方',
-            text: cleanText(m?.text, 100),
-          }))
-          .filter((m) => m.text)
-          .slice(0, 12)
-      : [],
+    regenerate: false,
+    previous_replies: [],
+    regenerate_dialogue: [],
     user_profile: normalizeUserProfile(metadata.user_profile),
   };
 }
@@ -1302,16 +1265,8 @@ function buildUserProfilePrefix(userProfile) {
   return ['【用户偏好】', ...parts, '', ''].join('\n');
 }
 
-function buildRegeneratePrefix(previousReplies) {
-  if (!Array.isArray(previousReplies) || previousReplies.length === 0) return '';
-  return [
-    '【本次任务：换一批不同风格的回复】',
-    '上次已经推荐过以下回复，本次请生成完全不同风格的候选，不要重复相同句子或句式：',
-    ...previousReplies.map((reply) => `- ${reply}`),
-    '要求：至少覆盖 3 种不同风格（例如：轻松玩笑 / 认真回应 / 带情绪 / 反问 / 暧昧），每组候选节奏和用词都要有明显区别。',
-    '',
-    '',
-  ].join('\n');
+function buildRegeneratePrefix() {
+  return '';
 }
 
 async function requestOpenAIAdviceWithVisionRetry(args) {
@@ -1735,7 +1690,7 @@ function parseAdvice(rawText) {
     needs_retry: isChatScreenshot && needsRetry,
     replies: isChatScreenshot ? replies : [],
     sticker_match_intent: stickerMatchIntent,
-    sticker_suggestions: stickerMatchIntent ? recommendStockStickers(stickerMatchIntent) : [],
+    sticker_suggestions: stickerMatchIntent ? recommendStockStickers(stickerMatchIntent, STICKER_RECOMMENDATION_COUNT, verifiedDialogue) : [],
   };
 }
 
@@ -3874,6 +3829,8 @@ function getNextBestMove({ stage, scene, riskLevel }) {
 }
 
 function normalizeRelationshipMemoryEngine(rawMemory, context) {
+  // Session memory is disabled; infer this compatibility object from current dialogue only.
+  rawMemory = null;
   const signals = getRelationshipSignals(context.dialogue);
   const directionSignals = analyzeConversationDirection(context.dialogue);
   const hasDirectionRepair = Boolean(directionSignals.repair_needed || directionSignals.attention_seeking);
@@ -4483,6 +4440,10 @@ function toStockStickerSuggestion(sticker, score, intent, index = 0) {
     scenario: normalizeCatalogList(sticker.scenario),
     relationship_stage: normalizeCatalogList(sticker.relationship_stage),
     tags: normalizeCatalogList(sticker.tags),
+    scene: normalizeCatalogList(sticker.scene),
+    intent: normalizeCatalogList(sticker.intent),
+    intent_tags: normalizeCatalogList(sticker.intent),
+    generic: sticker.generic === true,
     static: sticker.static !== false,
     score,
     match: {
@@ -4543,13 +4504,140 @@ function selectDiverseStockStickers(scored, count) {
   return selected.slice(0, count);
 }
 
-function recommendStockStickers(intent, count = STICKER_RECOMMENDATION_COUNT) {
+// ── 语义场景匹配：先判断截图场景，再只在同场景库存里筛选 ──────────────
+// 每个场景定义：触发模式（按对方最后一条/关键消息匹配）+ 允许的库存 scene 标签
+const SEMANTIC_STICKER_SCENES = [
+  { id: '晚安', patterns: /晚安|睡了|去睡|先睡|早点睡|睡觉|好梦|困死|要睡/, tags: ['晚安', '睡觉', '结束聊天'] },
+  { id: '早安', patterns: /早安|早上好|刚醒|早呀|睡醒/, tags: ['早安', '打招呼'] },
+  { id: '想念', patterns: /想你|想我|想见你|有点想/, tags: ['想念', '撒娇', '亲密', '暧昧'] },
+  { id: '感谢', patterns: /谢谢|感谢|多谢|辛苦你/, tags: ['感谢'] },
+  {
+    id: '事实解释',
+    patterns: /爱回收|回收|二手商|竞价|出价|谁高|谁价高|省时省心|一家家跑|包也收|挂上去|平台|流程|报价|验货|模式|我挺喜欢/,
+    tags: ['日常接话', '倾听', '无语', '吐槽', '惊叹'],
+    emotions: ['thinking', 'awkward', 'surprised', 'happy'],
+    scenarios: ['agree', 'speechless', 'teasing'],
+    allowGeneric: true,
+    genericTextPattern: /^(原来如此|有点意思|真的吗|好家伙|这么巧|我信了)$/,
+  },
+  { id: '安慰', patterns: /难过|想哭|哭了|委屈|心情不好|emo|崩溃|难受|不舒服|生病|发烧|头疼|肚子疼|好累|太累|累死|心累|压力|焦虑|烦死|好烦|失眠|睡不着|被骂|骂我|挨骂|不想干|不想上班|想辞职|辞职|被开除|失业|加班|还在公司|十二点|通宵|考砸|挂科|分手|被删|把我删|删了我|拉黑|搬家|吵架|不想做|提不起劲|没动力|没劲|好丧|心情差|低落/, tags: ['安慰', '关心'] },
+  { id: '求陪伴', patterns: /没人陪|没人理|陪陪我|陪我|想人陪|一个人好无聊|孤单|孤独|想找你说话/, tags: ['安慰', '亲密', '想念'], emotions: ['comfort', 'love', 'miss_you'], scenarios: ['comfort', 'hug', 'missing_you'] },
+  { id: '鼓励', patterns: /考试|面试|紧张|怕考|加油|冲刺|ddl|要上场|比赛/, tags: ['鼓励', '夸夸', '关心'] },
+  { id: '暧昧试探', patterns: /你是不是对谁都|会不会一直|我重要吗|喜欢你|喜欢我|你喜欢|心动|撩|暗示|暧昧|对你例外/, tags: ['暧昧', '心动', '想念', '亲密', '拉扯'] },
+  { id: '吃醋哄人', patterns: /生气|气死|哼|吃醋|酸了|不理你|不理我了|你哄|解释|你变了|讨厌你|跟她聊|跟他聊|聊挺多|和她聊|和他聊|她是谁|他是谁|安全感/, tags: ['吃醋', '撒娇', '闹脾气', '安慰'] },
+  { id: '大笑', patterns: /哈哈|笑死|太好笑|笑不活|乐死/, tags: ['大笑', '玩笑', '搞怪'] },
+  { id: '庆祝', patterns: /拿A|拿 A|过了|通过|考上|成功|中了|offer|涨了|好消息|搞定/, tags: ['庆祝', '夸夸', '开心', '鼓励'] },
+  { id: '道别出行', patterns: /拜拜|再见|先走了|出发|到家|路上|回家了|下班了/, tags: ['告别', '出行'] },
+  { id: '撒娇卖萌', patterns: /求你|拜托|嘛$|人家|可爱|卖萌|奖励我/, tags: ['卖萌', '撒娇', '亲密'] },
+  { id: '等待回应', patterns: /在吗|在不在|怎么不理|快回|等你回/, tags: ['等待', '想念', '日常'] },
+  { id: '确认回应', patterns: /^(好的?|好呀|好啊|嗯+|哦+|行|可以|没问题|约好了|明天见|说定了|一言为定|收到)[~！!。.]?$|明天.{0,4}见|就这么定/, tags: ['确认', '回应', '告别'], allowGeneric: true },
+  { id: '日常分享', patterns: /跟你说|和你说|你看|给你看|发现了|我发现|买了|去了趟|吃了个|看了个|拍的/, tags: ['开心', '夸夸', '大笑', '玩笑'] },
+];
+const SEMANTIC_STICKER_HIGH_MATCH_THRESHOLD = 0.8;
+const SEMANTIC_STICKER_MIN_COUNT = 3;
+
+function classifySemanticStickerScene(dialogue = []) {
+  const latest = getLatestOpponentText(dialogue);
+  const recent = recentDialogueText(dialogue, 6);
+  for (const scene of SEMANTIC_STICKER_SCENES) {
+    if (latest && scene.patterns.test(latest)) return scene;
+  }
+  for (const scene of SEMANTIC_STICKER_SCENES) {
+    if (recent && scene.patterns.test(recent)) return scene;
+  }
+  return null;
+}
+
+function stickerMatchesSemanticScene(sticker, scene) {
+  const stickerScenes = normalizeCatalogList(sticker.scene);
+  const stickerIntent = normalizeCatalogList(sticker.intent);
+  const stickerText = cleanText(sticker.text, 40);
+  return stickerScenes.some((tag) => scene.tags.includes(tag))
+    || stickerIntent.some((tag) => normalizeCatalogList(scene.intentTags).includes(tag))
+    || normalizeCatalogList(scene.textMatches).some((text) => stickerText.includes(text));
+}
+
+function semanticSceneAllowsGenericSticker(sticker, scene) {
+  if (sticker.generic !== true) return true;
+  if (scene.allowGeneric !== true) return false;
+  const stickerText = cleanText(sticker.text, 40);
+  if (scene.genericTextPattern && !scene.genericTextPattern.test(stickerText)) return false;
+  if (scene.blockedGenericTextPattern && scene.blockedGenericTextPattern.test(stickerText)) return false;
+  return true;
+}
+
+function scoreSemanticSceneMatch(sticker, scene) {
+  const stickerScenes = normalizeCatalogList(sticker.scene);
+  const stickerIntent = normalizeCatalogList(sticker.intent);
+  const stickerEmotion = normalizeCatalogEmotion(sticker.emotion);
+  const stickerScenario = normalizeCatalogList(sticker.scenario);
+  const stickerText = cleanText(sticker.text, 40);
+  let score = 0;
+
+  if (stickerScenes.some((tag) => scene.tags.includes(tag))) score += 0.6;
+  if (stickerScenes[0] && scene.tags[0] && stickerScenes[0] === scene.tags[0]) score += 0.05;
+  if (stickerIntent.some((tag) => normalizeCatalogList(scene.intentTags).includes(tag))) score += 0.15;
+  if (scene.genericTextPattern?.test(stickerText)
+    || normalizeCatalogList(scene.textMatches).some((text) => stickerText.includes(text))) {
+    score += 0.2;
+  }
+  if (normalizeCatalogList(scene.emotions).includes(stickerEmotion.primary)) score += 0.1;
+  if (stickerScenario.some((scenario) => normalizeCatalogList(scene.scenarios).includes(scenario))) score += 0.1;
+  return Math.min(1, Math.round(score * 100) / 100);
+}
+
+function filterSemanticStickerCandidates(scored, count, semanticScene) {
+  if (!semanticScene) {
+    const top = Math.max(...scored.map((s) => s.score));
+    return scored.filter((s) => s.score >= top * SEMANTIC_STICKER_HIGH_MATCH_THRESHOLD);
+  }
+
+  const sorted = scored.slice().sort(sortScoredStockStickers);
+  const highMatches = sorted.filter((entry) => entry.semanticScore >= SEMANTIC_STICKER_HIGH_MATCH_THRESHOLD);
+  const minCount = Math.min(SEMANTIC_STICKER_MIN_COUNT, count, sorted.length);
+  if (highMatches.length >= minCount) return highMatches;
+
+  const highIds = new Set(highMatches.map((entry) => entry.sticker.id));
+  return [
+    ...highMatches,
+    ...sorted.filter((entry) => !highIds.has(entry.sticker.id)).slice(0, minCount - highMatches.length),
+  ];
+}
+
+function recommendStockStickers(intent, count = STICKER_RECOMMENDATION_COUNT, dialogue = []) {
   if (!intent || !STOCK_STICKER_CATALOG.length) return [];
-  const scored = STOCK_STICKER_CATALOG
-    .filter((sticker) => sticker?.file && sticker.static !== false)
-    .map((sticker) => ({ sticker, score: scoreStockSticker(sticker, intent) }));
-  return selectDiverseStockStickers(scored, count)
-    .map(({ sticker, score }, index) => toStockStickerSuggestion(sticker, score, intent, index));
+  const usable = STOCK_STICKER_CATALOG.filter((sticker) => sticker?.file && sticker.static !== false);
+  const semanticScene = classifySemanticStickerScene(dialogue);
+
+  let pool;
+  if (semanticScene) {
+    // 场景先行：只在同场景库存里选；泛用确认类表情只在确认/分享场景出现
+    pool = usable.filter((sticker) => stickerMatchesSemanticScene(sticker, semanticScene)
+      && semanticSceneAllowsGenericSticker(sticker, semanticScene));
+  } else {
+    // 无明确场景：只在"轻反应"表情族里选（夸夸/惊叹/接话/大笑/搞怪），
+    // 排除泛用确认类和强场景类（晚安/吃醋/鼓励冲刺等需要明确语境的）
+    const REACTION_TAGS = ['夸夸', '惊叹', '开心', '大笑', '玩笑', '搞怪', '无语', '吐槽', '日常接话', '倾听', '卖萌'];
+    pool = usable.filter((sticker) => !sticker.generic
+      && normalizeCatalogList(sticker.scene).some((tag) => REACTION_TAGS.includes(tag)));
+  }
+  if (!pool.length) return [];
+
+  const scored = pool.map((sticker) => {
+    const semanticScore = semanticScene ? scoreSemanticSceneMatch(sticker, semanticScene) : 0;
+    return {
+      sticker,
+      score: scoreStockSticker(sticker, intent)
+        + (semanticScene ? semanticScore * 60 : 0)
+        + (semanticScene && normalizeCatalogList(sticker.scene)[0] === semanticScene.tags[0] ? 30 : 0),
+      semanticScore,
+    };
+  });
+
+  // 宁缺毋滥：场景命中即为高匹配；无场景时按相对分数截断，低相关不展示
+  const candidates = filterSemanticStickerCandidates(scored, count, semanticScene);
+  const picked = selectDiverseStockStickers(candidates, Math.min(count, candidates.length));
+  return picked.map(({ sticker, score }, index) => toStockStickerSuggestion(sticker, score, intent, index));
 }
 
 function normalizeStickerSuggestions(suggestions, stage = '轻松破冰', dialogue = [], analysis = {}) {
@@ -4576,7 +4664,7 @@ function normalizeStickerSuggestions(suggestions, stage = '轻松破冰', dialog
     analysis: coachAnalysis,
     scene,
   });
-  return recommendStockStickers(intent);
+  return recommendStockStickers(intent, STICKER_RECOMMENDATION_COUNT, dialogue);
 }
 
 function getDefaultNonChatReply() {
@@ -5077,7 +5165,6 @@ async function logUsage({
   advice,
   imageParts,
   metadata = {},
-  sessionId = null,
   model = '',
   degraded = false,
   status = '',
@@ -5169,7 +5256,6 @@ async function logUsage({
       user_agent: userAgent,
       referer,
       page_path: metadata.page_path || '',
-      session_id: sessionId || null,
       target_person_label: metadata.target_person_label || '',
       background_text: metadata.background_text || '',
       browser_language: metadata.browser_language || '',
@@ -5349,4 +5435,4 @@ function buildStoragePath({ visitorId, index, ext }) {
   return `screenshots/${day}/${safeVisitorId}-${Date.now()}-${index}.${ext}`;
 }
 
-export { CHAT_ADVICE_SCHEMA, CHAT_SCENE_LIBRARY, EXTRACTION_IMAGE_DETAIL, EXTRACTION_MAX_COMPLETION_TOKENS, EXTRACTION_SCHEMA, EXTRACTION_SYSTEM_PROMPT, GENERIC_REPLY_TEMPLATE_PATTERN, IMAGE_READING_RULES, INTENT_DETECTION_SCHEMA, INTENT_DETECTION_SYSTEM_PROMPT, INTENT_MAX_COMPLETION_TOKENS, INTENT_STRATEGY_MAP, MODELS, PRIMARY_IMAGE_DETAIL, PRIMARY_MAX_COMPLETION_TOKENS, PRIMARY_OPENAI_TIMEOUT_MS, REFLECTIVE_INTELLIGENCE_NOTE, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, REPLY_REFINEMENT_SCHEMA, REFINEMENT_MAX_COMPLETION_TOKENS, STYLE_DIMENSION_NOTE, analyzeConversationDirection, buildActiveCuriosityGuide, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildGroupChatAdvice, buildGroundedFallbackReplies, buildIntentPrefix, buildRegeneratePrefix, buildReplyRefinementPrompt, buildStageChatGuide, buildStickerMatchIntent, buildUserProfilePrefix, detectConversationIntent, detectScene, extractConcreteFacts, extractDialogueFromImages, extractFirstJsonObject, getReplyGroundingReport, getRequestParts, getStickerContext, hasActiveCuriosity, hasHappyEmotion, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, hasStudyStress, inferConversationStage, isRetryableModelError, isVerifiedChatScreenshot, logUsage, mergeRefinedReplies, needsReplyRefinement, normalizeChatGuide, normalizeClientMetadata, normalizeConversationMode, normalizeConversationStage, normalizeDialogue, normalizeChatEvidence, normalizeReplyCandidate, normalizeStickerSuggestions, normalizeUserProfile, parseAdvice, recommendStockStickers, repairReplyCandidates, requestOpenAIAdvice, requestOpenAIReplyRefinement, safeJsonParse, scoreStockSticker };
+export { CHAT_ADVICE_SCHEMA, CHAT_SCENE_LIBRARY, EXTRACTION_IMAGE_DETAIL, EXTRACTION_MAX_COMPLETION_TOKENS, EXTRACTION_SCHEMA, EXTRACTION_SYSTEM_PROMPT, GENERIC_REPLY_TEMPLATE_PATTERN, IMAGE_READING_RULES, INTENT_DETECTION_SCHEMA, INTENT_DETECTION_SYSTEM_PROMPT, INTENT_MAX_COMPLETION_TOKENS, INTENT_STRATEGY_MAP, MODELS, PRIMARY_IMAGE_DETAIL, PRIMARY_MAX_COMPLETION_TOKENS, PRIMARY_OPENAI_TIMEOUT_MS, REFLECTIVE_INTELLIGENCE_NOTE, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, REPLY_REFINEMENT_SCHEMA, REFINEMENT_MAX_COMPLETION_TOKENS, STYLE_DIMENSION_NOTE, analyzeConversationDirection, buildActiveCuriosityGuide, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildGroupChatAdvice, buildGroundedFallbackReplies, buildIntentPrefix, buildRegeneratePrefix, buildReplyRefinementPrompt, buildStageChatGuide, buildStickerMatchIntent, buildUserProfilePrefix, classifySemanticStickerScene, detectConversationIntent, detectScene, extractConcreteFacts, extractDialogueFromImages, extractFirstJsonObject, getReplyGroundingReport, getRequestParts, getStickerContext, hasActiveCuriosity, hasHappyEmotion, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, hasStudyStress, inferConversationStage, isRetryableModelError, isVerifiedChatScreenshot, logUsage, mergeRefinedReplies, needsReplyRefinement, normalizeChatGuide, normalizeClientMetadata, normalizeConversationMode, normalizeConversationStage, normalizeDialogue, normalizeChatEvidence, normalizeReplyCandidate, normalizeStickerSuggestions, normalizeUserProfile, parseAdvice, recommendStockStickers, repairReplyCandidates, requestOpenAIAdvice, requestOpenAIReplyRefinement, safeJsonParse, scoreStockSticker };

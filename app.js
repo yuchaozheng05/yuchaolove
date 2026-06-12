@@ -163,59 +163,7 @@ async function analyze() {
 }
 
 async function regenerateReplies() {
-  if (!lastAnalysisResult || !Array.isArray(lastAnalysisResult.dialogue) || lastAnalysisResult.dialogue.length === 0) {
-    analyze();
-    return;
-  }
-
-  setSubmitState(true, '正在换一批回复...');
-  document.getElementById('loadingState').style.display = 'block';
-
-  const previousReplies = Array.isArray(lastAnalysisResult.replies)
-    ? lastAnalysisResult.replies
-        .map((reply) => (Array.isArray(reply.messages) ? reply.messages.join(' / ') : reply.text || ''))
-        .filter(Boolean)
-        .slice(0, 5)
-    : [];
-
-  const metadata = {
-    ...buildRequestMetadata(0),
-    regenerate: true,
-    previous_replies: previousReplies,
-    regenerate_dialogue: lastAnalysisResult.dialogue.slice(-12),
-  };
-
-  try {
-    const response = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        metadata,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'text', text: buildPrompt(lastAnalysisResult.dialogue.length) },
-          ],
-        }],
-      }),
-    });
-
-    const data = await response.json();
-    if (!response.ok || data.error) throw new Error(data.error || `HTTP ${response.status}`);
-    const text = data?.content?.map((part) => part.text || '').join('') || '';
-    if (!text) throw new Error('empty response');
-
-    const parsed = parseAdvice(text);
-    const replies = Array.isArray(parsed.replies) ? parsed.replies : [];
-    renderReplies(replies);
-    lastAnalysisResult = { ...lastAnalysisResult, replies };
-  } catch (error) {
-    console.error('Regenerate failed:', error);
-    analyze();
-  } finally {
-    document.getElementById('loadingState').style.display = 'none';
-    setSubmitState(false, '重新分析');
-  }
+  await analyze();
 }
 
 function buildPrompt(imageCount) {
@@ -224,7 +172,7 @@ function buildPrompt(imageCount) {
 按系统规则识别有效聊天截图、还原 dialogue，先判断 relationship_stage、scene、emotion、reply_intent，再生成自然可发送的回复。
 请输出 3 到 5 组推荐回复；每组用 messages 表示 1 到 3 条微信连续消息，text 等于 messages 用换行拼起来。
 请输出 next_topics，告诉用户接下来怎么聊、什么时候追踪、不要一次性发完。
-表情包只给 3 个最贴合当前聊天的库存检索意图；每个意图包含 emotion、scenario、relationship_stage、keywords 和可发送短配字 text。页面只会从本地库存里按相关性推荐 6 个表情包，不要编造文件名。
+表情包只给 3 个最贴合当前聊天的库存检索意图；每个意图包含 emotion、scenario、relationship_stage、keywords 和可发送短配字 text。页面会从本地库存里按语义场景推荐 3 到 6 个表情包，宁可少也不要不相关，不要编造文件名。
 ${context ? `补充背景：${context}` : ''}
 只返回符合 schema 的 JSON。`;
 }
@@ -338,7 +286,7 @@ function syncProfile() {
 
 function markReplySent(replyText, buttonEl) {
   if (buttonEl) {
-    buttonEl.textContent = '✓ 已记录';
+    buttonEl.textContent = '✓ 已标记';
     buttonEl.disabled = true;
     buttonEl.style.opacity = '0.6';
   }
@@ -1072,6 +1020,16 @@ function normalizeStickerSuggestions(suggestions) {
       tags: Array.isArray(suggestion?.tags)
         ? suggestion.tags.map((item) => cleanText(item, 24)).filter(Boolean).slice(0, 12)
         : [],
+      scene: Array.isArray(suggestion?.scene)
+        ? suggestion.scene.map((item) => cleanText(item, 40)).filter(Boolean).slice(0, 6)
+        : [],
+      intent: Array.isArray(suggestion?.intent)
+        ? suggestion.intent.map((item) => cleanText(item, 40)).filter(Boolean).slice(0, 6)
+        : normalizeStickerList(suggestion?.intent_tags, 6, 40),
+      intent_tags: Array.isArray(suggestion?.intent_tags)
+        ? suggestion.intent_tags.map((item) => cleanText(item, 40)).filter(Boolean).slice(0, 6)
+        : normalizeStickerList(suggestion?.intent, 6, 40),
+      generic: suggestion?.generic === true,
       static: suggestion?.static !== false,
       score: Number.isFinite(Number(suggestion?.score)) ? Number(suggestion.score) : 0,
       match: suggestion?.match && typeof suggestion.match === 'object' ? suggestion.match : {},
