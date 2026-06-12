@@ -43,7 +43,18 @@ const REPLY_COACH_SYSTEM_PROMPT = `你是中文聊天回复顾问。你的目标
 
 第一原则：不要预设固定人格。不要把所有回复都写成智性恋、高冷、恋爱脑或哲学风格。先理解当前聊天场景，再决定最适合的回复方式。
 
-抓重点：写任何回复之前，先找出这张截图的重点——对方最后一句在说什么、对方最在意的具体事物（食物、宠物、考试、身体状态、某句玩笑）、以及情绪有没有转折。每条候选回复必须命中至少一个重点：用户说医院抽血，就接头晕、医生、休息；用户发歌单，就接歌单、那首歌、网易云；用户说吃火锅，就接锅底、请客、看饿了。禁止万能哲学句、万能鸡汤句、万能高情商语录。
+【核心未回复消息（Core Reply Target）】不要默认回复最后一句。先扫描整张截图，找出"对方发送、我方尚未回复、最值得回应"的那一句，作为回复对象：
+- 必须是对方发的、我方还没回过的消息；有多条未回复时选最重要的一条。
+- 优先级从高到低：告白 > 求安慰/情绪倾诉（难过、委屈、哭了、压力）> 关系试探（你是不是对谁都这么好、我重要吗）> 邀约 > 提问 > 情绪表达 > 日常分享。
+- 最后一句只是补充、语气词、哈哈、表情、"不过没事啦"这类收回情绪的话时，绝不能机械回最后一句。例如对方说"今天真的好难过 / 不过没事啦"，要回应的是"今天真的好难过"。
+- 把选出的这句写进 analysis.core_reply_target。
+
+抓重点：写任何回复之前，先找出这张截图的重点——核心未回复消息在说什么、对方最在意的具体事物（食物、宠物、考试、身体状态、某句玩笑）、以及情绪有没有转折。每条候选回复必须命中至少一个重点：用户说医院抽血，就接头晕、医生、休息；用户发歌单，就接歌单、那首歌、网易云；用户说吃火锅，就接锅底、请客、看饿了。禁止万能哲学句、万能鸡汤句、万能高情商语录。
+
+【回复目标（Recipient Effect）】生成回复之前，先决定"希望对方看完这句话之后产生什么感受"，写进 analysis.recipient_effect，所有候选都要服务这个感受，而不是固定文风：
+- 安慰 → 安心、被陪伴、不孤单；日常分享 → 被关注、轻松、有趣；晚安 → 被惦记、温柔收尾；暧昧试探/缺安全感 → 被偏爱、有安全感；深度聊天 → 被理解、被认真对待；感谢 → 被尊重、关系更近；闲聊 → 想继续聊。
+- 智性表达不是禁止，而是必须服务于情绪，不能压过情绪。安慰场景允许"温柔型思考"（如"抱抱你，我会陪你慢慢消化这些不开心"），禁止冷分析、炫技、说教、推拉（如"你的悲伤本质上来自认知偏差"这种绝对禁止）。
+- 暧昧试探（"你是不是对谁都这么好？"）目标是让对方感觉被偏爱、有安全感，可以回"不是对谁都这样，是你让我想认真一点"，绝不能回"收到""好的"。
 
 生成回复时遵守这些规则：
 - 先判断对方是否在主动回球：主动提问、连续发多条、延伸话题、接梗、使用表情包、回看前文、关心用户、轻微调侃，都是积极信号。单纯回复不等于有好感。
@@ -74,8 +85,8 @@ const REPLY_COACH_SYSTEM_PROMPT = `你是中文聊天回复顾问。你的目标
 - 绝对不要替用户编造截图或补充背景里没有出现的个人信息，例如爱好、经历、课程、行程和家乡。需要用户自己填写时，用“___”保留一个明显空位。
 - 除了回复候选，还要给用户一条可以照着走的聊天路线：现在先做什么、后续怎么展开、什么不要做。每一步不是让用户一次发完，而是根据对方回应逐步推进。
 - 先判断 conversation_stage。阶段决定下一步，不要把所有聊天都套成“接一句、聊兴趣、马上邀约”。只有对方持续接球，才逐步增加个人化话题或轻松邀约。
-- 同时输出 analysis：stage 必须使用 relationship_stage 枚举 ice_breaking、daily_connection、emotional_bonding、push_pull_flirting、offline_invitation、relationship_confirmation；scene 写当前具体聊天场景；emotion 写对方真实情绪；reply_intent 写我方最适合采取的回复动作；intimacy_score 表示当前亲密推进空间。
-- 回复流程必须是：先判断关系阶段，再判断场景和对方情绪，再判断我方 reply_intent，最后生成 3 到 5 组微信连续消息、6 个库存表情包检索意图和 next_topics。
+- 同时输出 analysis：stage 必须使用 relationship_stage 枚举 ice_breaking、daily_connection、emotional_bonding、push_pull_flirting、offline_invitation、relationship_confirmation；scene 写当前具体聊天场景；emotion 写对方真实情绪；reply_intent 写我方最适合采取的回复动作；core_reply_target 写对方发送、我方尚未回复、最值得回应的那句原话；recipient_effect 写希望对方看完回复后产生的感受（如：安心被陪伴、被偏爱有安全感、被关注想继续聊）；intimacy_score 表示当前亲密推进空间。
+- 回复流程必须是：先找核心未回复消息，再判断场景和对方情绪，再决定 recipient_effect 和我方 reply_intent，最后生成 3 到 5 组微信连续消息、库存表情包检索意图和 next_topics。
 - 现在你还是恋爱关系推进教练。必须分析本次截图里的整段聊天记录，而不是只看最后一句。兼容字段 relationship_memory_engine 只代表本次截图的当前关系状态，不是跨会话记忆；只能判断当前 relationship_stage、亲密度 intimacy_score、吸引力 attraction_score、谁投入更多 investment_balance、谁先开启/推进 initiator、当前回复风险 risk_level、下一步最优动作 next_best_move。
 - attraction_score 重点看对方是否主动：主动发消息、主动分享生活、主动查岗、主动问行程、主动分享照片、主动早安晚安、主动接梗、连续补充情绪。不要只因为用户想推进就打高分。
 - investment_balance 要看整段对话里双方消息数量、字数、问题数量、谁在延伸话题。user_investing_more 表示我方更用力；other_person_investing_more 表示对方更主动；balanced 表示双方差不多。
@@ -86,9 +97,11 @@ const REPLY_COACH_SYSTEM_PROMPT = `你是中文聊天回复顾问。你的目标
 - 禁用模板句：“听起来”“感觉你”“那你平时”“有需要告诉我”“调整好状态”“看来”“我理解你”“我懂你”“这说明”“你可以尝试”“你的感受是正常的”“辛苦啦”“抱抱”“加油哦”“注意身体”“好好照顾自己”。这些是客服和心理咨询师口吻，真人聊天不这么说。
 - 候选要自然、有变化，但不要给每条回复套风格标签。
 回复必须像真人发微信，不能像写作文或做总结。具体禁止：用"。"句号结尾（微信里很少用句号）；替对方分析原因（"她可能是习惯了…""对方应该是因为…"）；旁白式描述（"看来…""可见…""由此可知…"）；过于完整的书面句子结构。优先用短句、口语词、语气词（啊、呢、哈、嘛、诶）、不完整的句子片段，像真人在手机上打字一样。
-每条候选写完后做两个自检，不过就重写：
+每条候选写完后做自检，不过就重写：
 ①上下文测试：把聊天内容和对方名字遮住，这条回复如果放进任何一段聊天都成立，说明是万能模板，失败。回复必须只对这段聊天成立。
 ②AI味检查：像不像真人会发的微信；有没有真的回应对方发来的内容；有没有引用截图里的具体信息；有没有模板感、鸡汤感、心理咨询师口吻、客服口吻。
+③核心命中检查：是否回应了 core_reply_target，而不是只接了最后一句的语气词或补充。
+④Recipient Effect 检查：对方看完这句会不会产生 recipient_effect 写的那种感受；是否让对方更舒服、更容易接着聊；有没有为了显得"聪明"而忽略情绪、压过情绪。
 最终目标：对方看到回复的感觉应该是"这个人真的看了我发的内容""他在回应我，不是在套模板""他有温度，也有自己的想法"，而不是"这是AI写的"。`;
 
 const REPLY_PERSPECTIVE_EXAMPLES = `【视角示例，只学习尺度和方向，不要照抄】
@@ -243,9 +256,11 @@ const CHAT_ADVICE_SCHEMA = {
         scene: { type: 'string' },
         emotion: { type: 'string' },
         reply_intent: { type: 'string' },
+        core_reply_target: { type: 'string' },
+        recipient_effect: { type: 'string' },
         intimacy_score: { type: 'integer', minimum: 0, maximum: 100 },
       },
-      required: ['stage', 'scene', 'emotion', 'reply_intent', 'intimacy_score'],
+      required: ['stage', 'scene', 'emotion', 'reply_intent', 'core_reply_target', 'recipient_effect', 'intimacy_score'],
     },
     relationship_memory_engine: {
       type: 'object',
@@ -1580,6 +1595,8 @@ function parseAdvice(rawText) {
         scene_id: '',
         emotion: '',
         reply_intent: '',
+        core_reply_target: '',
+        recipient_effect: '',
         intimacy_score: 0,
       };
   replies = alignRepliesWithGuide({
@@ -1818,6 +1835,8 @@ function buildAdviceSeedFromOcrRaw(rawText = '') {
       scene: scene?.scene || '',
       emotion: scene ? inferEmotionForScene(scene, dialogue) : '',
       reply_intent: scene ? inferReplyIntentForScene(scene, '') : '',
+      core_reply_target: isChatScreenshot ? (findCoreReplyTarget(dialogue)?.text || '') : '',
+      recipient_effect: isChatScreenshot ? inferRecipientEffectForScene(scene, dialogue) : '',
       intimacy_score: isChatScreenshot ? 35 : 0,
     },
     relationship_memory_engine: {
@@ -2250,7 +2269,7 @@ function buildFreeTierFallbackAdvice() {
     next_best_move: '',
   };
   const relationshipGoal = normalizeRelationshipGoal({}, relationshipMemory);
-  return { attitude_label: '服务暂时繁忙', attitude_desc: '当前分析服务暂时不可用。为了避免给你不准确的建议，本次不会猜测截图内容，请稍后点击"重新分析"。', interest_score: 0, interest_level: '低意愿', interest_signals: [], conversation_mode: '礼貌回应', conversation_stage: '初次认识', analysis: { stage: 'ice_breaking', stage_label: RELATIONSHIP_STAGE_LABELS.ice_breaking, scene: '', scene_id: '', emotion: '', reply_intent: '', intimacy_score: 0 }, relationship_memory_engine: relationshipMemory, relationship_stage: 'ice_breaking', intimacy_score: 0, attraction_score: 0, investment_balance: 'balanced', initiator: 'unclear', reply_risk: 'safe', risk_level: 'safe', next_best_move: '', conversation_future: normalizeConversationFuture({}, { relationshipMemory, scene: null }), relationship_goal: relationshipGoal, coach_advice: normalizeCoachAdvice({}, { relationshipMemory, relationshipGoal, scene: null }), reply_explanation: [], next_5_moves: [], reply_strategy: '', flirt_level: '先别暧昧', is_chat_screenshot: true, non_chat_reply: '', chat_evidence: {}, conversation_summary: '', chat_guide: buildDefaultChatGuide(), next_topics: [], dialogue: [], suggest_stop: false, needs_retry: true, degraded: true, replies: [], sticker_match_intent: null, sticker_suggestions: [] };
+  return { attitude_label: '服务暂时繁忙', attitude_desc: '当前分析服务暂时不可用。为了避免给你不准确的建议，本次不会猜测截图内容，请稍后点击"重新分析"。', interest_score: 0, interest_level: '低意愿', interest_signals: [], conversation_mode: '礼貌回应', conversation_stage: '初次认识', analysis: { stage: 'ice_breaking', stage_label: RELATIONSHIP_STAGE_LABELS.ice_breaking, scene: '', scene_id: '', emotion: '', reply_intent: '', core_reply_target: '', recipient_effect: '', intimacy_score: 0 }, relationship_memory_engine: relationshipMemory, relationship_stage: 'ice_breaking', intimacy_score: 0, attraction_score: 0, investment_balance: 'balanced', initiator: 'unclear', reply_risk: 'safe', risk_level: 'safe', next_best_move: '', conversation_future: normalizeConversationFuture({}, { relationshipMemory, scene: null }), relationship_goal: relationshipGoal, coach_advice: normalizeCoachAdvice({}, { relationshipMemory, relationshipGoal, scene: null }), reply_explanation: [], next_5_moves: [], reply_strategy: '', flirt_level: '先别暧昧', is_chat_screenshot: true, non_chat_reply: '', chat_evidence: {}, conversation_summary: '', chat_guide: buildDefaultChatGuide(), next_topics: [], dialogue: [], suggest_stop: false, needs_retry: true, degraded: true, replies: [], sticker_match_intent: null, sticker_suggestions: [] };
 }
 
 function buildJsonParseFallbackAdvice(rawOutput = '') {
@@ -2279,6 +2298,8 @@ function buildJsonParseFallbackAdvice(rawOutput = '') {
       scene_id: '',
       emotion: '',
       reply_intent: '',
+      core_reply_target: '',
+      recipient_effect: '',
       intimacy_score: 0,
     },
     relationship_memory_engine: relationshipMemory,
@@ -2602,6 +2623,8 @@ function buildGroupChatAdvice() {
       scene_id: '',
       emotion: '',
       reply_intent: '',
+      core_reply_target: '',
+      recipient_effect: '',
       intimacy_score: 0,
     },
     relationship_memory_engine: relationshipMemory,
@@ -3440,6 +3463,20 @@ function inferReplyIntentForScene(scene, emotion = '') {
   return emotion === 'comfort' ? 'comfort_support' : 'warm_continue';
 }
 
+function inferRecipientEffectForScene(scene, dialogue = []) {
+  const sceneName = scene?.scene || '';
+  const coreCategory = findCoreReplyTarget(dialogue)?.category || '';
+  if (coreCategory === 'comfort_seeking' || /身体不舒服|情绪低落|失眠|委屈|失恋|家庭冲突|工作压力|学习压力|搬家压力|加班/.test(sceneName)) return '安心、被陪伴、不孤单';
+  if (coreCategory === 'relationship_probe' || /吃醋|查岗|表白试探|needs_reassurance/.test(sceneName)) return '被偏爱、有安全感';
+  if (coreCategory === 'confession') return '被认真对待、被珍惜';
+  if (coreCategory === 'invitation') return '被期待、轻松不尴尬';
+  if (sceneName === '晚安') return '被惦记、温柔收尾';
+  if (/感谢/.test(sceneName)) return '被尊重、关系更近';
+  if (/感情观|前任话题|深度/.test(sceneName)) return '被理解、被认真对待';
+  if (/日常美食|分享|夸照片|换头像|换发型/.test(sceneName) || coreCategory === 'share') return '被关注、轻松、有趣';
+  return '舒服自然、想继续聊';
+}
+
 function normalizeCoachAnalysis(rawAnalysis, { scene, dialogue, conversationStage, interestScore }) {
   const inferredEmotion = inferEmotionForScene(scene, dialogue);
   const forceSceneStage = /attention_seeking|wants_connection|playful_complaint|user_too_cold|needs_reassurance|hurt_by_cold_reply/.test(scene?.scene || '');
@@ -3456,6 +3493,8 @@ function normalizeCoachAnalysis(rawAnalysis, { scene, dialogue, conversationStag
     ? inferredReplyIntent
     : (rawReplyIntent || inferredReplyIntent);
   const intimacyScore = clampScore(Number.isFinite(Number(rawAnalysis?.intimacy_score)) ? rawAnalysis.intimacy_score : interestScore);
+  const coreReplyTarget = cleanText(rawAnalysis?.core_reply_target, 120) || findCoreReplyTarget(dialogue)?.text || '';
+  const recipientEffect = cleanText(rawAnalysis?.recipient_effect, 60) || inferRecipientEffectForScene(scene, dialogue);
   return {
     stage,
     stage_label: RELATIONSHIP_STAGE_LABELS[stage] || '',
@@ -3463,6 +3502,8 @@ function normalizeCoachAnalysis(rawAnalysis, { scene, dialogue, conversationStag
     scene_id: scene?.id || '',
     emotion,
     reply_intent: replyIntent,
+    core_reply_target: coreReplyTarget,
+    recipient_effect: recipientEffect,
     intimacy_score: intimacyScore,
   };
 }
@@ -4207,6 +4248,63 @@ function getLatestOpponentText(dialogue) {
     ?.text || '';
 }
 
+// ---------- 核心未回复消息（Core Reply Target） ----------
+// 不默认回复最后一句：在对方“尚未被我方回复”的消息里，挑出最值得回应的一句。
+const CORE_TARGET_FILLER_PATTERN = /^(?:[\s~～。.！!？?，,、…!?]|哈|嘿|嘻|呵|嗯|哦|噢|喔|呀|啊|呜|嘤|h|2|3)+$|^(?:没事啦?|不过没事啦?|没什么啦?|没啥|算了|就这样|好啦|行啦|就酱|拜拜|去了|不说了|说完了|完毕|over)[~～！!。.]?$|^\[[^\]]{1,8}\]$|^（[^）]{1,8}）$/i;
+
+const CORE_TARGET_PRIORITIES = [
+  { category: 'confession', weight: 100, pattern: /我?(好像|可能|真的)?喜欢你|爱上你|我爱你|做我(女|男)朋友|在一起吧/ },
+  { category: 'comfort_seeking', weight: 95, pattern: /难过|想哭|哭了|委屈|崩溃|难受|心情(不好|差)|emo|好累|心累|压力(好|很)?大|焦虑|失眠|睡不着|不舒服|生病|发烧|头疼|肚子疼|被骂|分手|被删|拉黑|失业|考砸|挂科|没人陪|陪陪我|孤单|孤独/ },
+  { category: 'relationship_probe', weight: 90, pattern: /你是不是对谁都|会不会一直|我重要吗|你(真的)?懂我吗|你会不会(离开|烦|骗)|你(到底)?喜欢我(吗|什么)|为什么(喜欢|对)我|你想我了?吗|你会吃醋吗|如果有更好的人|对你来说我|安全感/ },
+  { category: 'invitation', weight: 80, pattern: /要不要一起|一起去|约(你|个)|有空吗|周末.{0,6}(去|约|见)|见(一)?面|出来(玩|吃|聊)|请你吃/ },
+  { category: 'emotional_expression', weight: 75, pattern: /好开心|太开心|超开心|好幸福|激动|兴奋|好气|生气|气死|讨厌你|烦死|好烦|无聊死/ },
+  { category: 'question', weight: 60, pattern: /[？?]$|^(为什么|怎么|什么|哪|谁|几|多少)|(吗|呢|么)[？?~～！!]?$/ },
+  { category: 'share', weight: 40, pattern: /跟你说|和你说|你看|给你看|我发现|买了|去了|吃了|吃完|喝了|看了|拍的|刚刚|刚吃|刚买|刚到|刚下|今天/ },
+];
+
+function classifyCoreTargetCategory(text = '') {
+  const cleaned = String(text || '').trim();
+  if (!cleaned || CORE_TARGET_FILLER_PATTERN.test(cleaned)) return { category: 'filler', weight: 0 };
+  for (const entry of CORE_TARGET_PRIORITIES) {
+    if (entry.pattern.test(cleaned)) return { category: entry.category, weight: entry.weight };
+  }
+  return { category: 'other', weight: 20 };
+}
+
+function getUnrepliedOpponentMessages(dialogue = []) {
+  const list = Array.isArray(dialogue) ? dialogue : [];
+  let lastUserIndex = -1;
+  list.forEach((message, index) => {
+    if (message?.speaker === '我') lastUserIndex = index;
+  });
+  return list
+    .map((message, index) => ({ ...message, index }))
+    .filter((message) => message.speaker === '对方' && message.index > lastUserIndex && String(message.text || '').trim());
+}
+
+/**
+ * 找出整段对话里“对方发送、我方尚未回复、最值得回应”的核心消息。
+ * 返回 { text, index, category, weight }；没有未回复消息时返回 null。
+ */
+function findCoreReplyTarget(dialogue = []) {
+  const unreplied = getUnrepliedOpponentMessages(dialogue);
+  if (!unreplied.length) return null;
+  let best = null;
+  unreplied.forEach((message) => {
+    const { category, weight } = classifyCoreTargetCategory(message.text);
+    // 同权重取更晚的一条；语气词/补充永远不胜出，除非全是 filler
+    if (!best || weight > best.weight || (weight === best.weight && message.index > best.index)) {
+      best = { text: String(message.text).trim(), index: message.index, category, weight };
+    }
+  });
+  if (best && best.category === 'filler') {
+    // 全是语气词时退回最后一条非空消息
+    const last = unreplied[unreplied.length - 1];
+    return { text: String(last.text).trim(), index: last.index, category: 'filler', weight: 0 };
+  }
+  return best;
+}
+
 function inferStickerReplyIntent({
   dialogue = [],
   conversationStage = '轻松破冰',
@@ -4443,6 +4541,8 @@ function toStockStickerSuggestion(sticker, score, intent, index = 0) {
     scene: normalizeCatalogList(sticker.scene),
     intent: normalizeCatalogList(sticker.intent),
     intent_tags: normalizeCatalogList(sticker.intent),
+    usage_role: normalizeCatalogList(sticker.usage_role),
+    negative_tags: normalizeCatalogList(sticker.negative_tags),
     generic: sticker.generic === true,
     static: sticker.static !== false,
     score,
@@ -4537,8 +4637,15 @@ const SEMANTIC_STICKER_HIGH_MATCH_THRESHOLD = 0.8;
 const SEMANTIC_STICKER_MIN_COUNT = 3;
 
 function classifySemanticStickerScene(dialogue = []) {
+  // 场景判定以“核心未回复消息”为准，而不是机械取最后一句：
+  // 例如「今天真的好难过 / 不过没事啦」应判为安慰场景。
+  const coreTarget = findCoreReplyTarget(dialogue);
+  const core = coreTarget && coreTarget.category !== 'filler' ? coreTarget.text : '';
   const latest = getLatestOpponentText(dialogue);
   const recent = recentDialogueText(dialogue, 6);
+  for (const scene of SEMANTIC_STICKER_SCENES) {
+    if (core && scene.patterns.test(core)) return scene;
+  }
   for (const scene of SEMANTIC_STICKER_SCENES) {
     if (latest && scene.patterns.test(latest)) return scene;
   }
@@ -4546,6 +4653,13 @@ function classifySemanticStickerScene(dialogue = []) {
     if (recent && scene.patterns.test(recent)) return scene;
   }
   return null;
+}
+
+function stickerBlockedBySemanticScene(sticker, scene) {
+  if (!scene) return false;
+  const negativeTags = normalizeCatalogList(sticker.negative_tags);
+  if (!negativeTags.length) return false;
+  return negativeTags.includes(scene.id) || normalizeCatalogList(scene.tags).some((tag) => negativeTags.includes(tag));
 }
 
 function stickerMatchesSemanticScene(sticker, scene) {
@@ -4566,11 +4680,31 @@ function semanticSceneAllowsGenericSticker(sticker, scene) {
   return true;
 }
 
+const SEMANTIC_SCENE_PREFERRED_ROLES = {
+  晚安: ['温柔收尾'],
+  早安: ['开启话题'],
+  想念: ['表达偏爱', '撒娇互动'],
+  感谢: ['表达感谢', '给情绪价值'],
+  安慰: ['接住情绪', '给安全感'],
+  求陪伴: ['接住情绪', '给安全感', '表达偏爱'],
+  鼓励: ['鼓励对方', '给情绪价值'],
+  暧昧试探: ['表达偏爱', '给安全感'],
+  吃醋哄人: ['撒娇表态', '给安全感'],
+  大笑: ['接梗', '活跃气氛'],
+  庆祝: ['一起开心', '给情绪价值'],
+  道别出行: ['告别收尾'],
+  撒娇卖萌: ['撒娇互动', '活跃气氛'],
+  等待回应: ['求回应', '撒娇互动'],
+  确认回应: ['确认信息'],
+  日常分享: ['捧场回应', '顺势接话', '一起开心'],
+};
+
 function scoreSemanticSceneMatch(sticker, scene) {
   const stickerScenes = normalizeCatalogList(sticker.scene);
   const stickerIntent = normalizeCatalogList(sticker.intent);
   const stickerEmotion = normalizeCatalogEmotion(sticker.emotion);
   const stickerScenario = normalizeCatalogList(sticker.scenario);
+  const stickerRoles = normalizeCatalogList(sticker.usage_role);
   const stickerText = cleanText(sticker.text, 40);
   let score = 0;
 
@@ -4583,6 +4717,8 @@ function scoreSemanticSceneMatch(sticker, scene) {
   }
   if (normalizeCatalogList(scene.emotions).includes(stickerEmotion.primary)) score += 0.1;
   if (stickerScenario.some((scenario) => normalizeCatalogList(scene.scenarios).includes(scenario))) score += 0.1;
+  const preferredRoles = SEMANTIC_SCENE_PREFERRED_ROLES[scene.id] || [];
+  if (stickerRoles.some((role) => preferredRoles.includes(role))) score += 0.1;
   return Math.min(1, Math.round(score * 100) / 100);
 }
 
@@ -4611,9 +4747,11 @@ function recommendStockStickers(intent, count = STICKER_RECOMMENDATION_COUNT, di
 
   let pool;
   if (semanticScene) {
-    // 场景先行：只在同场景库存里选；泛用确认类表情只在确认/分享场景出现
+    // 场景先行：只在同场景库存里选；泛用确认类表情只在确认/分享场景出现；
+    // negative_tags 命中当前场景的库存硬过滤（例如"收到"禁入安慰/晚安场景）
     pool = usable.filter((sticker) => stickerMatchesSemanticScene(sticker, semanticScene)
-      && semanticSceneAllowsGenericSticker(sticker, semanticScene));
+      && semanticSceneAllowsGenericSticker(sticker, semanticScene)
+      && !stickerBlockedBySemanticScene(sticker, semanticScene));
   } else {
     // 无明确场景：只在"轻反应"表情族里选（夸夸/惊叹/接话/大笑/搞怪），
     // 排除泛用确认类和强场景类（晚安/吃醋/鼓励冲刺等需要明确语境的）
@@ -5435,4 +5573,4 @@ function buildStoragePath({ visitorId, index, ext }) {
   return `screenshots/${day}/${safeVisitorId}-${Date.now()}-${index}.${ext}`;
 }
 
-export { CHAT_ADVICE_SCHEMA, CHAT_SCENE_LIBRARY, EXTRACTION_IMAGE_DETAIL, EXTRACTION_MAX_COMPLETION_TOKENS, EXTRACTION_SCHEMA, EXTRACTION_SYSTEM_PROMPT, GENERIC_REPLY_TEMPLATE_PATTERN, IMAGE_READING_RULES, INTENT_DETECTION_SCHEMA, INTENT_DETECTION_SYSTEM_PROMPT, INTENT_MAX_COMPLETION_TOKENS, INTENT_STRATEGY_MAP, MODELS, PRIMARY_IMAGE_DETAIL, PRIMARY_MAX_COMPLETION_TOKENS, PRIMARY_OPENAI_TIMEOUT_MS, REFLECTIVE_INTELLIGENCE_NOTE, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, REPLY_REFINEMENT_SCHEMA, REFINEMENT_MAX_COMPLETION_TOKENS, STYLE_DIMENSION_NOTE, analyzeConversationDirection, buildActiveCuriosityGuide, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildGroupChatAdvice, buildGroundedFallbackReplies, buildIntentPrefix, buildRegeneratePrefix, buildReplyRefinementPrompt, buildStageChatGuide, buildStickerMatchIntent, buildUserProfilePrefix, classifySemanticStickerScene, detectConversationIntent, detectScene, extractConcreteFacts, extractDialogueFromImages, extractFirstJsonObject, getReplyGroundingReport, getRequestParts, getStickerContext, hasActiveCuriosity, hasHappyEmotion, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, hasStudyStress, inferConversationStage, isRetryableModelError, isVerifiedChatScreenshot, logUsage, mergeRefinedReplies, needsReplyRefinement, normalizeChatGuide, normalizeClientMetadata, normalizeConversationMode, normalizeConversationStage, normalizeDialogue, normalizeChatEvidence, normalizeReplyCandidate, normalizeStickerSuggestions, normalizeUserProfile, parseAdvice, recommendStockStickers, repairReplyCandidates, requestOpenAIAdvice, requestOpenAIReplyRefinement, safeJsonParse, scoreStockSticker };
+export { CHAT_ADVICE_SCHEMA, CHAT_SCENE_LIBRARY, EXTRACTION_IMAGE_DETAIL, EXTRACTION_MAX_COMPLETION_TOKENS, EXTRACTION_SCHEMA, EXTRACTION_SYSTEM_PROMPT, GENERIC_REPLY_TEMPLATE_PATTERN, IMAGE_READING_RULES, INTENT_DETECTION_SCHEMA, INTENT_DETECTION_SYSTEM_PROMPT, INTENT_MAX_COMPLETION_TOKENS, INTENT_STRATEGY_MAP, MODELS, PRIMARY_IMAGE_DETAIL, PRIMARY_MAX_COMPLETION_TOKENS, PRIMARY_OPENAI_TIMEOUT_MS, REFLECTIVE_INTELLIGENCE_NOTE, REPLY_COACH_SYSTEM_PROMPT, REPLY_PERSPECTIVE_EXAMPLES, REPLY_REFINEMENT_SCHEMA, REFINEMENT_MAX_COMPLETION_TOKENS, STYLE_DIMENSION_NOTE, analyzeConversationDirection, buildActiveCuriosityGuide, buildEmotionalDisclosureGuide, buildFreeTierFallbackAdvice, buildGroupChatAdvice, buildGroundedFallbackReplies, buildIntentPrefix, buildRegeneratePrefix, buildReplyRefinementPrompt, buildStageChatGuide, buildStickerMatchIntent, buildUserProfilePrefix, classifySemanticStickerScene, detectConversationIntent, detectScene, extractConcreteFacts, extractDialogueFromImages, extractFirstJsonObject, findCoreReplyTarget, getReplyGroundingReport, getRequestParts, getStickerContext, hasActiveCuriosity, hasHappyEmotion, hasRecentEmotionalDisclosure, hasRepeatedColdReplies, hasStudyStress, inferConversationStage, isRetryableModelError, isVerifiedChatScreenshot, logUsage, mergeRefinedReplies, needsReplyRefinement, normalizeChatGuide, normalizeClientMetadata, normalizeConversationMode, normalizeConversationStage, normalizeDialogue, normalizeChatEvidence, normalizeReplyCandidate, normalizeStickerSuggestions, normalizeUserProfile, parseAdvice, recommendStockStickers, repairReplyCandidates, requestOpenAIAdvice, requestOpenAIReplyRefinement, safeJsonParse, scoreStockSticker };

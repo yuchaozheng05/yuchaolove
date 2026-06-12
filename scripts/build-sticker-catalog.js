@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { basename, extname, join, relative } from 'node:path';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { enrichStickerItem } from './sticker-tag-rules.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const promptsDir = join(root, 'assets', 'stickers', 'prompts');
@@ -197,7 +198,7 @@ function buildCatalogItem(item) {
   const enrichedItem = { ...item, character, emotion };
   const scenario = item.scenario || inferScenario(item);
   const relationshipStage = item.relationship_stage || inferRelationshipStage(enrichedItem, scenario);
-  return {
+  return enrichStickerItem({
     id: toId(item.filename),
     file: item.file || `/assets/stickers/packs/style-bible-v1/images/${item.filename}`,
     thumb: item.thumb || '',
@@ -212,7 +213,9 @@ function buildCatalogItem(item) {
     generic: item.generic === true,
     quality_score: Number.isFinite(Number(item.quality_score)) ? Number(item.quality_score) : 0.82,
     usage_priority: Number.isFinite(Number(item.usage_priority)) ? Number(item.usage_priority) : 60,
-  };
+    usage_role: Array.isArray(item.usage_role) ? item.usage_role : [],
+    negative_tags: Array.isArray(item.negative_tags) ? item.negative_tags : [],
+  });
 }
 
 const { prompts, sources } = readPromptFiles();

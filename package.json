@@ -7,6 +7,7 @@
     "stickers:ss": "node scripts/generate-stickers.js --prompt-file=assets/stickers/prompts/screenshot-pack-prompts.json",
     "stickers:captions": "python3 scripts/add-captions.py",
     "stickers:build": "node scripts/build-sticker-catalog.js",
+    "stickers:enrich": "node scripts/enrich-sticker-tags.js",
     "stickers:validate": "node scripts/build-sticker-catalog.js --validate",
     "stickers:prompts:list": "ls assets/stickers/prompts/",
     "stickers:leonardo": "node scripts/generate-stickers-leonardo.js",

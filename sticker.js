@@ -1,7 +1,11 @@
 /* yuchaolove - stock sticker recommendations with canvas fallback */
 
 const STICKER_CATALOG_URL = '/assets/stickers/catalog.v1.json';
+// 推荐数量：3~6 个，宁缺毋滥；6 是上限不是目标
 const STICKER_PANEL_RECOMMENDATION_COUNT = 6;
+const STICKER_PANEL_MIN_COUNT = 3;
+// 低于最高分一定比例的候选视为"不够合适"，不为凑数展示
+const STICKER_PANEL_RELATIVE_SCORE_FLOOR = 0.55;
 const STICKER_EXPORT_SIZE = 512;
 const STICKER_EXPORT_CONTENT_RATIO = 0.88;
 const STICKER_PREVIEW_SIZE = 180;
@@ -286,12 +290,31 @@ function selectDiverseStickers(scored, count) {
   return selected.slice(0, count);
 }
 
+function stickerBlockedByIntent(item, intent) {
+  const negativeTags = normalizeList(item.negative_tags);
+  if (!negativeTags.length) return false;
+  // 当前语境标签（场景名/检索词）命中库存的禁用标签时硬过滤，
+  // 例如"收到/好的"类表情的 negative_tags 含「安慰」「晚安」
+  const contextTags = [...normalizeList(intent.tags), ...normalizeList(intent.scenarios)];
+  return negativeTags.some((tag) => contextTags.includes(tag));
+}
+
 function recommendFromCatalog(catalog, advice) {
   const intent = buildStickerIntent(advice);
   const scored = catalog
     .filter((item) => item?.file)
+    .filter((item) => !stickerBlockedByIntent(item, intent))
     .map((item) => ({ ...item, score: scoreSticker(item, intent) }));
-  return selectDiverseStickers(scored, STICKER_PANEL_RECOMMENDATION_COUNT)
+  if (!scored.length) return [];
+  // 宁缺毋滥：相对分数过低的不展示；保底 3 个、上限 6 个
+  const topScore = Math.max(...scored.map((item) => item.score));
+  const sorted = scored.slice().sort(sortScoredStickers);
+  const confident = sorted.filter((item) => topScore <= 0 || item.score >= topScore * STICKER_PANEL_RELATIVE_SCORE_FLOOR);
+  const pool = confident.length >= STICKER_PANEL_MIN_COUNT
+    ? confident
+    : sorted.slice(0, STICKER_PANEL_MIN_COUNT);
+  const count = Math.min(STICKER_PANEL_RECOMMENDATION_COUNT, pool.length);
+  return selectDiverseStickers(pool, count)
     .map((item, index) => ({
       ...item,
       text: String(item.text || '').trim() || getStickerDisplayTextForIntent(intent, index),
