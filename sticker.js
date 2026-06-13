@@ -10,7 +10,7 @@ const STICKER_EXPORT_SIZE = 512;
 const STICKER_EXPORT_CONTENT_RATIO = 0.88;
 const STICKER_PREVIEW_SIZE = 180;
 const STICKER_MODAL_PREVIEW_SIZE = 420;
-const STICKER_CHARACTER_ORDER = ['white_mochi', 'hamster', 'cat', 'shiba'];
+const STICKER_CHARACTER_ORDER = ['white_mochi', 'hamster', 'cat', 'bunny', 'shiba', 'fox'];
 const STICKER_MAX_PER_CHARACTER_SOFT = 2;
 const STICKER_CANONICAL_EMOTIONS = {
   comforting: 'comfort',

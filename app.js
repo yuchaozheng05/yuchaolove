@@ -414,6 +414,16 @@ function renderResults(data) {
     signals.appendChild(item);
   });
   signals.classList.toggle('show', Boolean(data.is_chat_screenshot && data.interest_signals.length));
+  const coreTarget = document.getElementById('coreReplyTarget');
+  if (coreTarget) {
+    const targetText = data.analysis?.core_reply_target || '';
+    const effectText = data.analysis?.recipient_effect || '';
+    const parts = [];
+    if (targetText) parts.push(`💬 在回应：「${targetText}」`);
+    if (effectText) parts.push(`🎯 想让对方感觉到：${effectText}`);
+    coreTarget.textContent = parts.join('　');
+    coreTarget.classList.toggle('show', Boolean(data.is_chat_screenshot && parts.length));
+  }
   const summary = document.getElementById('conversationSummary');
   summary.textContent = data.conversation_summary || '';
   summary.classList.toggle('show', Boolean(data.conversation_summary));

@@ -12,7 +12,7 @@ const imagesDir = join(stickersDir, 'packs', 'style-bible-v1', 'images');
 const thumbsDir = join(stickersDir, 'packs', 'style-bible-v1', 'thumbs');
 const catalogPath = join(root, 'assets', 'stickers', 'catalog.v1.json');
 const imageExtensions = new Set(['.png']);
-const catalogCharacters = new Set(['white_mochi', 'hamster', 'cat', 'shiba']);
+const catalogCharacters = new Set(['white_mochi', 'hamster', 'cat', 'shiba', 'fox', 'bunny']);
 const validateOnly = process.argv.includes('--validate');
 
 function readJson(path) {

@@ -1,15 +1,16 @@
 {
   "version": 1,
-  "generated_at": "2026-06-12T03:33:29.893Z",
+  "generated_at": "2026-06-12T09:18:25.683Z",
   "pack": "style-bible-v1",
   "source_prompts": [
     "/assets/stickers/prompts/sticker-prompts.json",
     "/assets/stickers/prompts/ref-pack-prompts.json",
+    "/assets/stickers/prompts/ref14-pack-prompts.json",
     "/assets/stickers/prompts/screenshot-pack-prompts.json"
   ],
   "image_dir": "/assets/stickers",
   "generated_image_dir": "/assets/stickers/packs/style-bible-v1/images",
-  "count": 201,
+  "count": 231,
   "items": [
     {
       "id": "ref1_01",
@@ -2136,6 +2137,1122 @@
         "安慰",
         "求陪伴"
       ]
+    },
+    {
+      "id": "ref14_01",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_01.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_01.png",
+      "character": "white_mochi",
+      "emotion": "greeting",
+      "scenario": "good_morning",
+      "relationship_stage": "acquaintance",
+      "text": "早安呀~",
+      "tags": [
+        "white_mochi",
+        "greeting",
+        "good_morning",
+        "早安呀~",
+        "ref14",
+        "01"
+      ],
+      "scene": [
+        "早安",
+        "打招呼"
+      ],
+      "intent": [
+        "问候",
+        "开启话题"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "开启话题"
+      ],
+      "negative_tags": [
+        "晚安"
+      ]
+    },
+    {
+      "id": "ref14_02",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_02.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_02.png",
+      "character": "shiba",
+      "emotion": "greeting",
+      "scenario": "good_morning",
+      "relationship_stage": "acquaintance",
+      "text": "早上好！",
+      "tags": [
+        "shiba",
+        "greeting",
+        "good_morning",
+        "早上好！",
+        "ref14",
+        "02"
+      ],
+      "scene": [
+        "早安",
+        "打招呼"
+      ],
+      "intent": [
+        "问候",
+        "开启话题"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "开启话题"
+      ],
+      "negative_tags": [
+        "晚安"
+      ]
+    },
+    {
+      "id": "ref14_03",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_03.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_03.png",
+      "character": "cat",
+      "emotion": "greeting",
+      "scenario": "greeting",
+      "relationship_stage": "acquaintance",
+      "text": "午安~",
+      "tags": [
+        "cat",
+        "greeting",
+        "午安~",
+        "ref14",
+        "03"
+      ],
+      "scene": [
+        "打招呼",
+        "日常"
+      ],
+      "intent": [
+        "问候"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "开启话题"
+      ],
+      "negative_tags": []
+    },
+    {
+      "id": "ref14_04",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_04.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_04.png",
+      "character": "fox",
+      "emotion": "greeting",
+      "scenario": "greeting",
+      "relationship_stage": "acquaintance",
+      "text": "晚上好~",
+      "tags": [
+        "fox",
+        "greeting",
+        "晚上好~",
+        "ref14",
+        "04"
+      ],
+      "scene": [
+        "打招呼",
+        "日常"
+      ],
+      "intent": [
+        "问候"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "开启话题"
+      ],
+      "negative_tags": []
+    },
+    {
+      "id": "ref14_05",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_05.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_05.png",
+      "character": "bunny",
+      "emotion": "goodnight",
+      "scenario": "good_night",
+      "relationship_stage": "acquaintance",
+      "text": "晚安啦~",
+      "tags": [
+        "bunny",
+        "goodnight",
+        "good_night",
+        "晚安啦~",
+        "ref14",
+        "05"
+      ],
+      "scene": [
+        "晚安",
+        "睡觉",
+        "结束聊天"
+      ],
+      "intent": [
+        "道晚安",
+        "温柔收尾"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "温柔收尾"
+      ],
+      "negative_tags": [
+        "早安",
+        "庆祝",
+        "鼓励"
+      ]
+    },
+    {
+      "id": "ref14_06",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_06.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_06.png",
+      "character": "hamster",
+      "emotion": "goodnight",
+      "scenario": "good_night",
+      "relationship_stage": "acquaintance",
+      "text": "好梦~",
+      "tags": [
+        "hamster",
+        "goodnight",
+        "good_night",
+        "好梦~",
+        "ref14",
+        "06"
+      ],
+      "scene": [
+        "晚安",
+        "睡觉",
+        "结束聊天"
+      ],
+      "intent": [
+        "道晚安",
+        "温柔收尾"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "温柔收尾"
+      ],
+      "negative_tags": [
+        "早安",
+        "庆祝",
+        "鼓励"
+      ]
+    },
+    {
+      "id": "ref14_07",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_07.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_07.png",
+      "character": "white_mochi",
+      "emotion": "apology",
+      "scenario": "apology",
+      "relationship_stage": "post_conflict",
+      "text": "对不起嘛~",
+      "tags": [
+        "white_mochi",
+        "apology",
+        "对不起嘛~",
+        "ref14",
+        "07"
+      ],
+      "scene": [
+        "道歉",
+        "认错",
+        "闹脾气",
+        "吃醋"
+      ],
+      "intent": [
+        "道歉",
+        "哄你"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "撒娇表态",
+        "道歉哄人"
+      ],
+      "negative_tags": [
+        "安慰",
+        "感谢",
+        "晚安",
+        "早安",
+        "想念",
+        "庆祝",
+        "鼓励",
+        "日常分享"
+      ]
+    },
+    {
+      "id": "ref14_08",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_08.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_08.png",
+      "character": "shiba",
+      "emotion": "apology",
+      "scenario": "apology",
+      "relationship_stage": "post_conflict",
+      "text": "我错啦~",
+      "tags": [
+        "shiba",
+        "apology",
+        "我错啦~",
+        "ref14",
+        "08"
+      ],
+      "scene": [
+        "道歉",
+        "认错",
+        "闹脾气",
+        "吃醋"
+      ],
+      "intent": [
+        "道歉",
+        "认错",
+        "哄你"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "撒娇表态",
+        "道歉哄人"
+      ],
+      "negative_tags": [
+        "安慰",
+        "感谢",
+        "晚安",
+        "早安",
+        "想念",
+        "庆祝",
+        "鼓励",
+        "日常分享"
+      ]
+    },
+    {
+      "id": "ref14_09",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_09.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_09.png",
+      "character": "cat",
+      "emotion": "apology",
+      "scenario": "apology",
+      "relationship_stage": "post_conflict",
+      "text": "抱歉抱歉~",
+      "tags": [
+        "cat",
+        "apology",
+        "抱歉抱歉~",
+        "ref14",
+        "09"
+      ],
+      "scene": [
+        "道歉",
+        "认错",
+        "闹脾气"
+      ],
+      "intent": [
+        "道歉",
+        "认错"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "撒娇表态",
+        "道歉哄人"
+      ],
+      "negative_tags": [
+        "安慰",
+        "感谢",
+        "晚安",
+        "早安",
+        "想念",
+        "庆祝",
+        "鼓励",
+        "日常分享"
+      ]
+    },
+    {
+      "id": "ref14_10",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_10.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_10.png",
+      "character": "fox",
+      "emotion": "apology",
+      "scenario": "apology",
+      "relationship_stage": "post_conflict",
+      "text": "都是我的错~",
+      "tags": [
+        "fox",
+        "apology",
+        "都是我的错~",
+        "ref14",
+        "10"
+      ],
+      "scene": [
+        "道歉",
+        "认错",
+        "闹脾气",
+        "吃醋"
+      ],
+      "intent": [
+        "道歉",
+        "认错",
+        "哄你"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "撒娇表态",
+        "道歉哄人"
+      ],
+      "negative_tags": [
+        "安慰",
+        "感谢",
+        "晚安",
+        "早安",
+        "想念",
+        "庆祝",
+        "鼓励",
+        "日常分享"
+      ]
+    },
+    {
+      "id": "ref14_11",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_11.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_11.png",
+      "character": "bunny",
+      "emotion": "apology",
+      "scenario": "apology",
+      "relationship_stage": "post_conflict",
+      "text": "对不起嘛~",
+      "tags": [
+        "bunny",
+        "apology",
+        "对不起嘛~",
+        "ref14",
+        "11"
+      ],
+      "scene": [
+        "道歉",
+        "认错",
+        "撒娇",
+        "吃醋"
+      ],
+      "intent": [
+        "道歉",
+        "撒娇",
+        "哄你"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "撒娇互动",
+        "撒娇表态",
+        "道歉哄人"
+      ],
+      "negative_tags": [
+        "安慰",
+        "感谢",
+        "晚安",
+        "早安",
+        "想念",
+        "庆祝",
+        "鼓励",
+        "日常分享"
+      ]
+    },
+    {
+      "id": "ref14_12",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_12.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_12.png",
+      "character": "hamster",
+      "emotion": "apology",
+      "scenario": "apology",
+      "relationship_stage": "post_conflict",
+      "text": "惹你生气了~",
+      "tags": [
+        "hamster",
+        "apology",
+        "惹你生气了~",
+        "ref14",
+        "12"
+      ],
+      "scene": [
+        "道歉",
+        "认错",
+        "闹脾气",
+        "吃醋"
+      ],
+      "intent": [
+        "道歉",
+        "哄你"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "撒娇表态",
+        "道歉哄人"
+      ],
+      "negative_tags": [
+        "安慰",
+        "感谢",
+        "晚安",
+        "早安",
+        "想念",
+        "庆祝",
+        "鼓励",
+        "日常分享"
+      ]
+    },
+    {
+      "id": "ref14_13",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_13.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_13.png",
+      "character": "white_mochi",
+      "emotion": "thanks",
+      "scenario": "thanks",
+      "relationship_stage": "talking_stage",
+      "text": "谢谢你~",
+      "tags": [
+        "white_mochi",
+        "thanks",
+        "谢谢你~",
+        "ref14",
+        "13"
+      ],
+      "scene": [
+        "感谢"
+      ],
+      "intent": [
+        "表达感谢"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "表达感谢"
+      ],
+      "negative_tags": []
+    },
+    {
+      "id": "ref14_14",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_14.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_14.png",
+      "character": "shiba",
+      "emotion": "thanks",
+      "scenario": "thanks",
+      "relationship_stage": "talking_stage",
+      "text": "太感谢啦！",
+      "tags": [
+        "shiba",
+        "thanks",
+        "太感谢啦！",
+        "ref14",
+        "14"
+      ],
+      "scene": [
+        "感谢"
+      ],
+      "intent": [
+        "表达感谢"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "表达感谢"
+      ],
+      "negative_tags": []
+    },
+    {
+      "id": "ref14_15",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_15.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_15.png",
+      "character": "cat",
+      "emotion": "thanks",
+      "scenario": "thanks",
+      "relationship_stage": "talking_stage",
+      "text": "非常感谢！",
+      "tags": [
+        "cat",
+        "thanks",
+        "非常感谢！",
+        "ref14",
+        "15"
+      ],
+      "scene": [
+        "感谢"
+      ],
+      "intent": [
+        "表达感谢"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "表达感谢"
+      ],
+      "negative_tags": []
+    },
+    {
+      "id": "ref14_16",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_16.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_16.png",
+      "character": "fox",
+      "emotion": "thanks",
+      "scenario": "thanks",
+      "relationship_stage": "talking_stage",
+      "text": "感恩有你！",
+      "tags": [
+        "fox",
+        "thanks",
+        "感恩有你！",
+        "ref14",
+        "16"
+      ],
+      "scene": [
+        "感谢",
+        "亲密"
+      ],
+      "intent": [
+        "表达感谢",
+        "表达在乎"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "表达感谢",
+        "表达偏爱",
+        "给安全感"
+      ],
+      "negative_tags": []
+    },
+    {
+      "id": "ref14_17",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_17.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_17.png",
+      "character": "bunny",
+      "emotion": "thanks",
+      "scenario": "thanks",
+      "relationship_stage": "talking_stage",
+      "text": "谢谢你呀！",
+      "tags": [
+        "bunny",
+        "thanks",
+        "谢谢你呀！",
+        "ref14",
+        "17"
+      ],
+      "scene": [
+        "感谢"
+      ],
+      "intent": [
+        "表达感谢"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "表达感谢"
+      ],
+      "negative_tags": []
+    },
+    {
+      "id": "ref14_18",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_18.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_18.png",
+      "character": "hamster",
+      "emotion": "thanks",
+      "scenario": "thanks",
+      "relationship_stage": "talking_stage",
+      "text": "真的很谢谢！",
+      "tags": [
+        "hamster",
+        "thanks",
+        "真的很谢谢！",
+        "ref14",
+        "18"
+      ],
+      "scene": [
+        "感谢"
+      ],
+      "intent": [
+        "表达感谢"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "表达感谢"
+      ],
+      "negative_tags": []
+    },
+    {
+      "id": "ref14_19",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_19.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_19.png",
+      "character": "white_mochi",
+      "emotion": "encourage",
+      "scenario": "encouragement",
+      "relationship_stage": "talking_stage",
+      "text": "加油鸭！",
+      "tags": [
+        "white_mochi",
+        "encourage",
+        "encouragement",
+        "加油鸭！",
+        "ref14",
+        "19"
+      ],
+      "scene": [
+        "鼓励",
+        "夸夸"
+      ],
+      "intent": [
+        "鼓励",
+        "打气"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "鼓励对方",
+        "给情绪价值"
+      ],
+      "negative_tags": [
+        "晚安",
+        "感谢",
+        "想念",
+        "暧昧试探"
+      ]
+    },
+    {
+      "id": "ref14_20",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_20.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_20.png",
+      "character": "shiba",
+      "emotion": "encourage",
+      "scenario": "encouragement",
+      "relationship_stage": "talking_stage",
+      "text": "你可以的！",
+      "tags": [
+        "shiba",
+        "encourage",
+        "encouragement",
+        "你可以的！",
+        "ref14",
+        "20"
+      ],
+      "scene": [
+        "鼓励",
+        "夸夸"
+      ],
+      "intent": [
+        "鼓励",
+        "打气"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "鼓励对方",
+        "给情绪价值"
+      ],
+      "negative_tags": [
+        "晚安",
+        "感谢",
+        "想念",
+        "暧昧试探"
+      ]
+    },
+    {
+      "id": "ref14_21",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_21.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_21.png",
+      "character": "cat",
+      "emotion": "encourage",
+      "scenario": "encouragement",
+      "relationship_stage": "talking_stage",
+      "text": "相信自己！",
+      "tags": [
+        "cat",
+        "encourage",
+        "encouragement",
+        "相信自己！",
+        "ref14",
+        "21"
+      ],
+      "scene": [
+        "鼓励",
+        "夸夸"
+      ],
+      "intent": [
+        "鼓励",
+        "打气"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "鼓励对方",
+        "给情绪价值"
+      ],
+      "negative_tags": [
+        "晚安",
+        "感谢",
+        "想念",
+        "暧昧试探"
+      ]
+    },
+    {
+      "id": "ref14_22",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_22.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_22.png",
+      "character": "fox",
+      "emotion": "encourage",
+      "scenario": "encouragement",
+      "relationship_stage": "talking_stage",
+      "text": "别放弃！",
+      "tags": [
+        "fox",
+        "encourage",
+        "encouragement",
+        "别放弃！",
+        "ref14",
+        "22"
+      ],
+      "scene": [
+        "鼓励",
+        "关心"
+      ],
+      "intent": [
+        "鼓励",
+        "打气"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "鼓励对方",
+        "给情绪价值",
+        "接住情绪",
+        "表达在乎"
+      ],
+      "negative_tags": [
+        "晚安",
+        "感谢",
+        "想念",
+        "暧昧试探"
+      ]
+    },
+    {
+      "id": "ref14_23",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_23.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_23.png",
+      "character": "bunny",
+      "emotion": "encourage",
+      "scenario": "encouragement",
+      "relationship_stage": "talking_stage",
+      "text": "冲鸭！",
+      "tags": [
+        "bunny",
+        "encourage",
+        "encouragement",
+        "冲鸭！",
+        "ref14",
+        "23"
+      ],
+      "scene": [
+        "鼓励",
+        "夸夸"
+      ],
+      "intent": [
+        "鼓励",
+        "打气"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "鼓励对方",
+        "给情绪价值"
+      ],
+      "negative_tags": [
+        "晚安",
+        "感谢",
+        "想念",
+        "暧昧试探"
+      ]
+    },
+    {
+      "id": "ref14_24",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_24.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_24.png",
+      "character": "hamster",
+      "emotion": "encourage",
+      "scenario": "encouragement",
+      "relationship_stage": "talking_stage",
+      "text": "一定行！",
+      "tags": [
+        "hamster",
+        "encourage",
+        "encouragement",
+        "一定行！",
+        "ref14",
+        "24"
+      ],
+      "scene": [
+        "鼓励",
+        "夸夸"
+      ],
+      "intent": [
+        "鼓励",
+        "打气"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "鼓励对方",
+        "给情绪价值"
+      ],
+      "negative_tags": [
+        "晚安",
+        "感谢",
+        "想念",
+        "暧昧试探"
+      ]
+    },
+    {
+      "id": "ref14_25",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_25.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_25.png",
+      "character": "white_mochi",
+      "emotion": "laugh",
+      "scenario": "teasing",
+      "relationship_stage": "talking_stage",
+      "text": "嘿嘿~",
+      "tags": [
+        "white_mochi",
+        "laugh",
+        "teasing",
+        "嘿嘿~",
+        "ref14",
+        "25"
+      ],
+      "scene": [
+        "玩笑",
+        "搞怪",
+        "卖萌"
+      ],
+      "intent": [
+        "接梗",
+        "卖萌"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "接梗",
+        "活跃气氛",
+        "撒娇互动"
+      ],
+      "negative_tags": [
+        "安慰",
+        "晚安",
+        "求陪伴"
+      ]
+    },
+    {
+      "id": "ref14_26",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_26.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_26.png",
+      "character": "shiba",
+      "emotion": "happy",
+      "scenario": "celebration",
+      "relationship_stage": "talking_stage",
+      "text": "耶耶耶！",
+      "tags": [
+        "shiba",
+        "happy",
+        "celebration",
+        "耶耶耶！",
+        "ref14",
+        "26"
+      ],
+      "scene": [
+        "庆祝",
+        "开心"
+      ],
+      "intent": [
+        "一起开心"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "一起开心"
+      ],
+      "negative_tags": [
+        "安慰",
+        "求陪伴"
+      ]
+    },
+    {
+      "id": "ref14_27",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_27.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_27.png",
+      "character": "cat",
+      "emotion": "laugh",
+      "scenario": "teasing",
+      "relationship_stage": "talking_stage",
+      "text": "嘻嘻~",
+      "tags": [
+        "cat",
+        "laugh",
+        "teasing",
+        "嘻嘻~",
+        "ref14",
+        "27"
+      ],
+      "scene": [
+        "玩笑",
+        "搞怪",
+        "卖萌"
+      ],
+      "intent": [
+        "接梗",
+        "卖萌"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "接梗",
+        "活跃气氛",
+        "撒娇互动"
+      ],
+      "negative_tags": [
+        "安慰",
+        "晚安",
+        "求陪伴"
+      ]
+    },
+    {
+      "id": "ref14_28",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_28.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_28.png",
+      "character": "fox",
+      "emotion": "surprised",
+      "scenario": "celebration",
+      "relationship_stage": "talking_stage",
+      "text": "哇哦~",
+      "tags": [
+        "fox",
+        "surprised",
+        "celebration",
+        "哇哦~",
+        "ref14",
+        "28"
+      ],
+      "scene": [
+        "惊叹",
+        "日常接话"
+      ],
+      "intent": [
+        "捧场",
+        "回应分享"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "捧场回应",
+        "顺势接话"
+      ],
+      "negative_tags": []
+    },
+    {
+      "id": "ref14_29",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_29.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_29.png",
+      "character": "bunny",
+      "emotion": "happy",
+      "scenario": "celebration",
+      "relationship_stage": "talking_stage",
+      "text": "开心~",
+      "tags": [
+        "bunny",
+        "happy",
+        "celebration",
+        "开心~",
+        "ref14",
+        "29"
+      ],
+      "scene": [
+        "开心",
+        "庆祝"
+      ],
+      "intent": [
+        "一起开心"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "一起开心"
+      ],
+      "negative_tags": [
+        "安慰",
+        "求陪伴"
+      ]
+    },
+    {
+      "id": "ref14_30",
+      "file": "/assets/stickers/packs/style-bible-v1/images/ref14_30.png",
+      "thumb": "/assets/stickers/packs/style-bible-v1/thumbs/ref14_30.png",
+      "character": "hamster",
+      "emotion": "happy",
+      "scenario": "teasing",
+      "relationship_stage": "talking_stage",
+      "text": "吃吃吃~",
+      "tags": [
+        "hamster",
+        "happy",
+        "teasing",
+        "吃吃吃~",
+        "ref14",
+        "30"
+      ],
+      "scene": [
+        "开心",
+        "玩笑",
+        "日常接话"
+      ],
+      "intent": [
+        "接梗",
+        "回应分享"
+      ],
+      "generic": false,
+      "quality_score": 0.85,
+      "usage_priority": 70,
+      "usage_role": [
+        "一起开心",
+        "接梗",
+        "活跃气氛",
+        "顺势接话"
+      ],
+      "negative_tags": []
     },
     {
       "id": "ref2_01",

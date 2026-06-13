@@ -4,6 +4,7 @@ import {
   findCoreReplyTarget,
   classifySemanticStickerScene,
   buildStickerMatchIntent,
+  dropCustomerServiceReplies,
   recommendStockStickers,
 } from '../api/analyze.js';
 
@@ -121,6 +122,81 @@ test('暧昧试探：泛用确认类（收到/好的）绝不出现', () => {
   for (const p of picks) {
     assert.ok(!GENERIC_TEXTS.test(p.text), `暧昧试探不该出现泛用表情：${p.text}`);
   }
+});
+
+// ---------- 模型语义场景信号 ----------
+
+test('模型场景提示优先：没有关键词的情绪句也能进安慰场景', () => {
+  const dialogue = [{ speaker: '对方', text: '心里堵得慌' }];
+  assert.equal(classifySemanticStickerScene(dialogue), null, '纯正则应判不出场景');
+  assert.equal(classifySemanticStickerScene(dialogue, '情绪低落')?.id, '安慰');
+  assert.equal(classifySemanticStickerScene(dialogue, '吃醋查岗')?.id, '吃醋哄人');
+  assert.equal(classifySemanticStickerScene(dialogue, '表白试探')?.id, '暧昧试探');
+});
+
+test('模型场景提示参与推荐：道歉/感谢库存可被命中', () => {
+  const dialogue = [{ speaker: '对方', text: '你今天帮了我大忙' }];
+  const intent = buildStickerMatchIntent({ dialogue });
+  const picks = recommendStockStickers(intent, 6, dialogue, '感谢');
+  assert.ok(picks.length >= 3, `感谢场景应有足够库存：${picks.length}`);
+  for (const p of picks) {
+    assert.ok((p.scene || []).some((s) => ['感谢', '亲密'].includes(s)), `与感谢无关：${p.text}`);
+  }
+});
+
+test('对方生我的气 → 道歉表情；对方吐槽气死了 → 哄/安慰，不道歉', () => {
+  assert.equal(classifySemanticStickerScene([{ speaker: '对方', text: '你还在生我气吗' }])?.id, '哄人道歉');
+  assert.equal(classifySemanticStickerScene([{ speaker: '对方', text: '我真的气死了' }])?.id, '吃醋哄人');
+
+  const apologyDialogue = [{ speaker: '对方', text: '你还在生我气吗' }];
+  const apology = recommendStockStickers(buildStickerMatchIntent({ dialogue: apologyDialogue }), 6, apologyDialogue);
+  assert.ok(apology.some((p) => /对不起|我错|抱歉|惹你生气/.test(p.text)),
+    `对方生我气时应出现道歉表情：${apology.map((p) => p.text).join('、')}`);
+
+  const ventDialogue = [{ speaker: '对方', text: '我真的气死了' }];
+  const vent = recommendStockStickers(buildStickerMatchIntent({ dialogue: ventDialogue }), 6, ventDialogue);
+  assert.ok(vent.every((p) => !/对不起|我错啦|抱歉|都是我的错/.test(p.text)),
+    `对方吐槽别人时不该道歉：${vent.map((p) => p.text).join('、')}`);
+});
+
+test('无效的模型提示回退正则判断', () => {
+  const scene = classifySemanticStickerScene([{ speaker: '对方', text: '晚安~' }], '不存在的场景');
+  assert.equal(scene?.id, '晚安');
+});
+
+// ---------- 客服味候选硬过滤 ----------
+
+test('客服味候选被过滤，正常候选保留', () => {
+  const advice = {
+    replies: [
+      { text: '听起来你今天很累', messages: ['听起来你今天很累'] },
+      { text: '先躺一会儿，我给你点杯热的', messages: ['先躺一会儿', '我给你点杯热的'] },
+      { text: '你的感受是正常的', messages: ['你的感受是正常的'] },
+      { text: '这题卡住真的会烦死', messages: ['这题卡住真的会烦死'] },
+      { text: '抱抱，今天辛苦你了还想着我', messages: ['抱抱，今天辛苦你了还想着我'] },
+    ],
+  };
+  const result = dropCustomerServiceReplies(advice);
+  assert.equal(result.replies.length, 3);
+  assert.ok(result.replies.every((r) => !/^听起来|感受是正常/.test(r.text)));
+});
+
+test('过滤后不足 3 条则保持原样（保底优先）', () => {
+  const advice = {
+    replies: [
+      { text: '听起来你很难过', messages: [] },
+      { text: '我理解你的感受', messages: [] },
+      { text: '你可以尝试深呼吸', messages: [] },
+      { text: '先睡吧', messages: [] },
+    ],
+  };
+  const result = dropCustomerServiceReplies(advice);
+  assert.equal(result.replies.length, 4, '只剩1条合格时不动原数组');
+});
+
+test('恰好 3 条时不过滤', () => {
+  const advice = { replies: [{ text: '听起来不错' }, { text: 'a' }, { text: 'b' }] };
+  assert.equal(dropCustomerServiceReplies(advice).replies.length, 3);
 });
 
 test('推荐数量永不超过 6', () => {

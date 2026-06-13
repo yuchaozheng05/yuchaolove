@@ -1,0 +1,787 @@
+[
+  {
+    "filename": "ref14_01.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "greeting",
+    "scenario": "good_morning",
+    "text": "早安呀~",
+    "scene": [
+      "早安",
+      "打招呼"
+    ],
+    "intent": [
+      "问候",
+      "开启话题"
+    ],
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "问候祝福",
+      "早安呀"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #1"
+  },
+  {
+    "filename": "ref14_02.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "greeting",
+    "scenario": "good_morning",
+    "text": "早上好！",
+    "scene": [
+      "早安",
+      "打招呼"
+    ],
+    "intent": [
+      "问候",
+      "开启话题"
+    ],
+    "tags": [
+      "shiba",
+      "柴犬",
+      "问候祝福",
+      "早上好"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #2"
+  },
+  {
+    "filename": "ref14_03.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "greeting",
+    "scenario": "greeting",
+    "text": "午安~",
+    "scene": [
+      "打招呼",
+      "日常"
+    ],
+    "intent": [
+      "问候"
+    ],
+    "tags": [
+      "cat",
+      "小猫",
+      "问候祝福",
+      "午安"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #3"
+  },
+  {
+    "filename": "ref14_04.png",
+    "priority": "REF",
+    "character": "fox",
+    "emotion": "greeting",
+    "scenario": "greeting",
+    "text": "晚上好~",
+    "scene": [
+      "打招呼",
+      "日常"
+    ],
+    "intent": [
+      "问候"
+    ],
+    "tags": [
+      "fox",
+      "狐狸",
+      "问候祝福",
+      "晚上好"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #4"
+  },
+  {
+    "filename": "ref14_05.png",
+    "priority": "REF",
+    "character": "bunny",
+    "emotion": "goodnight",
+    "scenario": "good_night",
+    "text": "晚安啦~",
+    "scene": [
+      "晚安",
+      "睡觉",
+      "结束聊天"
+    ],
+    "intent": [
+      "道晚安",
+      "温柔收尾"
+    ],
+    "tags": [
+      "bunny",
+      "兔子",
+      "问候祝福",
+      "晚安啦"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #5"
+  },
+  {
+    "filename": "ref14_06.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "goodnight",
+    "scenario": "good_night",
+    "text": "好梦~",
+    "scene": [
+      "晚安",
+      "睡觉",
+      "结束聊天"
+    ],
+    "intent": [
+      "道晚安",
+      "温柔收尾"
+    ],
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "问候祝福",
+      "好梦"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #6"
+  },
+  {
+    "filename": "ref14_07.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "apology",
+    "scenario": "apology",
+    "text": "对不起嘛~",
+    "scene": [
+      "道歉",
+      "认错",
+      "闹脾气",
+      "吃醋"
+    ],
+    "intent": [
+      "道歉",
+      "哄你"
+    ],
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "道歉认错",
+      "对不起嘛"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #7"
+  },
+  {
+    "filename": "ref14_08.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "apology",
+    "scenario": "apology",
+    "text": "我错啦~",
+    "scene": [
+      "道歉",
+      "认错",
+      "闹脾气",
+      "吃醋"
+    ],
+    "intent": [
+      "道歉",
+      "认错",
+      "哄你"
+    ],
+    "tags": [
+      "shiba",
+      "柴犬",
+      "道歉认错",
+      "我错啦"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #8"
+  },
+  {
+    "filename": "ref14_09.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "apology",
+    "scenario": "apology",
+    "text": "抱歉抱歉~",
+    "scene": [
+      "道歉",
+      "认错",
+      "闹脾气"
+    ],
+    "intent": [
+      "道歉",
+      "认错"
+    ],
+    "tags": [
+      "cat",
+      "小猫",
+      "道歉认错",
+      "抱歉抱歉"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #9"
+  },
+  {
+    "filename": "ref14_10.png",
+    "priority": "REF",
+    "character": "fox",
+    "emotion": "apology",
+    "scenario": "apology",
+    "text": "都是我的错~",
+    "scene": [
+      "道歉",
+      "认错",
+      "闹脾气",
+      "吃醋"
+    ],
+    "intent": [
+      "道歉",
+      "认错",
+      "哄你"
+    ],
+    "tags": [
+      "fox",
+      "狐狸",
+      "道歉认错",
+      "都是我的错"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #10"
+  },
+  {
+    "filename": "ref14_11.png",
+    "priority": "REF",
+    "character": "bunny",
+    "emotion": "apology",
+    "scenario": "apology",
+    "text": "对不起嘛~",
+    "scene": [
+      "道歉",
+      "认错",
+      "撒娇",
+      "吃醋"
+    ],
+    "intent": [
+      "道歉",
+      "撒娇",
+      "哄你"
+    ],
+    "tags": [
+      "bunny",
+      "兔子",
+      "道歉认错",
+      "对不起嘛"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #11"
+  },
+  {
+    "filename": "ref14_12.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "apology",
+    "scenario": "apology",
+    "text": "惹你生气了~",
+    "scene": [
+      "道歉",
+      "认错",
+      "闹脾气",
+      "吃醋"
+    ],
+    "intent": [
+      "道歉",
+      "哄你"
+    ],
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "道歉认错",
+      "惹你生气了"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #12"
+  },
+  {
+    "filename": "ref14_13.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "thanks",
+    "scenario": "thanks",
+    "text": "谢谢你~",
+    "scene": [
+      "感谢"
+    ],
+    "intent": [
+      "表达感谢"
+    ],
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "感恩感谢",
+      "谢谢你"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #13"
+  },
+  {
+    "filename": "ref14_14.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "thanks",
+    "scenario": "thanks",
+    "text": "太感谢啦！",
+    "scene": [
+      "感谢"
+    ],
+    "intent": [
+      "表达感谢"
+    ],
+    "tags": [
+      "shiba",
+      "柴犬",
+      "感恩感谢",
+      "太感谢啦"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #14"
+  },
+  {
+    "filename": "ref14_15.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "thanks",
+    "scenario": "thanks",
+    "text": "非常感谢！",
+    "scene": [
+      "感谢"
+    ],
+    "intent": [
+      "表达感谢"
+    ],
+    "tags": [
+      "cat",
+      "小猫",
+      "感恩感谢",
+      "非常感谢"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #15"
+  },
+  {
+    "filename": "ref14_16.png",
+    "priority": "REF",
+    "character": "fox",
+    "emotion": "thanks",
+    "scenario": "thanks",
+    "text": "感恩有你！",
+    "scene": [
+      "感谢",
+      "亲密"
+    ],
+    "intent": [
+      "表达感谢",
+      "表达在乎"
+    ],
+    "tags": [
+      "fox",
+      "狐狸",
+      "感恩感谢",
+      "感恩有你"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #16"
+  },
+  {
+    "filename": "ref14_17.png",
+    "priority": "REF",
+    "character": "bunny",
+    "emotion": "thanks",
+    "scenario": "thanks",
+    "text": "谢谢你呀！",
+    "scene": [
+      "感谢"
+    ],
+    "intent": [
+      "表达感谢"
+    ],
+    "tags": [
+      "bunny",
+      "兔子",
+      "感恩感谢",
+      "谢谢你呀"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #17"
+  },
+  {
+    "filename": "ref14_18.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "thanks",
+    "scenario": "thanks",
+    "text": "真的很谢谢！",
+    "scene": [
+      "感谢"
+    ],
+    "intent": [
+      "表达感谢"
+    ],
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "感恩感谢",
+      "真的很谢谢"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #18"
+  },
+  {
+    "filename": "ref14_19.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "加油鸭！",
+    "scene": [
+      "鼓励",
+      "夸夸"
+    ],
+    "intent": [
+      "鼓励",
+      "打气"
+    ],
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "鼓励加油",
+      "加油鸭"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #19"
+  },
+  {
+    "filename": "ref14_20.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "你可以的！",
+    "scene": [
+      "鼓励",
+      "夸夸"
+    ],
+    "intent": [
+      "鼓励",
+      "打气"
+    ],
+    "tags": [
+      "shiba",
+      "柴犬",
+      "鼓励加油",
+      "你可以的"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #20"
+  },
+  {
+    "filename": "ref14_21.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "相信自己！",
+    "scene": [
+      "鼓励",
+      "夸夸"
+    ],
+    "intent": [
+      "鼓励",
+      "打气"
+    ],
+    "tags": [
+      "cat",
+      "小猫",
+      "鼓励加油",
+      "相信自己"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #21"
+  },
+  {
+    "filename": "ref14_22.png",
+    "priority": "REF",
+    "character": "fox",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "别放弃！",
+    "scene": [
+      "鼓励",
+      "关心"
+    ],
+    "intent": [
+      "鼓励",
+      "打气"
+    ],
+    "tags": [
+      "fox",
+      "狐狸",
+      "鼓励加油",
+      "别放弃"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #22"
+  },
+  {
+    "filename": "ref14_23.png",
+    "priority": "REF",
+    "character": "bunny",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "冲鸭！",
+    "scene": [
+      "鼓励",
+      "夸夸"
+    ],
+    "intent": [
+      "鼓励",
+      "打气"
+    ],
+    "tags": [
+      "bunny",
+      "兔子",
+      "鼓励加油",
+      "冲鸭"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #23"
+  },
+  {
+    "filename": "ref14_24.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "encourage",
+    "scenario": "encouragement",
+    "text": "一定行！",
+    "scene": [
+      "鼓励",
+      "夸夸"
+    ],
+    "intent": [
+      "鼓励",
+      "打气"
+    ],
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "鼓励加油",
+      "一定行"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #24"
+  },
+  {
+    "filename": "ref14_25.png",
+    "priority": "REF",
+    "character": "white_mochi",
+    "emotion": "laugh",
+    "scenario": "teasing",
+    "text": "嘿嘿~",
+    "scene": [
+      "玩笑",
+      "搞怪",
+      "卖萌"
+    ],
+    "intent": [
+      "接梗",
+      "卖萌"
+    ],
+    "tags": [
+      "white_mochi",
+      "白团子",
+      "日常可爱",
+      "嘿嘿"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #25"
+  },
+  {
+    "filename": "ref14_26.png",
+    "priority": "REF",
+    "character": "shiba",
+    "emotion": "happy",
+    "scenario": "celebration",
+    "text": "耶耶耶！",
+    "scene": [
+      "庆祝",
+      "开心"
+    ],
+    "intent": [
+      "一起开心"
+    ],
+    "tags": [
+      "shiba",
+      "柴犬",
+      "日常可爱",
+      "耶耶耶"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #26"
+  },
+  {
+    "filename": "ref14_27.png",
+    "priority": "REF",
+    "character": "cat",
+    "emotion": "laugh",
+    "scenario": "teasing",
+    "text": "嘻嘻~",
+    "scene": [
+      "玩笑",
+      "搞怪",
+      "卖萌"
+    ],
+    "intent": [
+      "接梗",
+      "卖萌"
+    ],
+    "tags": [
+      "cat",
+      "小猫",
+      "日常可爱",
+      "嘻嘻"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #27"
+  },
+  {
+    "filename": "ref14_28.png",
+    "priority": "REF",
+    "character": "fox",
+    "emotion": "surprised",
+    "scenario": "celebration",
+    "text": "哇哦~",
+    "scene": [
+      "惊叹",
+      "日常接话"
+    ],
+    "intent": [
+      "捧场",
+      "回应分享"
+    ],
+    "tags": [
+      "fox",
+      "狐狸",
+      "日常可爱",
+      "哇哦"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #28"
+  },
+  {
+    "filename": "ref14_29.png",
+    "priority": "REF",
+    "character": "bunny",
+    "emotion": "happy",
+    "scenario": "celebration",
+    "text": "开心~",
+    "scene": [
+      "开心",
+      "庆祝"
+    ],
+    "intent": [
+      "一起开心"
+    ],
+    "tags": [
+      "bunny",
+      "兔子",
+      "日常可爱",
+      "开心"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #29"
+  },
+  {
+    "filename": "ref14_30.png",
+    "priority": "REF",
+    "character": "hamster",
+    "emotion": "happy",
+    "scenario": "teasing",
+    "text": "吃吃吃~",
+    "scene": [
+      "开心",
+      "玩笑",
+      "日常接话"
+    ],
+    "intent": [
+      "接梗",
+      "回应分享"
+    ],
+    "tags": [
+      "hamster",
+      "仓鼠",
+      "日常可爱",
+      "吃吃吃"
+    ],
+    "generic": false,
+    "quality_score": 0.85,
+    "usage_priority": 70,
+    "source": "ref-14 #30"
+  }
+]
